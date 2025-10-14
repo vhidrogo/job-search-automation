@@ -5,7 +5,8 @@ from resume.services.llm_client import ClaudeClient
 class JDParser:
     def __init__(
             self, 
-            client: ClaudeClient = None, prompt_path: str = "resume/prompts/parse_jd.md",
+            client: ClaudeClient = None, 
+            prompt_path: str = "resume/prompts/parse_jd.md",
             placeholder: str = "{{JOB_DESCRIPTION}}",
             ):
         self.client = client or ClaudeClient()
