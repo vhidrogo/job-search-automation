@@ -22,7 +22,7 @@ You are a job description parser. Your task is to extract **structured metadata*
   "requirements": [
     {
       "rank": <integer>,
-      "requirement_sentence": "<full sentence describing a requirement>",
+      "text": "<short phrase describing a requirement>",
       "keywords": ["<keyword1>", "<keyword2>", "..."],
       "relevance": <float 0-1, higher means more important>,
     },
@@ -40,9 +40,9 @@ You are a job description parser. Your task is to extract **structured metadata*
 
 3. **Requirements Rules:**  
    - Extract all explicit or implied job requirements.  
-   - Each requirement must be a short phrase.  
+   - `text`: Each requirement must be a short phrase.  
    - Include relevant keywords (technical skills, tools, soft skills) for each requirement.  
-   - Assign a `relevance` score (0-1) to indicate importance.
+   - `relevance`: Assign a score (0-1) to indicate importance.
 
 4. **Formatting Rules:**  
    - JSON must be syntactically correct.  
