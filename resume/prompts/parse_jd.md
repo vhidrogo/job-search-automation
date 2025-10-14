@@ -35,12 +35,12 @@ You are a job description parser. Your task is to extract **structured metadata*
    - `role`: choose the best match from the six standardized roles.  
    - `specialization`: include "Python" or "Backend" if the title or JD heavily emphasizes it (e.g., “Senior Data Engineer (Python)” or “Backend Software Engineer”).
    - `level`: extract from JD title or inferred seniority.  
-   - `remote`: choose one of On-site, Hybrid, or Remote, default to On-site if not specified.  
+   - `work_setting`: choose one of On-site, Hybrid, or Remote, default to On-site if not specified.  
    - If a numeric field is missing, you may omit it but keep JSON valid.
 
 3. **Requirements Rules:**  
    - Extract all explicit or implied job requirements.  
-   - Each requirement must be a full sentence.  
+   - Each requirement must be a short phrase.  
    - Include relevant keywords (technical skills, tools, soft skills) for each requirement.  
    - Assign a `relevance` score (0-1) to indicate importance.
 
