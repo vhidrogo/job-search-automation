@@ -104,3 +104,38 @@ For now, manually select relevant sections for each JD when copying/pasting into
 - This approach balances cost reduction with the need for complete, relevant context.  
 - Even partial preprocessing can meaningfully reduce input tokens, lowering per-call cost without sacrificing bullet quality.  
 - Maintaining a manual workflow initially ensures critical requirements are not accidentally omitted, with automation considered as a future improvement.
+
+## Requirement Extraction Granularity: Explicit vs Implied and Sentence vs Phrase Format
+
+**Context:**  
+When parsing job descriptions into structured requirements for the resume builder, the level of granularity and phrasing impacts both the quality and cost of downstream LLM calls. The original prompt extracted all explicit and implied requirements, expressed as full sentences.
+
+**Options Considered:**  
+1. **Explicit or Implied + Full Sentences (Baseline):**  
+   - Capture every possible requirement in full-sentence form.  
+   - Maximizes coverage but increases token usage.  
+2. **Explicit or Implied + Short Phrases:**  
+   - Keep all requirements (explicit and implied) but express them concisely.  
+   - Reduces input/output tokens with minimal loss of meaning.  
+3. **Explicit Only + Short Phrases:**  
+   - Capture only clearly stated requirements.  
+   - Further reduces token count and number of API calls, but risks missing subtle or implied expectations.
+
+**Tradeoffs:**  
+- **Explicit or Implied + Full Sentences:**  
+  - **Pros:** Maximum completeness and human readability.  
+  - **Cons:** High token cost and redundancy.  
+- **Explicit or Implied + Short Phrases:**  
+  - **Pros:** Compact, token-efficient, and still captures most relevant context.  
+  - **Cons:** Slightly less descriptive output, but negligible information loss for LLM use.  
+- **Explicit Only + Short Phrases:**  
+  - **Pros:** Minimal token and call cost; very efficient.  
+  - **Cons:** May omit nuanced or implied requirements that improve match quality.
+
+**Decision:**  
+Adopt the **explicit or implied + short phrases** approach for now. This maintains full requirement coverage while reducing token usage. Future iterations may test **explicit-only** extraction if the total requirement count becomes too high.
+
+**Reflection:**  
+- The “short phrase” change provides a clear, low-risk cost optimization.  
+- The “explicit-only” change remains an optional lever for future fine-tuning based on observed performance.  
+- Requirement count can be tracked dynamically through model relationships rather than stored directly.
