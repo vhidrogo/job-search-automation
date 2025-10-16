@@ -267,6 +267,6 @@ Incremental Build Plan
 ## Future Enhancements
 - Iterative Match Workflow: add `ResumeMatcher` (LLM-assisted) to enable on-demand evaluation of which requirements are satisfied, drive iterative `ExperienceProject` additions/overrides, and update `match_ratio`.
 - Batch generation for multiple JDs.
-- Resume feedback loops (rejected vs callback correlation). 
+- Resume feedback analytics: correlate application outcomes (rejected/callback) with resume features (match_ratio, template, overrides) to identify high-ROI targets and guide generation improvements. 
 
 ---
