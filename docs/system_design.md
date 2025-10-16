@@ -109,6 +109,51 @@ This approach:
 
 ## Data Model Design
 
+### App and Model Organization
+
+To maintain modularity between the resume-generation domain and the job-tracking domain, models are distributed across **domain-specific Django apps** rather than centralized in one location. This structure supports future growth (e.g., adding analytics or orchestration apps) without creating coupling between unrelated domains.
+
+| App | Domain | Core Models | Responsibility |
+|------|---------|--------------|----------------|
+| **resume** | Resume generation | `ResumeTemplate`, `TemplateRoleConfig`, `Resume`, `ResumeBullet`, `ExperienceRole`, `ExperienceProject` | Manages templates, experience data, and generated resume artifacts. |
+| **tracker** | Job and application tracking | `Job`, `Requirement`, `ContractJob`, `Application`, `ApplicationStatus` | Manages job postings, parsed requirements, applications, and status updates. |
+
+**Rationale:**
+- Keeps resume logic independent from job tracking logic.
+- Enables modular testing and database migrations.
+- Supports clean orchestration via `JobApplicationManager`, which coordinates both domains.
+- Allows new domain apps (e.g., analytics, orchestration) to be added without refactoring existing models.
+
+**Cross-App Relationships:**
+- The `Resume` model references `tracker.Job` (via FK) since resumes are generated for specific jobs.
+- Cross-app foreign keys are defined using the `app_label.ModelName` convention, e.g.:
+
+    ```python
+    job = models.ForeignKey("tracker.Job", on_delete=models.CASCADE)
+    ```
+
+**Model Organization:**
+Each app uses a `models/` directory instead of a single `models.py` file, improving maintainability and clarity as the model layer expands.
+
+```
+resume/
+  models/
+    resume.py
+    resume_bullet.py
+    resume_template.py
+    experience_role.py
+    template_role_config.py
+
+tracker/
+  models/
+    job.py
+    requirement.py
+    application.py
+    application_status.py
+```
+
+Each directory includes an `__init__.py` file that imports all model classes, enabling simple imports throughout the codebase (e.g., `from resume.models import Resume`).
+
 ### Core Models
 
 #### Job
