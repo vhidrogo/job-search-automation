@@ -27,6 +27,29 @@ Minor implementation details (e.g., helper function naming, small API parameter 
 
 **Reflection:** If future prompts require multiple dynamic fields (e.g., `{COMPANY}`, `{ROLE}`), may revisit string formatting with careful brace escaping or use a templating library like Jinja2 for controlled substitution.
 
+### Tradeoff: Pydantic schema validation vs manual dictionary-based validation
+
+**Context**  
+The JDParser consumes JSON output from an LLM representing job metadata and requirements. This data must be validated before creating Django model instances to prevent schema mismatches or runtime errors.
+
+**Options Considered**  
+1. **Manual dict-based validation:**  
+   Define an expected dictionary structure and verify keys, types, and required fields with custom logic.  
+2. **Use Pydantic schemas:**  
+   Define a typed schema (e.g., `JDModel`, `RequirementSchema`, `Metadata`) that enforces types, constraints, and defaults automatically.
+
+**Tradeoffs**  
+- **Dict-based validation:**  
+  Lightweight and dependency-free, but requires repetitive manual checks (`if "role" not in data`, `isinstance(x, list)` etc.). Limited error reporting and no support for nested validation.  
+- **Pydantic-based:**  
+  Adds a small dependency but provides automatic type coercion, nested validation, expressive constraints (`confloat`, `conlist`), and clear error messages. It acts as a contract between the LLM and your backend.
+
+**Decision**  
+Adopt **Pydantic** for structured, type-safe validation of LLM output before ORM persistence. Use schema class naming (e.g., `RequirementSchema`) to avoid conflict with Django models.
+
+**Reflection**  
+This improves reliability, readability, and alignment with modern Python practices. It also demonstrates familiarity with strongly typed design principles, which transfer well to larger-scale systems and typed languages like Java or TypeScript.
+
 ## Requirement-Based Bullet Generation: Per-Requirement LLM Calls vs Bulk Generation
 
 **Context:**  
@@ -139,3 +162,112 @@ Adopt the **explicit or implied + short phrases** approach for now. This maintai
 - The “short phrase” change provides a clear, low-risk cost optimization.  
 - The “explicit-only” change remains an optional lever for future fine-tuning based on observed performance.  
 - Requirement count can be tracked dynamically through model relationships rather than stored directly.
+
+## Bullet Generation Strategy: Per-Role Batching vs Per-Requirement + State
+
+**Context:** 
+Needed a reliable, scalable, and token-efficient method to generate resume bullets from parsed job descriptions. Previous large-prompt approach (all roles + all requirements in one call) caused inconsistent bullet counts, irrelevant bullets, and token/throughput issues.
+
+**Options Considered:**
+1. **Per-requirement + full state tracking:** 
+   - Generate bullets one requirement at a time, maintaining full state of bullets generated so far.
+   - Input includes all work experience + accumulated bullets.
+2. **Per-role batching (simplified MVP):** 
+   - Generate all bullets for a single experience role in one call.
+   - Input includes only that role’s work history + sorted requirements.
+   - Use preconfigured max bullets per role and included roles for deterministic filtering.
+
+**Tradeoffs:**
+- Per-requirement + state:
+  - ✅ Maximum control over bullets and scoring.
+  - ✅ Can implement dynamic pruning based on weighted scores.
+  - ❌ High complexity (state management, token tracking, pruning logic).
+  - ❌ Likely hits API rate limits for output tokens if many requirements.
+  - ❌ Large token usage per request (input + output).
+- Per-role batching:
+  - ✅ Simple, deterministic pipeline.
+  - ✅ Token-efficient (each call small, under input/output limits).
+  - ✅ Avoids irrelevant bullets and inconsistent totals by preconfigured rules.
+  - ✅ Fewer API calls, no state tracking required.
+  - ❌ Less granular control over individual requirements (rely on LLM to map requirements to bullets effectively).
+
+**Decision:** Adopt per-role batching as the MVP approach. Use preconfigured included roles, max bullets per role, and sorted requirements to maintain quality.  
+
+**Reflection:** 
+If future use cases reveal very large JDs, unusually many requirements, or quality issues, consider revisiting per-requirement generation with state tracking and weighted scoring. For now, this approach balances quality, efficiency, and simplicity.
+
+### Tradeoff: Modeling Application Status as a Separate Entity
+
+**Context**  
+I needed a way to represent the lifecycle of a job application — including whether it resulted in a callback, rejection, closure, or no response — while maintaining flexibility for tracking event timing, analytics, and future extensions (like interviews or offers). The model also had to allow for easily identifying the *latest* status of any given application.
+
+**Options Considered**  
+1. **Embed a `status` field directly in `Application`**  
+   - Store a simple `CharField` with predefined choices (e.g., rejected, callback, closed).  
+   - Quick to implement and easy to query.  
+   - However, limits historical tracking and timestamping of status changes.
+
+2. **Use separate models for each outcome type (e.g., `Rejection`, `Callback`, `Closure`)**  
+   - Provides flexibility for each event type to have custom fields.  
+   - But leads to repetitive boilerplate, scattered logic, and complex relationships.
+
+3. **Centralize statuses in a dedicated `ApplicationStatus` model** *(chosen)*  
+   - A single model to represent all state transitions.  
+   - Allows timestamping each status event (`status_date`).  
+   - Keeps the `Application` model clean with a single `status` FK pointing to the latest known status.
+
+**Tradeoffs**  
+- **Pros:**  
+  - Extensible and scalable as new states or events are added.  
+  - Simplifies analytics (e.g., querying all applications with a “callback” state).  
+  - Maintains historical integrity by decoupling state records from the main application entity.  
+- **Cons:**  
+  - Slightly more complex to manage (requires updating FK on `Application` when a new `ApplicationStatus` is created).  
+  - Indirect queries (need to traverse relationships to get the most recent status).
+
+**Decision**  
+Adopted a separate `ApplicationStatus` model linked via a foreign key to `Application`, with the following schema:
+
+#### Application
+| Field | Type | Description |
+|--------|------|-------------|
+| id | IntegerField (primary_key=True) | Primary key |
+| applied_date | DateField | When application was submitted |
+| resume_id | FK(Resume) | Resume used |
+| job_id | FK(Job) | Job applied to |
+| status | FK(ApplicationStatus) | Latest known status |
+
+#### ApplicationStatus
+| Field | Type | Description |
+|--------|------|-------------|
+| id | IntegerField (primary_key=True) | Primary key |
+| state | CharField(max_length=50, choices=STATUS_CHOICES) | Application state (e.g., rejected, callback, closed, etc.) |
+| application_id | FK(Application) | Associated application |
+| status_date | DateField | When the event occurred or was recorded |
+
+**Reflection**  
+This structure provides an elegant balance between normalization and practical usability. It keeps the system event-driven and analytics-ready without overcomplicating the schema or duplicating logic across models. As future events (like interviews or offers) are introduced, they can seamlessly integrate into this pattern or relate to `ApplicationStatus` entries.
+
+## Resume Bullet Editability
+
+### Context
+The system generates structured resume bullets from LLM outputs and stores them in the `ResumeBullet` model. Initially, the assumption was that these LLM-generated bullets would remain final and directly populate the markdown resume. However, in practice, users often want to reword or exclude certain bullets, making direct markdown editing insufficiently structured and data-destructive. A design was needed that preserves structured data while allowing flexible, manual control over bullet inclusion and wording.
+
+### Options Considered
+1. **Edit Markdown Directly**  
+   Users manually edit the markdown output and re-import or regenerate it as needed.
+2. **Add `exclude` and `override_text` Fields to `ResumeBullet`**  
+   Introduce structured fields allowing toggling and in-place text overrides.
+3. **Physically Edit/Delete `ResumeBullet` Records**  
+   Directly modify or remove bullet entries that are unsatisfactory.
+
+### Tradeoffs
+- **Option 1** offers simplicity but breaks the link between structured data and the final markdown output, making auditability and analytics impossible.  
+- **Option 2** adds minor schema complexity but maintains full traceability, allowing reversible edits and analytics on LLM accuracy and user edits.  
+- **Option 3** keeps the data minimal but sacrifices edit history and risks losing insights about LLM-generated versus human-edited content.
+
+### Decision
+Adopt **Option 2** by adding `exclude: BooleanField(default=False)` and `override_text: TextField(blank=True, null=True)` to the `ResumeBullet` model. Resume generation will include only non-excluded bullets and use `override_text` if present, otherwise defaulting to `text`.
+
+### Reflection
+This approach strikes the best balance between structure, flexibility, and future analytics. It allows iterative refinement of resume content without data loss or duplication, supporting both human-in-the-loop workflows and later evaluation of model output quality.
