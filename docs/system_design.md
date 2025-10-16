@@ -154,6 +154,43 @@ tracker/
 
 Each directory includes an `__init__.py` file that imports all model classes, enabling simple imports throughout the codebase (e.g., `from resume.models import Resume`).
 
+### Models by Domain Diagram
+```mermaid
+flowchart TD
+    subgraph Resume App
+        RT[ResumeTemplate]
+        TRC[TemplateRoleConfig]
+        R[Resume]
+        REB[ResumeExperienceBullet]
+        RSB[ResumeSkillBullet]
+        ER[ExperienceRole]
+        EP[ExperienceProject]
+
+        RT --> TRC
+        TRC --> ER
+        R --> REB
+        R --> RSB
+        ER --> EP
+    end
+
+    subgraph Tracker App
+        J[Job]
+        C[ContractJob]
+        Req[Requirement]
+        A[Application]
+        AS[ApplicationStatus]
+
+        J --> Req
+        J --> C
+        A --> R
+        A --> J
+        A --> AS
+    end
+
+    %% Cross-app references
+    R --> J
+```
+
 ### Core Models
 
 #### Job
