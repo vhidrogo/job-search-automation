@@ -225,19 +225,19 @@ This approach:
 
 ```mermaid
 flowchart TD
-    A[User saves JD file (jd.txt)] --> B[JobApplicationManager.main()]
-    B --> C[JDParser.parse(path_to_file)]
-    C --> D[Persist Job + Requirements via tracker models]
-    D --> E[Fetch ResumeTemplate (by Job.role + Job.level)]
+    A[User saves JD file: jd.txt] --> B[JobApplicationManager main]
+    B --> C[JDParser parse (path_to_file)]
+    C --> D[Persist Job and Requirements via tracker models]
+    D --> E[Fetch ResumeTemplate by Job role and level]
     E --> F[Fetch TemplateRoleConfig → ExperienceRoles]
-    F --> G[For each ExperienceRole: ResumeWriter.generate()]
-    G --> H[Persist Resume + ResumeBullet objects]
-    H --> I[ResumeMatcher.evaluate() → update match_ratio + unmet_requirements]
-    I --> J[User reviews + edits bullets (override/exclude)]
+    F --> G[For each ExperienceRole: ResumeWriter generate]
+    G --> H[Persist Resume and ResumeBullet objects]
+    H --> I[ResumeMatcher evaluate → update match_ratio and unmet_requirements]
+    I --> J[User reviews and edits bullets (override or exclude)]
     J --> K[ResumeMatcher re-run (optional)]
-    K --> L[User triggers application save (Application + Resume.saveToPdf())]
+    K --> L[User triggers application save → Application and Resume saved as PDF]
     L --> M[Admin updates ApplicationStatus for outcome tracking]
-    M --> N[Analytics layer: compute feedback loops & high-ROI insights]
+    M --> N[Analytics layer computes feedback loops and high-ROI insights]
 ```
 
 ---
@@ -267,6 +267,7 @@ Incremental Build Plan
 ## Future Enhancements
 - Iterative Match Workflow: add `ResumeMatcher` (LLM-assisted) to enable on-demand evaluation of which requirements are satisfied, drive iterative `ExperienceProject` additions/overrides, and update `match_ratio`.
 - Batch generation for multiple JDs.
-- Resume feedback loops (rejected vs callback correlation). 
+- Resume feedback analytics: correlate application outcomes (rejected/callback) with resume features (match_ratio, template, overrides) to identify high-ROI targets and guide generation improvements. 
+- Analytics/Dashboarding
 
 ---
