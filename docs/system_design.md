@@ -207,7 +207,7 @@ Each directory includes an `__init__.py` file that imports all model classes, en
 | unmet_requirements | CharField | CSV string of unmatched tools/technologies (e.g., "Go,Ruby on Rails") |
 | match_ratio | FloatField | (Met requirements / total requirements) |
 
-#### ResumeBullet
+#### ResumeExperienceBullet
 | Field | Type | Description |
 |--------|------|-------------|
 | id | IntegerField | Primary key |
@@ -216,6 +216,14 @@ Each directory includes an `__init__.py` file that imports all model classes, en
 | text | TextField | Bullet content |
 | exclude | BooleanField | Whether to exclude this bullet from the generated resume |
 | override_text | TextField | Optional manually edited version of the bullet that takes priority over `text` |
+
+#### ResumeSkillBullet
+| Field | Type | Description |
+|--------|------|-------------|
+| id | IntegerField | Primary key |
+| resume | FK(Resume) | Associated resume |
+| category | CharField | Category label such as "Programming Languages" or "Data & Visualization" |
+| skills_text | TextField | CSV string of related skills (e.g., "Python, Java") |
 
 #### ExperienceRole
 | Field | Type | Description |
