@@ -2,7 +2,7 @@
 
 ## Overview
 The Job Search Automation project automates the generation and tailoring of resumes to job descriptions (JDs).  
-The system reads a JD, extracts structured requirements and metadata via an LLM, and generates role-specific bullet points aligned with selected experience templates.  
+The system reads a JD, extracts structured requirements and metadata via an LLM, and generates role-specific experience bullet points and skills aligned with selected experience templates.  
 This design emphasizes modularity, configurability, and token-efficient LLM orchestration.
 
 ---
@@ -34,11 +34,10 @@ job_search_automation/ (Django Project)
 | Class | Responsibility |
 |-------|----------------|
 | **ClaudeClient** | Wraps LLM API calls (`generate()`, `count_tokens()`), handles configuration and model defaults. |
-| **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements. |
+| **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skill_bullets()` to produce both experience and skill-section entries used by `Resume` rendering. |
 | **JobDescriptionParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
 | **ApplicationLogger** | Validates metadata and stores applications/resume info in DB; triggers optional notifications. |
 | **JobApplicationManager** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative match/repair flows. |
-| **JobApplicationManager** | Orchestrates the entire flow: fetch JD, parse JD, generate resume, log application. |
 | **Resume (model methods)** | Responsible for on-demand rendering: `_generate()` (assemble template + bullets), `saveToMarkdown()`, `saveToPdf()` — these use persisted models to render output when called. |
 | **ResumeMatcher** | LLM-assisted utility that, given a job's requirements and the current resume (bullets), returns which requirements are met/missing and enables iterative improvement of `match_ratio`. |
 
@@ -109,6 +108,89 @@ This approach:
 
 ## Data Model Design
 
+### App and Model Organization
+
+To maintain modularity between the resume-generation domain and the job-tracking domain, models are distributed across **domain-specific Django apps** rather than centralized in one location. This structure supports future growth (e.g., adding analytics or orchestration apps) without creating coupling between unrelated domains.
+
+| App | Domain | Core Models | Responsibility |
+|------|---------|--------------|----------------|
+| **resume** | Resume generation | `ResumeTemplate`, `TemplateRoleConfig`, `Resume`, `ResumeExperienceBullet`, `ResumeSkillBullet`, `ExperienceRole`, `ExperienceProject` | Manages templates, experience data, and generated resume artifacts. |
+| **tracker** | Job and application tracking | `Job`, `Requirement`, `ContractJob`, `Application`, `ApplicationStatus` | Manages job postings, parsed requirements, applications, and status updates. |
+
+**Rationale:**
+- Keeps resume logic independent from job tracking logic.
+- Enables modular testing and database migrations.
+- Supports clean orchestration via `JobApplicationManager`, which coordinates both domains.
+- Allows new domain apps (e.g., analytics, orchestration) to be added without refactoring existing models.
+
+**Cross-App Relationships:**
+- The `Resume` model references `tracker.Job` (via FK) since resumes are generated for specific jobs.
+- Cross-app foreign keys are defined using the `app_label.ModelName` convention, e.g.:
+
+    ```python
+    job = models.ForeignKey("tracker.Job", on_delete=models.CASCADE)
+    ```
+
+**Model Organization:**
+Each app uses a `models/` directory instead of a single `models.py` file, improving maintainability and clarity as the model layer expands.
+
+```
+resume/
+  models/
+    resume.py
+    resume_experience_bullet.py
+    resume_skill_bullet.py
+    resume_template.py
+    experience_role.py
+    template_role_config.py
+
+tracker/
+  models/
+    job.py
+    requirement.py
+    application.py
+    application_status.py
+```
+
+Each directory includes an `__init__.py` file that imports all model classes, enabling simple imports throughout the codebase (e.g., `from resume.models import Resume`).
+
+### Models by Domain Diagram
+```mermaid
+flowchart TD
+    subgraph Resume App
+        RT[ResumeTemplate]
+        TRC[TemplateRoleConfig]
+        R[Resume]
+        REB[ResumeExperienceBullet]
+        RSB[ResumeSkillBullet]
+        ER[ExperienceRole]
+        EP[ExperienceProject]
+
+        RT --> TRC
+        TRC --> ER
+        R --> REB
+        R --> RSB
+        ER --> EP
+    end
+
+    subgraph Tracker App
+        J[Job]
+        C[ContractJob]
+        Req[Requirement]
+        A[Application]
+        AS[ApplicationStatus]
+
+        J --> Req
+        J --> C
+        A --> R
+        A --> J
+        A --> AS
+    end
+
+    %% Cross-app references
+    R --> J
+```
+
 ### Core Models
 
 #### Job
@@ -162,7 +244,7 @@ This approach:
 | unmet_requirements | CharField | CSV string of unmatched tools/technologies (e.g., "Go,Ruby on Rails") |
 | match_ratio | FloatField | (Met requirements / total requirements) |
 
-#### ResumeBullet
+#### ResumeExperienceBullet
 | Field | Type | Description |
 |--------|------|-------------|
 | id | IntegerField | Primary key |
@@ -171,6 +253,14 @@ This approach:
 | text | TextField | Bullet content |
 | exclude | BooleanField | Whether to exclude this bullet from the generated resume |
 | override_text | TextField | Optional manually edited version of the bullet that takes priority over `text` |
+
+#### ResumeSkillBullet
+| Field | Type | Description |
+|--------|------|-------------|
+| id | IntegerField | Primary key |
+| resume | FK(Resume) | Associated resume |
+| category | CharField | Category label such as "Programming Languages" or "Data & Visualization" |
+| skills_text | TextField | CSV string of related skills (e.g., "Python, Java") |
 
 #### ExperienceRole
 | Field | Type | Description |
@@ -230,14 +320,15 @@ flowchart TD
     C --> D["Persist Job + Requirements via tracker models"]
     D --> E["Fetch ResumeTemplate (by Job.role + Job.level)"]
     E --> F["Fetch TemplateRoleConfig → ExperienceRoles"]
-    F --> G["For each ExperienceRole: ResumeWriter.generate()"]
-    G --> H["Persist Resume + ResumeBullet objects"]
-    H --> I["ResumeMatcher.evaluate() → update match_ratio + unmet_requirements"]
-    I --> J["User reviews + edits bullets (override/exclude)"]
-    J --> K["ResumeMatcher re-run (optional)"]
-    K --> L["User triggers application save (Application + Resume.saveToPdf())"]
-    L --> M["Admin updates ApplicationStatus for outcome tracking"]
-    M --> N["Analytics layer: compute feedback loops & high-ROI insights"]
+    F --> G["For each ExperienceRole: ResumeWriter.generate_experience_bullets()"]
+    G --> H["ResumeWriter.generate_skill_bullets()"]
+    H --> I["Persist Resume + ResumeExperienceBullet + ResumeSkillBullet objects"]
+    I --> J["ResumeMatcher.evaluate() → update match_ratio + unmet_requirements"]
+    J --> K["User reviews + edits bullets (override/exclude)"]
+    K --> L["ResumeMatcher re-run (optional)"]
+    L --> M["User triggers application save (Application + Resume.saveToPdf())"]
+    M --> N["Admin updates ApplicationStatus for outcome tracking"]
+    N --> O["Analytics layer: compute feedback loops & high-ROI insights"]
 ```
 
 ---
@@ -258,9 +349,10 @@ Incremental Build Plan
 | [x] Phase 2 | JD extraction (metadata + requirements) | JSON output |
 | [ ] Phase 3 | Template selection | Correct Markdown template (TemplateRoleConfig-based) |
 | [ ] Phase 4 | Bullet generation loop | Persisted Resume + ResumeBullet entries |
-| [ ] Phase 5 | Resume rendering | `_generate()` + `saveToMarkdown()` / `saveToPdf()` |
-| [ ] Phase 6 | Iterative match utility | `ResumeMatcher` to evaluate & improve `match_ratio` |
-| [ ] Phase 7 | tracker app expansion | End-to-end automation, analytics, dashboards |
+| [ ] Phase 5 | Skill-section generation | Persisted ResumeSkillBullet entries (generated after experience bullets) |
+| [ ] Phase 6 | Resume rendering | `_generate()` + `saveToMarkdown()` / `saveToPdf()` |
+| [ ] Phase 7 | Iterative match utility | `ResumeMatcher` to evaluate & improve `match_ratio` |
+| [ ] Phase 8 | tracker app expansion | End-to-end automation, analytics, dashboards |
 
 ---
 
