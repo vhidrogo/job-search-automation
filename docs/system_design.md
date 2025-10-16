@@ -225,19 +225,19 @@ This approach:
 
 ```mermaid
 flowchart TD
-    A[User saves JD file: jd.txt] --> B[JobApplicationManager main]
-    B --> C[JDParser parse (path_to_file)]
-    C --> D[Persist Job and Requirements via tracker models]
-    D --> E[Fetch ResumeTemplate by Job role and level]
-    E --> F[Fetch TemplateRoleConfig → ExperienceRoles]
-    F --> G[For each ExperienceRole: ResumeWriter generate]
-    G --> H[Persist Resume and ResumeBullet objects]
-    H --> I[ResumeMatcher evaluate → update match_ratio and unmet_requirements]
-    I --> J[User reviews and edits bullets (override or exclude)]
-    J --> K[ResumeMatcher re-run (optional)]
-    K --> L[User triggers application save → Application and Resume saved as PDF]
-    L --> M[Admin updates ApplicationStatus for outcome tracking]
-    M --> N[Analytics layer computes feedback loops and high-ROI insights]
+    A["User saves JD file (jd.txt)"] --> B["JobApplicationManager.main()"]
+    B --> C["JDParser.parse(path_to_file)"]
+    C --> D["Persist Job + Requirements via tracker models"]
+    D --> E["Fetch ResumeTemplate (by Job.role + Job.level)"]
+    E --> F["Fetch TemplateRoleConfig → ExperienceRoles"]
+    F --> G["For each ExperienceRole: ResumeWriter.generate()"]
+    G --> H["Persist Resume + ResumeBullet objects"]
+    H --> I["ResumeMatcher.evaluate() → update match_ratio + unmet_requirements"]
+    I --> J["User reviews + edits bullets (override/exclude)"]
+    J --> K["ResumeMatcher re-run (optional)"]
+    K --> L["User triggers application save (Application + Resume.saveToPdf())"]
+    L --> M["Admin updates ApplicationStatus for outcome tracking"]
+    M --> N["Analytics layer: compute feedback loops & high-ROI insights"]
 ```
 
 ---
