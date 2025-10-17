@@ -357,9 +357,12 @@ Incremental Build Plan
 ---
 
 ## Future Enhancements
-- Iterative Match Workflow: add `ResumeMatcher` (LLM-assisted) to enable on-demand evaluation of which requirements are satisfied, drive iterative `ExperienceProject` additions/overrides, and update `match_ratio`.
+- *Iterative Match Workflow:* add `ResumeMatcher` (LLM-assisted) to enable on-demand evaluation of which requirements are satisfied, drive iterative `ExperienceProject` additions/overrides, and update `match_ratio`.
 - Batch generation for multiple JDs.
-- Resume feedback analytics: correlate application outcomes (rejected/callback) with resume features (match_ratio, template, overrides) to identify high-ROI targets and guide generation improvements. 
+- *Resume feedback analytics:* correlate application outcomes (rejected/callback) with resume features (match_ratio, template, overrides) to identify high-ROI targets and guide generation improvements. 
 - Analytics/Dashboarding
+- **General and Company-Tailored Resume Modes:**
+  - *General Target Role Resume:* Generate a “framed” resume for a target role (e.g., *Data Engineer*) when limited or no requirements are provided — such as when a recruiter message lacks a full JD. The system leverages the role-specific template and weighted prior experience configurations to infer likely requirements and produce a strong generic framing.
+  - *Company-Tailored Resume:* Generate resumes explicitly aligned with a company’s known leadership principles or values (e.g., Amazon LPs, Meta Leadership). This mode enriches bullet phrasing and ordering to reflect organizational priorities without requiring a full job description.
 
 ---
