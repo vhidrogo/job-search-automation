@@ -14,6 +14,7 @@ job_search_automation/ (Django Project)
 ├── job_search_automation/        # Django project settings, URLs, WSGI
 ├── resume/                       # LLM-based resume generation app
 │   ├── prompts/                  # Reusable and versioned LLM prompts
+│   ├── schemas/                  # Pydantic schemas for validating all LLM outputs
 │   ├── services/                 # External API clients (ClaudeClient)
 │   ├── templates/                # Markdown templates per role
 │   ├── utils/                    # Internal logic: ResumeWriter, JDParser
@@ -52,6 +53,8 @@ job_search_automation/ (Django Project)
 ### Requirements & Metadata Extraction
 - Make LLM API call.
 - Return structured JSON:
+- **Validate the returned JSON against the `JDModel` Pydantic schema** to ensure the response adheres to expected types and structure before persisting to the database. Any validation failure halts the flow and surfaces a descriptive error.
+
 
 ```
 {
@@ -88,12 +91,14 @@ job_search_automation/ (Django Project)
 - One LLM call per **experience role**, not per requirement.
 - Input: all requirements (sorted by relevance) + experience details for one role.
 - Output: up to *N* bullets (preconfigured) for that role.
+- **All bullet-generation responses are also validated with Pydantic models** before any ORM persistence, ensuring schema correctness and safe downstream usage.
 
 This approach:
 - Keeps input well under the per-request token limit.
 - Avoids rate limiting due to fewer calls.
 - Produces consistent bullet counts and relevance.
 - Simplifies orchestration while maintaining strong quality control.
+- Ensures validated, structured outputs for downstream persistence.
 
 ### Output Generation
 - Save Markdown resume.
@@ -103,6 +108,24 @@ This approach:
 ### Application Logging
 - Store JD metadata, extracted requirements, and generated resume info.
 - Validate and persist via Django ORM.
+
+---
+
+## Validation Layer
+
+All LLM outputs—whether from **JDParser** (requirements extraction), **ResumeWriter** (bullet generation), or **ResumeMatcher** (evaluation)—undergo **schema validation via Pydantic** before any persistence or downstream processing.
+
+### Purpose
+- Guarantee structured and type-safe data flowing into the Django model layer.
+- Catch malformed or incomplete LLM responses early, with clear developer-facing error messages.
+- Standardize validation logic across all services interacting with the LLM.
+
+### Implementation Summary
+- Each LLM service defines its corresponding Pydantic schema (e.g., `JDModel`, `BulletListModel`, `MatchResultModel`).
+- Validation occurs immediately after receiving LLM output and before ORM operations.
+- Validation failures raise descriptive exceptions to prevent silent data corruption or inconsistent states.
+
+This validation step is mandatory across all LLM-integrated modules.
 
 ---
 
