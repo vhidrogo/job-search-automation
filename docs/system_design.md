@@ -21,8 +21,9 @@ job_search_automation/ (Django Project)
 ├── tracker/                      # Job/application logging and analytics
 │   ├── models.py                 # Job, Resume, Application
 │   └── utils/                    # ApplicationLogger
-├── main/                         # CLI / orchestration entrypoints (management commands or scripts)
-│   └── job_application_manager.py # thin orchestrator that imports resume + tracker logic and runs end-to-end
+├── orchestration/                # CLI / orchestration entrypoints (management commands or scripts)
+│   ├── orchestrator.py           # thin Orchestrator that imports resume + tracker logic and runs end-to-end
+│   ├── management/commands/      # CLI commands / Django commands (run_orchestrator.py)
 ├── db.sqlite3                    # Local data store
 └── manage.py
 ```
@@ -35,9 +36,8 @@ job_search_automation/ (Django Project)
 |-------|----------------|
 | **ClaudeClient** | Wraps LLM API calls (`generate()`, `count_tokens()`), handles configuration and model defaults. |
 | **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skill_bullets()` to produce both experience and skill-section entries used by `Resume` rendering. |
-| **JobDescriptionParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
-| **ApplicationLogger** | Validates metadata and stores applications/resume info in DB; triggers optional notifications. |
-| **JobApplicationManager** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative match/repair flows. |
+| **JDParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
+| **Orchestrator** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative match/repair flows. |
 | **Resume (model methods)** | Responsible for on-demand rendering: `_generate()` (assemble template + bullets), `saveToMarkdown()`, `saveToPdf()` — these use persisted models to render output when called. |
 | **ResumeMatcher** | LLM-assisted utility that, given a job's requirements and the current resume (bullets), returns which requirements are met/missing and enables iterative improvement of `match_ratio`. |
 
