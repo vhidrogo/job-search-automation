@@ -249,6 +249,7 @@ flowchart TD
 | job_id | FK(Job) | Source JD |
 | text | TextField | Requirement text |
 | relevance | FloatField | Relevance score (0–1, higher means more important) |
+| order | IntegerField | Position in the LLM-sorted list; used to preserve a deterministic order when relevance scores are equal |
 
 #### ResumeTemplate
 | Field | Type | Description |

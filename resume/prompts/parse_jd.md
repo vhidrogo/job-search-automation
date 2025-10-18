@@ -24,6 +24,7 @@ You are a job description parser. Your task is to extract **structured metadata*
       "text": "<short phrase describing a requirement>",
       "keywords": ["<keyword1>", "<keyword2>", "..."],
       "relevance": <float 0-1, higher means more important>,
+      "order": <integer>
     },
     ...
   ]
