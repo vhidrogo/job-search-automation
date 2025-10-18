@@ -5,7 +5,6 @@ from resume.utils.jd_parser import JDParser
 from resume.schemas.jd_schema import JDModel
 
 
-@pytest.mark.unit
 class TestJDParser:
     """Unit test suite for the JDParser util, ensuring robust validation,
     parsing, and error handling behavior across all key failure modes.
