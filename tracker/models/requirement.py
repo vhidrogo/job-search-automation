@@ -26,7 +26,7 @@ class Requirement(models.Model):
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
         help_text="Relevance score in the range [0.0, 1.0].",
     )
-    order = models.PositiveIntegerField(help_text="Ordering index from the parser (0-based).")
+    order = models.PositiveIntegerField(help_text="Ordering index from the parser.")
 
     class Meta:
         app_label = "tracker"
