@@ -1,14 +1,13 @@
-from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
 
-from resume.models.experience_role import ExperienceRole, RoleKey
+from resume.models import ExperienceRole
 
 
 class TestExperienceRoleModel(TestCase):
     """Test suite for the ExperienceRole model."""
 
-    KEY = RoleKey.NAVIT
+    KEY = "navit"
     COMPANY = "Nav.it"
     TITLE = "Software Engineer"
     DISPLAY_NAME = "Nav.it SWE"
@@ -74,27 +73,6 @@ class TestExperienceRoleModel(TestCase):
                 title="Different Title",
             )
 
-    def test_all_role_key_choices_valid(self) -> None:
-        """Test that all RoleKey choices can be used to create roles."""
-        for key_value, key_label in RoleKey.choices:
-            role = ExperienceRole.objects.create(
-                key=key_value,
-                company=f"Company for {key_label}",
-                title=f"Title for {key_label}",
-            )
-            self.assertEqual(role.key, key_value)
-
-    def test_invalid_key_validation(self) -> None:
-        """Test that an invalid key choice is rejected."""
-        role = ExperienceRole(
-            key="invalid_key",
-            company=self.COMPANY,
-            title=self.TITLE,
-        )
-
-        with self.assertRaises(ValidationError):
-            role.full_clean()
-
     def test_query_by_key(self) -> None:
         """Test querying by the key field."""
         role = ExperienceRole.objects.create(
@@ -106,3 +84,19 @@ class TestExperienceRoleModel(TestCase):
         retrieved = ExperienceRole.objects.get(key=self.KEY)
         self.assertEqual(retrieved.id, role.id)
         self.assertEqual(retrieved.company, self.COMPANY)
+
+    def test_multiple_roles_with_different_keys(self) -> None:
+        """Test creating multiple roles with different keys."""
+        role1 = ExperienceRole.objects.create(
+            key="navit",
+            company="Nav.it",
+            title="Software Engineer",
+        )
+        role2 = ExperienceRole.objects.create(
+            key="amazon_sde",
+            company="Amazon",
+            title="Software Development Engineer",
+        )
+
+        self.assertEqual(ExperienceRole.objects.count(), 2)
+        self.assertNotEqual(role1.key, role2.key)

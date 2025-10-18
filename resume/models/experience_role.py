@@ -1,14 +1,6 @@
 from django.db import models
 
 
-class RoleKey(models.TextChoices):
-    NAVIT = "navit", "Nav.it"
-    AMAZON_SDE = "amazon_sde", "Amazon SDE"
-    AMAZON_BIE = "amazon_bie", "Amazon BIE"
-    DARIGOLD = "darigold", "Darigold"
-    AVENU = "avenu", "Avenu"
-
-
 class ExperienceRole(models.Model):
     """
     Represents a past work role used to generate experience bullets for resumes.
@@ -22,7 +14,6 @@ class ExperienceRole(models.Model):
 
     key = models.CharField(
         max_length=50,
-        choices=RoleKey.choices,
         unique=True,
         help_text="Stable identifier used by templates (e.g., 'navit', 'amazon_sde').",
     )
