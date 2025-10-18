@@ -3,6 +3,7 @@ from django.test import TestCase
 
 from resume.schemas.jd_schema import Metadata
 from tracker.models.job import Job, JobLevel, JobRole, WorkSetting
+from tracker.models.requirement import Requirement
 
 
 class TestJobModel(TestCase):
@@ -83,3 +84,33 @@ class TestJobModel(TestCase):
         created_jobs = Job.bulk_create_from_parsed(parsed_jobs, batch_size=2)
         self.assertEqual(len(created_jobs), 5)
         self.assertEqual(Job.objects.count(), 5)
+
+    def test_job_can_access_related_requirements(self):
+        job = Job.objects.create(
+            company="Meta",
+            listing_job_title="Software Engineer",
+            role=JobRole.SOFTWARE_ENGINEER,
+            level=JobLevel.II,
+            location="Remote",
+            work_setting=WorkSetting.REMOTE,
+        )
+
+        Requirement.objects.create(
+            job=job,
+            text="Python experience",
+            keywords="Python",
+            relevance=1,
+            order=1,
+        )
+        Requirement.objects.create(
+            job=job,
+            text="Django experience",
+            keywords="Django",
+            relevance=.9,
+            order=2,
+        )
+
+        related = list(job.requirements.order_by("order"))
+        self.assertEqual(len(related), 2)
+        self.assertEqual(related[0].text, "Python experience")
+        self.assertEqual(related[1].text, "Django experience")
