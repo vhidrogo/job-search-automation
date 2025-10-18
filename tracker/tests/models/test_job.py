@@ -5,7 +5,7 @@ from resume.schemas.jd_schema import Metadata
 from tracker.models.job import Job, JobLevel, JobRole, WorkSetting
 
 
-class JobModelTest(TestCase):
+class TestJobModel(TestCase):
     """Test that bulk_create_from_parsed correctly creates and persists Job instances from Metadata models"""
     def test_bulk_create_from_parsed_creates_jobs(self):
         parsed_jobs: List[Metadata] = [
