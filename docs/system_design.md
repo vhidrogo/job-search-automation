@@ -143,7 +143,7 @@ To maintain modularity between the resume-generation domain and the job-tracking
 **Rationale:**
 - Keeps resume logic independent from job tracking logic.
 - Enables modular testing and database migrations.
-- Supports clean orchestration via `JobApplicationManager`, which coordinates both domains.
+- Supports clean orchestration via `Orchestrator`, which coordinates both domains.
 - Allows new domain apps (e.g., analytics, orchestration) to be added without refactoring existing models.
 
 **Cross-App Relationships:**
@@ -339,7 +339,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A["User saves JD file (jd.txt)"] --> B["JobApplicationManager.main()"]
+    A["User saves JD file (jd.txt)"] --> B["Orchestrator.run()"]
     B --> C["JDParser.parse(path_to_file)"]
     C --> D["Persist Job + Requirements via tracker models"]
     D --> E["Fetch ResumeTemplate (by Job.role + Job.level)"]
