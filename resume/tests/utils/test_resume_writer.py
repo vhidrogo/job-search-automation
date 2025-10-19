@@ -81,8 +81,7 @@ class TestResumeWriterGenerateExperienceBullets:
     def test_generates_bullets_successfully(
         self,
         mock_client: MagicMock,
-        experience_role: ExperienceRole,
-        experience_projects: None
+        experience_role: ExperienceRole
     ) -> None:
         """Validates successful bullet generation with valid inputs."""
         writer = ResumeWriter(client=mock_client)
@@ -103,8 +102,7 @@ class TestResumeWriterGenerateExperienceBullets:
     def test_formats_requirements_correctly_in_prompt(
         self,
         mock_client: MagicMock,
-        experience_role: ExperienceRole,
-        experience_projects: None
+        experience_role: ExperienceRole
     ) -> None:
         """Ensures requirements are formatted with relevance percentages and keywords."""
         writer = ResumeWriter(client=mock_client)
@@ -145,8 +143,7 @@ class TestResumeWriterGenerateExperienceBullets:
     def test_handles_list_response_without_bullets_key(
         self,
         mock_client: MagicMock,
-        experience_role: ExperienceRole,
-        experience_projects: None
+        experience_role: ExperienceRole
     ) -> None:
         """Validates handling of LLM responses that return a list directly."""
         list_response = json.dumps([
@@ -169,8 +166,7 @@ class TestResumeWriterGenerateExperienceBullets:
     def test_raises_error_when_bullet_count_exceeds_max(
         self,
         mock_client: MagicMock,
-        experience_role: ExperienceRole,
-        experience_projects: None
+        experience_role: ExperienceRole
     ) -> None:
         """Ensures ValueError is raised when LLM returns too many bullets."""
         excessive_response = json.dumps({
@@ -193,8 +189,7 @@ class TestResumeWriterGenerateExperienceBullets:
     def test_passes_model_parameter_to_client(
         self,
         mock_client: MagicMock,
-        experience_role: ExperienceRole,
-        experience_projects: None
+        experience_role: ExperienceRole
     ) -> None:
         """Validates that custom model parameter is passed to LLM client."""
         writer = ResumeWriter(client=mock_client)
@@ -234,8 +229,7 @@ class TestResumeWriterGenerateExperienceBullets:
     def test_raises_error_for_truncated_llm_output(
         self,
         mock_client: MagicMock,
-        experience_role: ExperienceRole,
-        experience_projects: None
+        experience_role: ExperienceRole
     ) -> None:
         """Ensures ValueError is raised when LLM output is incomplete."""
         mock_client.generate.return_value = '{"bullets": [{"order": 1'
@@ -252,8 +246,7 @@ class TestResumeWriterGenerateExperienceBullets:
     def test_raises_error_for_invalid_json(
         self,
         mock_client: MagicMock,
-        experience_role: ExperienceRole,
-        experience_projects: None
+        experience_role: ExperienceRole
     ) -> None:
         """Ensures ValueError is raised for malformed JSON."""
         mock_client.generate.return_value = '{"bullets": [invalid json]}'
@@ -270,8 +263,7 @@ class TestResumeWriterGenerateExperienceBullets:
     def test_raises_error_for_schema_validation_failure(
         self,
         mock_client: MagicMock,
-        experience_role: ExperienceRole,
-        experience_projects: None
+        experience_role: ExperienceRole
     ) -> None:
         """Ensures ValueError is raised when response doesn't match schema."""
         invalid_schema_response = json.dumps({
