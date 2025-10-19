@@ -26,7 +26,7 @@ class TestJDParser:
                 "work_setting": "Remote"
             },
             "requirements": [
-                {"text": "Strong Python skills", "keywords": ["Python"], "relevance": 0.9}
+                {"text": "Strong Python skills", "keywords": ["Python"], "relevance": 0.9, "order": 1}
             ]
         }
 
