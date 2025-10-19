@@ -70,7 +70,7 @@ def parse_json_response(text: str) -> Dict[str, Any]:
     """Extract and parse JSON from an LLM response.
     
     Handles common LLM response formats including:
-    - Plain JSON
+    - Plain JSON objects or arrays
     - JSON wrapped in ```json code blocks
     - Responses with extra whitespace
     
@@ -78,15 +78,15 @@ def parse_json_response(text: str) -> Dict[str, Any]:
         text: The raw LLM response text.
         
     Returns:
-        The parsed JSON as a Python dictionary.
+        The parsed JSON as a Python dictionary or list.
         
     Raises:
-        ValueError: If the response appears truncated (doesn't end with '}').
+        ValueError: If the response appears truncated (doesn't end with '}' or ']').
         ValueError: If the JSON cannot be parsed.
     """
     cleaned = text.replace("```json", "").replace("```", "").strip()
     
-    if not cleaned.strip().endswith("}"):
+    if not (cleaned.endswith("}") or cleaned.endswith("]")):
         raise ValueError(
             "LLM output truncated = increase max_tokens or retry."
         )
