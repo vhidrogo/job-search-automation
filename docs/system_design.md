@@ -13,12 +13,12 @@ This design emphasizes modularity, configurability, and token-efficient LLM orch
 job_search_automation/ (Django Project)
 ├── job_search_automation/        # Django project settings, URLs, WSGI
 ├── resume/                       # LLM-based resume generation app
+│   ├── models/                   # Models for persisting resume data
 │   ├── prompts/                  # Reusable and versioned LLM prompts
 │   ├── schemas/                  # Pydantic schemas for validating all LLM outputs
 │   ├── services/                 # External API clients (ClaudeClient)
 │   ├── templates/                # Markdown templates per role
 │   ├── utils/                    # Internal logic: ResumeWriter, JDParser
-│   ├── config/                   # Role mapping, model config
 ├── tracker/                      # Job/application logging and analytics
 │   ├── models.py                 # Job, Resume, Application
 │   └── utils/                    # ApplicationLogger
