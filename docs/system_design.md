@@ -388,5 +388,13 @@ Incremental Build Plan
 - **General and Company-Tailored Resume Modes:**
   - *General Target Role Resume:* Generate a “framed” resume for a target role (e.g., *Data Engineer*) when limited or no requirements are provided — such as when a recruiter message lacks a full JD. The system leverages the role-specific template and weighted prior experience configurations to infer likely requirements and produce a strong generic framing.
   - *Company-Tailored Resume:* Generate resumes explicitly aligned with a company’s known leadership principles or values (e.g., Amazon LPs, Meta Leadership). This mode enriches bullet phrasing and ordering to reflect organizational priorities without requiring a full job description.
+- **Model Flexibility and Benchmarking:**
+  - Introduce configurable model selection to allow using different LLM providers (e.g., Anthropic, OpenAI) and versions (e.g., `claude-sonnet-4-5`, `claude-haiku-4-5`, `gpt-4.1`, etc.).
+  - Support per-utility model selection so that modules can use optimal models for their complexity:
+    - Example: more context-heavy tasks (e.g., `generate_experience_bullets()` or iterative match evaluation) may use higher-capacity models like `claude-sonnet-4-5`.
+    - Example: `generate_skill_bullets()` may use a faster, cheaper model like `claude-haiku-4-5`.
+  - Implement a benchmarking and metrics layer to track model **cost**, **latency**, and **output quality** (e.g., validation success rate, token usage).
+  - Aggregate and visualize results to guide model selection decisions and cost-performance optimization over time.
+
 
 ---
