@@ -13,14 +13,14 @@ This design emphasizes modularity, configurability, and token-efficient LLM orch
 job_search_automation/ (Django Project)
 ├── job_search_automation/        # Django project settings, URLs, WSGI
 ├── resume/                       # LLM-based resume generation app
+│   ├── models/                   # Models for persisting resume data
 │   ├── prompts/                  # Reusable and versioned LLM prompts
 │   ├── schemas/                  # Pydantic schemas for validating all LLM outputs
 │   ├── services/                 # External API clients (ClaudeClient)
 │   ├── templates/                # Markdown templates per role
 │   ├── utils/                    # Internal logic: ResumeWriter, JDParser
-│   ├── config/                   # Role mapping, model config
 ├── tracker/                      # Job/application logging and analytics
-│   ├── models.py                 # Job, Resume, Application
+│   ├── models/                   # Models for persisting job and application data
 │   └── utils/                    # ApplicationLogger
 ├── orchestration/                # CLI / orchestration entrypoints (management commands or scripts)
 │   ├── orchestrator.py           # thin Orchestrator that imports resume + tracker logic and runs end-to-end
@@ -143,7 +143,7 @@ To maintain modularity between the resume-generation domain and the job-tracking
 **Rationale:**
 - Keeps resume logic independent from job tracking logic.
 - Enables modular testing and database migrations.
-- Supports clean orchestration via `JobApplicationManager`, which coordinates both domains.
+- Supports clean orchestration via `Orchestrator`, which coordinates both domains.
 - Allows new domain apps (e.g., analytics, orchestration) to be added without refactoring existing models.
 
 **Cross-App Relationships:**
@@ -339,7 +339,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A["User saves JD file (jd.txt)"] --> B["JobApplicationManager.main()"]
+    A["User saves JD file (jd.txt)"] --> B["Orchestrator.run()"]
     B --> C["JDParser.parse(path_to_file)"]
     C --> D["Persist Job + Requirements via tracker models"]
     D --> E["Fetch ResumeTemplate (by Job.role + Job.level)"]
@@ -388,5 +388,13 @@ Incremental Build Plan
 - **General and Company-Tailored Resume Modes:**
   - *General Target Role Resume:* Generate a “framed” resume for a target role (e.g., *Data Engineer*) when limited or no requirements are provided — such as when a recruiter message lacks a full JD. The system leverages the role-specific template and weighted prior experience configurations to infer likely requirements and produce a strong generic framing.
   - *Company-Tailored Resume:* Generate resumes explicitly aligned with a company’s known leadership principles or values (e.g., Amazon LPs, Meta Leadership). This mode enriches bullet phrasing and ordering to reflect organizational priorities without requiring a full job description.
+- **Model Flexibility and Benchmarking:**
+  - Introduce configurable model selection to allow using different LLM providers (e.g., Anthropic, OpenAI) and versions (e.g., `claude-sonnet-4-5`, `claude-haiku-4-5`, `gpt-4.1`, etc.).
+  - Support per-utility model selection so that modules can use optimal models for their complexity:
+    - Example: more context-heavy tasks (e.g., `generate_experience_bullets()` or iterative match evaluation) may use higher-capacity models like `claude-sonnet-4-5`.
+    - Example: `generate_skill_bullets()` may use a faster, cheaper model like `claude-haiku-4-5`.
+  - Implement a benchmarking and metrics layer to track model **cost**, **latency**, and **output quality** (e.g., validation success rate, token usage).
+  - Aggregate and visualize results to guide model selection decisions and cost-performance optimization over time.
+
 
 ---
