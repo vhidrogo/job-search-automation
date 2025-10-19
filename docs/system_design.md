@@ -20,7 +20,7 @@ job_search_automation/ (Django Project)
 │   ├── templates/                # Markdown templates per role
 │   ├── utils/                    # Internal logic: ResumeWriter, JDParser
 ├── tracker/                      # Job/application logging and analytics
-│   ├── models.py                 # Job, Resume, Application
+│   ├── models/                   # Models for persisting job and application data
 │   └── utils/                    # ApplicationLogger
 ├── orchestration/                # CLI / orchestration entrypoints (management commands or scripts)
 │   ├── orchestrator.py           # thin Orchestrator that imports resume + tracker logic and runs end-to-end
