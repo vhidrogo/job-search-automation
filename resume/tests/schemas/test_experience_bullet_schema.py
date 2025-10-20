@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from resume.schemas.experience_bullet_schema import ExperienceBullet, BulletListModel
 
 
-class ExperienceBulletTestCase(TestCase):
+class TestExperienceBulletSchema(TestCase):
     """Test suite for ExperienceBullet schema validation."""
     
     VALID_BULLET_TEXT = "Built a real-time search API using Django and Postgres that reduced query latency by 80%"
@@ -88,7 +88,7 @@ class ExperienceBulletTestCase(TestCase):
         )
 
 
-class BulletListModelTestCase(TestCase):
+class TestBulletListModelTestCase(TestCase):
     """Test suite for BulletListModel schema validation."""
     
     VALID_BULLET_TEXT_1 = "Built a real-time search API using Django and Postgres that reduced query latency by 80%"
