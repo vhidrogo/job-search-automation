@@ -1,12 +1,9 @@
 from pathlib import Path
 from resume.schemas.jd_schema import JDModel
-from resume.services.llm_client import ClaudeClient
-from resume.utils.llm_helpers import (
-    load_prompt,
-    fill_placeholders,
-    parse_json_response,
-    validate_with_schema,
-)
+from resume.clients.llm_client import ClaudeClient
+from resume.utils.prompt import fill_placeholders, load_prompt
+from resume.utils.validation import parse_llm_json
+from resume.utils.validation import validate_with_schema
 
 
 class JDParser:
@@ -65,7 +62,7 @@ class JDParser:
         prompt = fill_placeholders(prompt_template, {self.placeholder: jd_content})
         
         response_text = self.client.generate(prompt, model=model, max_tokens=4000)
-        parsed_data = parse_json_response(response_text)
+        parsed_data = parse_llm_json(response_text)
         validated_data = validate_with_schema(parsed_data, JDModel)
         
         return validated_data
