@@ -23,7 +23,7 @@ class ResumeWriter:
     def __init__(
         self,
         client: ClaudeClient = None,
-        experience_prompt_path: str = "resume/prompts/generate_resume_bullets.md",
+        experience_prompt_path: str = "resume/prompts/generate_experience_bullets.md",
     ):
         """Initialize the resume writer.
         
