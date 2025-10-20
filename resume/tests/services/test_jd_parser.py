@@ -1,7 +1,7 @@
 import json
 import pytest
 from unittest.mock import MagicMock
-from resume.utils.jd_parser import JDParser
+from resume.services.jd_parser import JDParser
 from resume.schemas.jd_schema import JDModel
 
 
