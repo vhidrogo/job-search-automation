@@ -1,8 +1,6 @@
 import pytest
 from pydantic import BaseModel, ConfigDict
-from resume.utils.llm_helpers import (
-    validate_with_schema,
-)
+from resume.utils.validation import validate_with_schema
 
 
 class SampleSchema(BaseModel):

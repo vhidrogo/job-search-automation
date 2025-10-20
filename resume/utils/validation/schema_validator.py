@@ -1,15 +1,3 @@
-"""Shared utilities for LLM-based services.
-
-This module provides reusable helper functions for common LLM integration tasks:
-- Loading prompt templates from files
-- Filling placeholder variables in prompts
-- Parsing JSON responses from LLM outputs
-- Validating parsed data against Pydantic schemas
-
-These utilities are designed to be shared across JDParser, ResumeWriter, 
-ResumeMatcher, and other LLM-integrated services.
-"""
-
 from typing import Any, Dict, Type, TypeVar
 from pydantic import BaseModel, ValidationError
 
@@ -36,3 +24,4 @@ def validate_with_schema(data: Dict[str, Any], schema: Type[T]) -> T:
         raise ValueError(
             f"Pydantic validation failed: {e.errors()}"
         ) from e
+  

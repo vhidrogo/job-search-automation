@@ -3,9 +3,7 @@ from resume.schemas.jd_schema import JDModel
 from resume.clients.llm_client import ClaudeClient
 from resume.utils.prompt import fill_placeholders, load_prompt
 from resume.utils.validation import parse_llm_json
-from resume.utils.llm_helpers import (
-    validate_with_schema,
-)
+from resume.utils.validation import validate_with_schema
 
 
 class JDParser:
