@@ -16,12 +16,12 @@ job_search_automation/ (Django Project)
 │   ├── models/                   # Models for persisting resume data
 │   ├── prompts/                  # Reusable and versioned LLM prompts
 │   ├── schemas/                  # Pydantic schemas for validating all LLM outputs
-│   ├── services/                 # External API clients (ClaudeClient)
+│   ├── services/                 # ResumeWriter, JDParser, ResumeMatcher
+│   ├── clients/                  # External API clients (ClaudeClient)
 │   ├── templates/                # Markdown templates per role
-│   ├── utils/                    # Internal logic: ResumeWriter, JDParser
+│   └── utils/                    # Shared helpers for the app (prompt manipulation, validation, content builders)
 ├── tracker/                      # Job/application logging and analytics
 │   ├── models/                   # Models for persisting job and application data
-│   └── utils/                    # ApplicationLogger
 ├── orchestration/                # CLI / orchestration entrypoints (management commands or scripts)
 │   ├── orchestrator.py           # thin Orchestrator that imports resume + tracker logic and runs end-to-end
 │   ├── management/commands/      # CLI commands / Django commands (run_orchestrator.py)
