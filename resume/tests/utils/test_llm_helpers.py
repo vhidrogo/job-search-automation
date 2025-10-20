@@ -4,7 +4,6 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict
 from resume.utils.llm_helpers import (
     load_prompt,
-    fill_placeholders,
     parse_json_response,
     validate_with_schema,
 )
@@ -36,41 +35,6 @@ class TestLoadPrompt:
         """Ensures FileNotFoundError is raised for non-existent files."""
         with pytest.raises(FileNotFoundError, match="Prompt file not found"):
             load_prompt("/nonexistent/path/prompt.md")
-
-
-class TestFillPlaceholders:
-    """Test suite for fill_placeholders() function."""
-    
-    TEMPLATE = "Hello {{NAME}}, you have {{COUNT}} messages."
-    
-    def test_replaces_all_placeholders(self) -> None:
-        """Validates that all placeholders are correctly replaced."""
-        replacements = {"NAME": "Alice", "COUNT": "5"}
-        
-        result = fill_placeholders(self.TEMPLATE, replacements)
-        
-        assert result == "Hello Alice, you have 5 messages."
-    
-    def test_strips_whitespace_from_values(self) -> None:
-        """Ensures replacement values are stripped of leading/trailing whitespace."""
-        replacements = {"NAME": "  Bob  ", "COUNT": "  10  "}
-        
-        result = fill_placeholders(self.TEMPLATE, replacements)
-        
-        assert result == "Hello Bob, you have 10 messages."
-    
-    def test_raises_error_for_missing_placeholder(self) -> None:
-        """Ensures ValueError is raised when a placeholder is not in the template."""
-        replacements = {"NAME": "Alice", "COUNT": "5", "EXTRA": "unused"}
-        
-        with pytest.raises(ValueError, match="Placeholder '{{EXTRA}}' not found"):
-            fill_placeholders(self.TEMPLATE, replacements)
-    
-    def test_handles_empty_template(self) -> None:
-        """Validates behavior with an empty template string."""
-        result = fill_placeholders("", {})
-        
-        assert result == ""
 
 
 class TestParseJsonResponse:
