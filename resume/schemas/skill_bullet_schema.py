@@ -1,4 +1,3 @@
-# resume/schemas/skill_bullet_schema.py
 from typing import Annotated, List
 from pydantic import BaseModel, Field, field_validator
 

@@ -1,4 +1,3 @@
-# resume/models/template_role_config.py
 from django.db import models
 
 

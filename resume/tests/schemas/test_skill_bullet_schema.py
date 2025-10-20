@@ -1,4 +1,3 @@
-# resume/tests/test_skill_bullet_schema.py
 from unittest import TestCase
 from pydantic import ValidationError
 from resume.schemas.skill_bullet_schema import SkillCategorySchema, SkillBulletListModel
