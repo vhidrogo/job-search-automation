@@ -4,7 +4,7 @@ import pytest
 from resume.models.experience_project import ExperienceProject
 from resume.models.experience_role import ExperienceRole
 from resume.schemas.experience_bullet_schema import BulletListModel
-from resume.utils.resume_writer import ResumeWriter
+from resume.services.resume_writer import ResumeWriter
 
 
 @pytest.mark.django_db
