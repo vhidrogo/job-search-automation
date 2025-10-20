@@ -1,4 +1,3 @@
-# resume/tests/test_experience_bullet_schema.py
 from unittest import TestCase
 from pydantic import ValidationError
 from resume.schemas.experience_bullet_schema import ExperienceBullet, BulletListModel

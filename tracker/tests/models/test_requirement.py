@@ -1,4 +1,3 @@
-# tracker/tests/models/test_requirement.py
 from typing import List
 from django.test import TestCase
 
