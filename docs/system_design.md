@@ -193,6 +193,7 @@ flowchart TD
         TRC --> ER
         R --> REB
         R --> RSB
+        REB --> ER
         ER --> EP
     end
 
@@ -273,6 +274,7 @@ flowchart TD
 |--------|------|-------------|
 | id | IntegerField | Primary key |
 | resume | FK(Resume) | Associated resume |
+| experience_role | FK(ExperienceRole) | Experience role this bullet was generated for |
 | order | IntegerField | Display order |
 | text | TextField | Bullet content |
 | exclude | BooleanField | Whether to exclude this bullet from the generated resume |
