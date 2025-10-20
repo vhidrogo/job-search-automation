@@ -2,7 +2,7 @@ from typing import Dict, List
 from resume.models.experience_project import ExperienceProject
 from resume.models.experience_role import ExperienceRole
 from resume.schemas.experience_bullet_schema import BulletListModel
-from resume.services.llm_client import ClaudeClient
+from resume.clients.llm_client import ClaudeClient
 from resume.utils.llm_helpers import (
     load_prompt,
     fill_placeholders,

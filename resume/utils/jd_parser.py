@@ -1,6 +1,6 @@
 from pathlib import Path
 from resume.schemas.jd_schema import JDModel
-from resume.services.llm_client import ClaudeClient
+from resume.clients.llm_client import ClaudeClient
 from resume.utils.llm_helpers import (
     load_prompt,
     fill_placeholders,
