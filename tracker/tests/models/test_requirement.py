@@ -2,8 +2,7 @@ from typing import List
 from django.test import TestCase
 
 from resume.schemas.jd_schema import RequirementSchema
-from tracker.models.job import Job, JobLevel, JobRole, WorkSetting
-from tracker.models.requirement import Requirement
+from tracker.models import Job, JobLevel, JobRole, Requirement, WorkSetting
 
 
 class TestRequirementModel(TestCase):
