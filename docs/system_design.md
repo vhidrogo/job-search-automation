@@ -129,6 +129,22 @@ This validation step is mandatory across all LLM-integrated modules.
 
 ---
 
+## LLM Cost Strategy
+
+LLM cost management is a core part of the system’s architecture due to the multi-step pipeline (parsing → generation → matching).  
+Rather than embedding all details in this design document, a dedicated reference is provided in [`llm_cost_strategy.md`](./llm_cost_strategy.md).
+
+At a high level, the system’s **cost control principles** are:
+- Use **per-role batching** for predictable and token-efficient bullet generation.
+- Express requirements as **short phrases** instead of full sentences.
+- Estimate and log token usage before every call using `ClaudeClient.count_tokens()`.
+- Default to **Claude 4.5 Sonnet**, with optional support for cheaper models for auxiliary tasks.
+- Manually preprocess JDs to exclude irrelevant sections for reduced input size.
+
+For detailed strategies, pricing breakdowns, and future optimization levers, see **`llm_cost_strategy.md`**.
+
+---
+
 ## Data Model Design
 
 ### App and Model Organization
