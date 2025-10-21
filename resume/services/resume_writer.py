@@ -1,11 +1,13 @@
 from typing import Dict, List
+from resume.clients.llm_client import ClaudeClient
 from resume.models.experience_project import ExperienceProject
 from resume.models.experience_role import ExperienceRole
+from resume.models.resume import Resume
 from resume.schemas.experience_bullet_schema import BulletListModel
-from resume.clients.llm_client import ClaudeClient
+from resume.schemas.skill_bullet_schema import SkillBulletListModel
 from resume.utils.prompt import fill_placeholders, load_prompt
-from resume.utils.validation import parse_llm_json
-from resume.utils.validation import validate_with_schema
+from resume.utils.prompt_content_builders import build_experience_bullets_for_prompt
+from resume.utils.validation import parse_llm_json, validate_with_schema
 
 
 class ResumeWriter:
@@ -21,15 +23,18 @@ class ResumeWriter:
         self,
         client: ClaudeClient = None,
         experience_prompt_path: str = "resume/prompts/generate_experience_bullets.md",
+        skill_prompt_path: str = "resume/prompts/generate_skill_bullets.md",
     ):
         """Initialize the resume writer.
         
         Args:
             client: LLM client for API calls. Defaults to ClaudeClient if not provided.
             experience_prompt_path: Path to the experience bullet generation prompt template.
+            skill_prompt_path: Path to the skill bullet generation prompt template.
         """
         self.client = client or ClaudeClient()
         self.experience_prompt_path = experience_prompt_path
+        self.skill_prompt_path = skill_prompt_path
     
     def generate_experience_bullets(
         self,
@@ -56,7 +61,6 @@ class ResumeWriter:
             ValueError: If LLM output is truncated or malformed.
             ValueError: If parsed JSON fails schema validation.
         """
-        # Query and structure experience projects for this role
         projects = ExperienceProject.objects.filter(
             experience_role=experience_role
         ).order_by('id')
@@ -86,6 +90,55 @@ class ResumeWriter:
         
         return validated_bullets
     
+    def generate_skill_bullets(
+        self,
+        resume: Resume,
+        requirements: List[Dict[str, any]],
+        target_role: str,
+        max_category_count: int,
+        model: str = None,
+    ) -> SkillBulletListModel:
+        """Generate skill category bullets for a resume based on requirements and experience bullets.
+        
+        Args:
+            resume: The Resume instance whose experience bullets will be analyzed.
+            requirements: List of requirement dictionaries with 'text', 'keywords',
+                         and 'relevance' keys, sorted by relevance (highest first).
+            target_role: The target job role string (e.g., "Software Engineer").
+            max_category_count: Maximum number of skill categories to generate.
+            model: Optional LLM model identifier to use for generation.
+            
+        Returns:
+            Validated SkillBulletListModel instance containing generated skill categories.
+            
+        Raises:
+            ValueError: If LLM output is truncated or malformed.
+            ValueError: If parsed JSON fails schema validation.
+        """
+        bullets_text = build_experience_bullets_for_prompt(resume)
+        keywords_text = self._format_keywords_for_prompt(requirements)
+        
+        prompt_template = load_prompt(self.skill_prompt_path)
+        prompt = fill_placeholders(
+            prompt_template,
+            {
+                "TARGET_ROLE": target_role,
+                "REQUIREMENTS": keywords_text,
+                "BULLETS": bullets_text,
+            }
+        )
+        
+        response_text = self.client.generate(prompt, model=model, max_tokens=2000)
+        parsed_data = parse_llm_json(response_text)
+        
+        if isinstance(parsed_data, list):
+            parsed_data = {"skill_categories": parsed_data}
+        
+        validated_skills = validate_with_schema(parsed_data, SkillBulletListModel)
+        validated_skills.validate_max_count(max_category_count)
+        
+        return validated_skills
+    
     def _format_requirements_for_prompt(self, requirements: List[Dict[str, any]]) -> str:
         """Format requirements list into numbered prompt text with relevance scores.
         
@@ -105,6 +158,29 @@ class ResumeWriter:
             requirements_lines.append(req_line)
         
         return "\n".join(requirements_lines)
+    
+    def _format_keywords_for_prompt(self, requirements: List[Dict[str, any]]) -> str:
+        """Extract and format keywords from requirements into comma-separated text.
+        
+        Args:
+            requirements: List of requirement dicts with 'keywords' field.
+            
+        Returns:
+            Comma-separated string of unique keywords from all requirements.
+        """
+        all_keywords = []
+        for req in requirements:
+            keywords = req.get('keywords', [])
+            all_keywords.extend(keywords)
+        
+        unique_keywords = []
+        seen = set()
+        for keyword in all_keywords:
+            if keyword.lower() not in seen:
+                seen.add(keyword.lower())
+                unique_keywords.append(keyword)
+        
+        return ", ".join(unique_keywords) if unique_keywords else "No specific keywords provided"
     
     def _format_projects_for_prompt(self, projects) -> str:
         """Format experience projects into structured prompt text blocks.
@@ -128,3 +204,4 @@ class ResumeWriter:
             project_blocks.append(project_block)
         
         return "\n\n".join(project_blocks)
+  
