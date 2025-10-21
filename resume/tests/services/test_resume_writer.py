@@ -3,8 +3,13 @@ from unittest.mock import MagicMock
 import pytest
 from resume.models.experience_project import ExperienceProject
 from resume.models.experience_role import ExperienceRole
+from resume.models.resume import Resume
+from resume.models.resume_experience_bullet import ResumeExperienceBullet
+from resume.models.resume_template import ResumeTemplate
 from resume.schemas.experience_bullet_schema import BulletListModel
+from resume.schemas.skill_bullet_schema import SkillBulletListModel
 from resume.services.resume_writer import ResumeWriter
+from tracker.models.job import Job, JobLevel, JobRole, WorkSetting
 
 
 @pytest.mark.django_db
@@ -279,3 +284,352 @@ class TestResumeWriterGenerateExperienceBullets:
                 target_role=self.TARGET_ROLE,
                 max_bullet_count=self.MAX_BULLET_COUNT
             )
+
+
+@pytest.mark.django_db
+class TestResumeWriterGenerateSkillBullets:
+    """Test suite for ResumeWriter.generate_skill_bullets()."""
+    
+    TARGET_ROLE = "Software Engineer"
+    MAX_CATEGORY_COUNT = 4
+    
+    REQUIREMENTS = [
+        {
+            "text": "Strong Python and Django experience",
+            "keywords": ["Python", "Django"],
+            "relevance": 0.9
+        },
+        {
+            "text": "Experience with AWS cloud services",
+            "keywords": ["AWS"],
+            "relevance": 0.8
+        },
+        {
+            "text": "Proficiency with React for frontend development",
+            "keywords": ["React", "JavaScript"],
+            "relevance": 0.7
+        }
+    ]
+    
+    VALID_LLM_RESPONSE = json.dumps([
+        {
+            "category": "Programming Languages",
+            "skills": "Python, JavaScript"
+        },
+        {
+            "category": "Frameworks & Libraries",
+            "skills": "Django, React"
+        }
+    ])
+    
+    @pytest.fixture
+    def mock_client(self) -> MagicMock:
+        """Create a mock LLM client."""
+        client = MagicMock()
+        client.generate.return_value = self.VALID_LLM_RESPONSE
+        return client
+    
+    @pytest.fixture
+    def resume_with_bullets(self) -> Resume:
+        """Create a test resume with experience bullets."""
+        template = ResumeTemplate.objects.create(
+            target_role=JobRole.SOFTWARE_ENGINEER,
+            target_level=JobLevel.II,
+            template_path="templates/test.md"
+        )
+        job = Job.objects.create(
+            company="Test Corp",
+            listing_job_title="Software Engineer",
+            role=JobRole.SOFTWARE_ENGINEER,
+            level=JobLevel.II,
+            location="Seattle, WA",
+            work_setting=WorkSetting.REMOTE,
+            min_experience_years=3
+        )
+        resume = Resume.objects.create(
+            template=template,
+            job=job,
+            match_ratio=0.85
+        )
+        
+        role = ExperienceRole.objects.create(
+            key="test_role",
+            company="Previous Corp",
+            title="Software Engineer"
+        )
+        
+        ResumeExperienceBullet.objects.create(
+            resume=resume,
+            experience_role=role,
+            order=1,
+            text="Built Django REST API with Python for 10K+ daily requests"
+        )
+        ResumeExperienceBullet.objects.create(
+            resume=resume,
+            experience_role=role,
+            order=2,
+            text="Deployed infrastructure on AWS using Docker and Terraform"
+        )
+        
+        return resume
+    
+    def test_generates_skill_bullets_successfully(
+        self,
+        mock_client: MagicMock,
+        resume_with_bullets: Resume
+    ) -> None:
+        """Validates successful skill bullet generation with valid inputs."""
+        writer = ResumeWriter(client=mock_client)
+        
+        result = writer.generate_skill_bullets(
+            resume=resume_with_bullets,
+            requirements=self.REQUIREMENTS,
+            target_role=self.TARGET_ROLE,
+            max_category_count=self.MAX_CATEGORY_COUNT
+        )
+        
+        assert isinstance(result, SkillBulletListModel)
+        assert len(result.skill_categories) == 2
+        assert result.skill_categories[0].category == "Programming Languages"
+        assert "Python" in result.skill_categories[0].skills
+        assert mock_client.generate.called
+    
+    def test_formats_keywords_correctly_in_prompt(
+        self,
+        mock_client: MagicMock,
+        resume_with_bullets: Resume
+    ) -> None:
+        """Ensures keywords are extracted and formatted as comma-separated list."""
+        writer = ResumeWriter(client=mock_client)
+        
+        writer.generate_skill_bullets(
+            resume=resume_with_bullets,
+            requirements=self.REQUIREMENTS,
+            target_role=self.TARGET_ROLE,
+            max_category_count=self.MAX_CATEGORY_COUNT
+        )
+        
+        call_args = mock_client.generate.call_args[0][0]
+        assert "Python, Django, AWS, React, JavaScript" in call_args
+    
+    def test_deduplicates_keywords_case_insensitively(
+        self,
+        mock_client: MagicMock,
+        resume_with_bullets: Resume
+    ) -> None:
+        """Ensures duplicate keywords with different cases are deduplicated."""
+        requirements_with_dupes = [
+            {"text": "Python experience", "keywords": ["Python", "python"], "relevance": 0.9},
+            {"text": "Django skills", "keywords": ["Django", "DJANGO"], "relevance": 0.8}
+        ]
+        writer = ResumeWriter(client=mock_client)
+        
+        writer.generate_skill_bullets(
+            resume=resume_with_bullets,
+            requirements=requirements_with_dupes,
+            target_role=self.TARGET_ROLE,
+            max_category_count=self.MAX_CATEGORY_COUNT
+        )
+        
+        call_args = mock_client.generate.call_args[0][0]
+        assert call_args.count("Python") == 1
+        assert call_args.count("Django") == 1
+    
+    def test_formats_experience_bullets_as_numbered_list(
+        self,
+        mock_client: MagicMock,
+        resume_with_bullets: Resume
+    ) -> None:
+        """Ensures experience bullets are formatted as a numbered list."""
+        writer = ResumeWriter(client=mock_client)
+        
+        writer.generate_skill_bullets(
+            resume=resume_with_bullets,
+            requirements=self.REQUIREMENTS,
+            target_role=self.TARGET_ROLE,
+            max_category_count=self.MAX_CATEGORY_COUNT
+        )
+        
+        call_args = mock_client.generate.call_args[0][0]
+        assert "1. Built Django REST API with Python for 10K+ daily requests" in call_args
+        assert "2. Deployed infrastructure on AWS using Docker and Terraform" in call_args
+    
+    def test_handles_dict_response_without_skill_categories_key(
+        self,
+        mock_client: MagicMock,
+        resume_with_bullets: Resume
+    ) -> None:
+        """Validates handling of LLM responses that return a list directly."""
+        list_response = json.dumps([
+            {"category": "Programming Languages", "skills": "Python, Java"},
+            {"category": "Cloud Platforms", "skills": "AWS, Azure"}
+        ])
+        mock_client.generate.return_value = list_response
+        writer = ResumeWriter(client=mock_client)
+        
+        result = writer.generate_skill_bullets(
+            resume=resume_with_bullets,
+            requirements=self.REQUIREMENTS,
+            target_role=self.TARGET_ROLE,
+            max_category_count=self.MAX_CATEGORY_COUNT
+        )
+        
+        assert isinstance(result, SkillBulletListModel)
+        assert len(result.skill_categories) == 2
+    
+    def test_raises_error_when_category_count_exceeds_max(
+        self,
+        mock_client: MagicMock,
+        resume_with_bullets: Resume
+    ) -> None:
+        """Ensures ValueError is raised when LLM returns too many categories."""
+        excessive_response = json.dumps([
+            {"category": f"Category {i}", "skills": "skill1, skill2"}
+            for i in range(1, 6)
+        ])
+        mock_client.generate.return_value = excessive_response
+        writer = ResumeWriter(client=mock_client)
+        
+        with pytest.raises(ValueError, match="maximum allowed is 4"):
+            writer.generate_skill_bullets(
+                resume=resume_with_bullets,
+                requirements=self.REQUIREMENTS,
+                target_role=self.TARGET_ROLE,
+                max_category_count=4
+            )
+    
+    def test_passes_model_parameter_to_client(
+        self,
+        mock_client: MagicMock,
+        resume_with_bullets: Resume
+    ) -> None:
+        """Validates that custom model parameter is passed to LLM client."""
+        writer = ResumeWriter(client=mock_client)
+        custom_model = "claude-haiku-4-5"
+        
+        writer.generate_skill_bullets(
+            resume=resume_with_bullets,
+            requirements=self.REQUIREMENTS,
+            target_role=self.TARGET_ROLE,
+            max_category_count=self.MAX_CATEGORY_COUNT,
+            model=custom_model
+        )
+        
+        mock_client.generate.assert_called_once()
+        call_kwargs = mock_client.generate.call_args[1]
+        assert call_kwargs['model'] == custom_model
+    
+    def test_handles_resume_with_no_bullets(
+        self,
+        mock_client: MagicMock
+    ) -> None:
+        """Validates behavior when resume has no experience bullets."""
+        template = ResumeTemplate.objects.create(
+            target_role=JobRole.SOFTWARE_ENGINEER,
+            target_level=JobLevel.II,
+            template_path="templates/test.md"
+        )
+        job = Job.objects.create(
+            company="Test Corp",
+            listing_job_title="Software Engineer",
+            role=JobRole.SOFTWARE_ENGINEER,
+            level=JobLevel.II,
+            location="Seattle, WA",
+            work_setting=WorkSetting.REMOTE,
+            min_experience_years=3
+        )
+        resume = Resume.objects.create(
+            template=template,
+            job=job,
+            match_ratio=0.0
+        )
+        
+        writer = ResumeWriter(client=mock_client)
+        
+        writer.generate_skill_bullets(
+            resume=resume,
+            requirements=self.REQUIREMENTS,
+            target_role=self.TARGET_ROLE,
+            max_category_count=self.MAX_CATEGORY_COUNT
+        )
+        
+        call_args = mock_client.generate.call_args[0][0]
+        assert "No experience bullets available." in call_args
+    
+    def test_handles_requirements_with_no_keywords(
+        self,
+        mock_client: MagicMock,
+        resume_with_bullets: Resume
+    ) -> None:
+        """Validates behavior when requirements have no keywords."""
+        requirements_no_keywords = [
+            {"text": "General software development", "keywords": [], "relevance": 0.5}
+        ]
+        writer = ResumeWriter(client=mock_client)
+        
+        writer.generate_skill_bullets(
+            resume=resume_with_bullets,
+            requirements=requirements_no_keywords,
+            target_role=self.TARGET_ROLE,
+            max_category_count=self.MAX_CATEGORY_COUNT
+        )
+        
+        call_args = mock_client.generate.call_args[0][0]
+        assert "No specific keywords provided" in call_args
+    
+    def test_raises_error_for_truncated_llm_output(
+        self,
+        mock_client: MagicMock,
+        resume_with_bullets: Resume
+    ) -> None:
+        """Ensures ValueError is raised when LLM output is incomplete."""
+        mock_client.generate.return_value = '[{"category": "Programming"'
+        writer = ResumeWriter(client=mock_client)
+        
+        with pytest.raises(ValueError, match="LLM output truncated"):
+            writer.generate_skill_bullets(
+                resume=resume_with_bullets,
+                requirements=self.REQUIREMENTS,
+                target_role=self.TARGET_ROLE,
+                max_category_count=self.MAX_CATEGORY_COUNT
+            )
+    
+    def test_raises_error_for_invalid_json(
+        self,
+        mock_client: MagicMock,
+        resume_with_bullets: Resume
+    ) -> None:
+        """Ensures ValueError is raised for malformed JSON."""
+        mock_client.generate.return_value = '[{invalid json}]'
+        writer = ResumeWriter(client=mock_client)
+        
+        with pytest.raises(ValueError, match="Failed to parse LLM JSON output"):
+            writer.generate_skill_bullets(
+                resume=resume_with_bullets,
+                requirements=self.REQUIREMENTS,
+                target_role=self.TARGET_ROLE,
+                max_category_count=self.MAX_CATEGORY_COUNT
+            )
+    
+    def test_deduplicates_keywords_case_insensitively(
+        self,
+        mock_client: MagicMock,
+        resume_with_bullets: Resume
+    ) -> None:
+        """Ensures duplicate keywords with different cases are deduplicated."""
+        requirements_with_dupes = [
+            {"text": "Python experience", "keywords": ["Python", "python"], "relevance": 0.9},
+            {"text": "Django skills", "keywords": ["Django", "DJANGO"], "relevance": 0.8}
+        ]
+        writer = ResumeWriter(client=mock_client)
+        
+        writer.generate_skill_bullets(
+            resume=resume_with_bullets,
+            requirements=requirements_with_dupes,
+            target_role=self.TARGET_ROLE,
+            max_category_count=self.MAX_CATEGORY_COUNT
+        )
+        
+        call_args = mock_client.generate.call_args[0][0]
+        # Verify the keywords appear exactly once in the entire prompt (case-insensitive check)
+        assert call_args.lower().count("python, django") == 1 or "Python, Django" in call_args
