@@ -271,3 +271,33 @@ Adopt **Option 2** by adding `exclude: BooleanField(default=False)` and `overrid
 
 ### Reflection
 This approach strikes the best balance between structure, flexibility, and future analytics. It allows iterative refinement of resume content without data loss or duplication, supporting both human-in-the-loop workflows and later evaluation of model output quality.
+
+## LLM Cost Management Strategy: Granularity and Token Optimization
+
+**Context:**  
+As the system scaled to support multiple LLM services (JD parsing, bullet generation, and resume matching), costs became a critical consideration. Each call involves potentially thousands of tokens, making architectural cost discipline essential.
+
+**Options Considered:**  
+1. **Inline strategy within each service:**  
+   - Each LLM client manages its own token handling and budget logic independently.  
+2. **Centralized cost policy (chosen):**  
+   - Define a shared cost strategy (`llm_cost_strategy.md`) and enforce consistent batching, token estimation, and model selection across all services.
+
+**Tradeoffs:**  
+- **Inline (per-service):**  
+  - ✅ Simple and isolated.  
+  - ❌ Inconsistent; duplicate logic across services.  
+  - ❌ Hard to globally tune or audit total token usage.  
+- **Centralized strategy:**  
+  - ✅ Enables unified cost governance and global tuning.  
+  - ✅ Easier to monitor and optimize with shared logging.  
+  - ✅ Scales across services and future models.  
+  - ❌ Requires maintaining a separate policy document and coordination layer.  
+
+**Decision:**  
+Adopt a **centralized LLM cost management strategy**, documented in `llm_cost_strategy.md`.  
+Each LLM client implements shared utilities for token estimation, logging, and model routing. The orchestration layer enforces consistent cost-aware execution across all services.
+
+**Reflection:**  
+This design trades slight coordination overhead for long-term scalability and predictability.  
+It future-proofs the system by allowing consistent upgrades in model selection, batching strategy, and analytics integration without rewriting individual service logic.
