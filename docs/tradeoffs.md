@@ -13,124 +13,109 @@ Minor implementation details (e.g., helper function naming, small API parameter 
 
 ## Tradeoffs
 
-### Prompt Placeholder Substitution: `.replace()` vs String Formatting
+### Foundation & Infrastructure
+Decisions affecting system-wide architecture, validation, and cost management.
 
-**Context:** Needed a reliable way to insert job descriptions into LLM prompt templates for the job description parser.
+---
 
-**Options Considered:**
-1. `.replace()` using a fixed placeholder (e.g., `{{JOB_DESCRIPTION}}`)
-2. Python string formatting (e.g., `.format()` or f-strings with `{JOB_DESCRIPTION}`)
-
-**Tradeoffs:**
-- `.replace()`: ✅ safe from JSON brace conflicts, ✅ predictable behavior, ✅ simple to debug, ❌ less flexible for multi-placeholder templates  
-- String formatting: ✅ scalable for multiple variables, ✅ clearer intent for dynamic fields, ❌ brittle if `{}` appear in JSON or Markdown, ❌ risk of `KeyError` or template corruption
-
-**Decision:** Chose `.replace()` for stability and simplicity in LLM prompt handling, especially since prompts often include braces for JSON examples.
-
-**Reflection:** If future prompts require multiple dynamic fields (e.g., `{COMPANY}`, `{ROLE}`), may revisit string formatting with careful brace escaping or use a templating library like Jinja2 for controlled substitution.
-
-### Pydantic schema validation vs manual dictionary-based validation
-
-**Context**  
-The JDParser consumes JSON output from an LLM representing job metadata and requirements. This data must be validated before creating Django model instances to prevent schema mismatches or runtime errors.
-
-**Options Considered**  
-1. **Manual dict-based validation:**  
-   Define an expected dictionary structure and verify keys, types, and required fields with custom logic.  
-2. **Use Pydantic schemas:**  
-   Define a typed schema (e.g., `JDModel`, `RequirementSchema`, `Metadata`) that enforces types, constraints, and defaults automatically.
-
-**Tradeoffs**  
-- **Dict-based validation:**  
-  Lightweight and dependency-free, but requires repetitive manual checks (`if "role" not in data`, `isinstance(x, list)` etc.). Limited error reporting and no support for nested validation.  
-- **Pydantic-based:**  
-  Adds a small dependency but provides automatic type coercion, nested validation, expressive constraints (`confloat`, `conlist`), and clear error messages. It acts as a contract between the LLM and your backend.
-
-**Decision**  
-Adopt **Pydantic** for structured, type-safe validation of LLM output before ORM persistence. Use schema class naming (e.g., `RequirementSchema`) to avoid conflict with Django models.
-
-**Reflection**  
-This improves reliability, readability, and alignment with modern Python practices. It also demonstrates familiarity with strongly typed design principles, which transfer well to larger-scale systems and typed languages like Java or TypeScript.
-
-### Requirement-Based Bullet Generation: Per-Requirement LLM Calls vs Bulk Generation
+#### LLM Cost Management Strategy: Granularity and Token Optimization
 
 **Context:**  
-When building the LLM-assisted resume writer, each requirement extracted from a job description must be satisfied with one or more bullets generated from structured work experience data. There is a decision to be made whether to generate bullets **per requirement** (many calls, fine-grained control) or **in bulk** (fewer calls, more general output).
+As the system scaled to support multiple LLM services (JD parsing, bullet generation, and resume matching), costs became a critical consideration. Each call involves potentially thousands of tokens, making architectural cost discipline essential.
 
 **Options Considered:**  
-1. **Per-Requirement LLM Calls:**  
-   - Make an API call for each requirement, passing in the requirement, relevant experience data, and the current state of generated bullets.  
-   - Track which bullets satisfy which requirements with a weighted score to later select top bullets for the final resume.  
-
-2. **Bulk LLM Call:**  
-   - Pass all requirements for all roles in a single call, asking the LLM to generate bullets for the entire set at once.
+1. **Inline strategy within each service:**  
+   - Each LLM client manages its own token handling and budget logic independently.  
+2. **Centralized cost policy:**  
+   - Define a shared cost strategy (`llm_cost_strategy.md`) and enforce consistent batching, token estimation, and model selection across all services.
 
 **Tradeoffs:**  
-- **Per-Requirement Calls:**  
-  - **Pros:**  
-    - High control over relevance and quantity of bullets.  
-    - Reduces risk of irrelevant or bloated output.  
-    - Allows state tracking to avoid duplicates and measure coverage of requirements.  
-    - Consistent results even if using older models (useful for cost management).  
-  - **Cons:**  
-    - Higher API call count → higher cost.  
-    - More complex workflow.  
-
-- **Bulk Call:**  
-  - **Pros:**  
-    - Fewer API calls → lower cost.  
-    - Simpler call structure.  
-  - **Cons:**  
-    - Higher risk of irrelevant or excessive bullets.  
-    - Harder to track coverage of individual requirements.  
-    - Inconsistent outputs if model version changes or input is too large.  
+- **Inline (per-service):**  
+  - ✅ Simple and isolated.  
+  - ❌ Inconsistent; duplicate logic across services.  
+  - ❌ Hard to globally tune or audit total token usage.  
+- **Centralized strategy:**  
+  - ✅ Enables unified cost governance and global tuning.  
+  - ✅ Easier to monitor and optimize with shared logging.  
+  - ✅ Scales across services and future models.  
+  - ❌ Requires maintaining a separate policy document and coordination layer.  
 
 **Decision:**  
-Use **per-requirement calls** despite higher cost and complexity. This maximizes control, maintains high-quality bullet generation, allows consistent results across model versions, and supports the weighted score system for selecting final bullets. Bulk generation is rejected due to higher risk of irrelevant output and inconsistent quality.
+Adopt a **centralized LLM cost management strategy**, documented in `llm_cost_strategy.md`. Each LLM client implements shared utilities for token estimation, logging, and model routing. The orchestration layer enforces consistent cost-aware execution across all services.
 
 **Reflection:**  
-- Cost optimizations (e.g., filtering experience data or limiting requirements) are considered but largely rejected because they may degrade quality.  
-- Manual or lightweight preprocessing of job descriptions (e.g., stripping non-essential sections) is a safe cost-saving measure.  
-- This design prioritizes **quality and predictability over minimal cost**, which is appropriate for the resume-building use case.
+This design trades slight coordination overhead for long-term scalability and predictability. It future-proofs the system by allowing consistent upgrades in model selection, batching strategy, and analytics integration without rewriting individual service logic.
 
-### Job Description Preprocessing: Full JD vs Relevant Sections Only
+---
+
+#### Pydantic Schema Validation vs Manual Dictionary-Based Validation
 
 **Context:**  
-LLM API calls for parsing job descriptions and generating requirement-based bullets can become costly due to long input texts. Job descriptions often include sections like “About Us,” “Benefits,” and “Culture,” which are **not directly relevant** for extracting requirements or generating bullets.
+The JDParser consumes JSON output from an LLM representing job metadata and requirements. This data must be validated before creating Django model instances to prevent schema mismatches or runtime errors.
+
+**Options Considered:**  
+1. **Manual dict-based validation:**  
+   - Define an expected dictionary structure and verify keys, types, and required fields with custom logic.  
+2. **Use Pydantic schemas:**  
+   - Define a typed schema (e.g., `JDModel`, `RequirementSchema`, `Metadata`) that enforces types, constraints, and defaults automatically.
+
+**Tradeoffs:**  
+- **Dict-based validation:**  
+  - ✅ Lightweight and dependency-free.  
+  - ❌ Requires repetitive manual checks (`if "role" not in data`, `isinstance(x, list)` etc.).  
+  - ❌ Limited error reporting and no support for nested validation.  
+- **Pydantic-based:**  
+  - ✅ Automatic type coercion and nested validation.  
+  - ✅ Expressive constraints (`confloat`, `conlist`) and clear error messages.  
+  - ✅ Acts as a contract between the LLM and backend.  
+  - ❌ Adds a small dependency.
+
+**Decision:**  
+Adopt **Pydantic** for structured, type-safe validation of LLM output before ORM persistence. Use schema class naming (e.g., `RequirementSchema`) to avoid conflict with Django models.
+
+**Reflection:**  
+This improves reliability, readability, and alignment with modern Python practices. It also demonstrates familiarity with strongly typed design principles, which transfer well to larger-scale systems and typed languages like Java or TypeScript.
+
+---
+
+### Job Description Processing
+Decisions related to parsing and extracting requirements from job descriptions.
+
+---
+
+#### Job Description Preprocessing: Full JD vs Relevant Sections Only
+
+**Context:**  
+LLM API calls for parsing job descriptions and generating requirement-based bullets can become costly due to long input texts. Job descriptions often include sections like "About Us," "Benefits," and "Culture," which are **not directly relevant** for extracting requirements or generating bullets.
 
 **Options Considered:**  
 1. **Send Full JD:**  
    - Include the entire job description text in the prompt.  
 2. **Send Relevant Sections Only:**  
-   - Manually or programmatically extract only sections such as “What We’re Looking For” or “Requirements.”  
+   - Manually or programmatically extract only sections such as "What We're Looking For" or "Requirements."  
    - Optionally use regex-based extraction for common section headers.
 
 **Tradeoffs:**  
 - **Full JD:**  
-  - **Pros:**  
-    - Maximum context; no risk of excluding potentially important information.  
-  - **Cons:**  
-    - High token usage → higher API cost.  
-    - Longer prompts may slightly increase response time.  
-    - Includes irrelevant information, which could distract the LLM.  
-
+  - ✅ Maximum context; no risk of excluding potentially important information.  
+  - ❌ High token usage → higher API cost.  
+  - ❌ Longer prompts may slightly increase response time.  
+  - ❌ Includes irrelevant information, which could distract the LLM.  
 - **Relevant Sections Only:**  
-  - **Pros:**  
-    - Lower token usage → lower API cost.  
-    - Focused input likely improves parsing accuracy.  
-  - **Cons:**  
-    - Risk of excluding niche or subtle requirements that appear outside standard sections.  
-    - Regex-based automation may fail on unusual JD formats.
+  - ✅ Lower token usage → lower API cost.  
+  - ✅ Focused input likely improves parsing accuracy.  
+  - ❌ Risk of excluding niche or subtle requirements that appear outside standard sections.  
+  - ❌ Regex-based automation may fail on unusual JD formats.
 
 **Decision:**  
 For now, manually select relevant sections for each JD when copying/pasting into prompts. Automation via regex or other extraction techniques may be implemented later to reduce manual work, but only if it reliably captures all important requirements.
 
 **Reflection:**  
-- This approach balances cost reduction with the need for complete, relevant context.  
-- Even partial preprocessing can meaningfully reduce input tokens, lowering per-call cost without sacrificing bullet quality.  
-- Maintaining a manual workflow initially ensures critical requirements are not accidentally omitted, with automation considered as a future improvement.
+This approach balances cost reduction with the need for complete, relevant context. Even partial preprocessing can meaningfully reduce input tokens, lowering per-call cost without sacrificing bullet quality. Maintaining a manual workflow initially ensures critical requirements are not accidentally omitted, with automation considered as a future improvement.
 
-### Requirement Extraction Granularity: Explicit vs Implied and Sentence vs Phrase Format
+---
+
+#### Requirement Extraction Granularity: Explicit vs Implied and Sentence vs Phrase Format
 
 **Context:**  
 When parsing job descriptions into structured requirements for the resume builder, the level of granularity and phrasing impacts both the quality and cost of downstream LLM calls. The original prompt extracted all explicit and implied requirements, expressed as full sentences.
@@ -148,163 +133,147 @@ When parsing job descriptions into structured requirements for the resume builde
 
 **Tradeoffs:**  
 - **Explicit or Implied + Full Sentences:**  
-  - **Pros:** Maximum completeness and human readability.  
-  - **Cons:** High token cost and redundancy.  
+  - ✅ Maximum completeness and human readability.  
+  - ❌ High token cost and redundancy.  
 - **Explicit or Implied + Short Phrases:**  
-  - **Pros:** Compact, token-efficient, and still captures most relevant context.  
-  - **Cons:** Slightly less descriptive output, but negligible information loss for LLM use.  
+  - ✅ Compact, token-efficient, and still captures most relevant context.  
+  - ❌ Slightly less descriptive output, but negligible information loss for LLM use.  
 - **Explicit Only + Short Phrases:**  
-  - **Pros:** Minimal token and call cost; very efficient.  
-  - **Cons:** May omit nuanced or implied requirements that improve match quality.
+  - ✅ Minimal token and call cost; very efficient.  
+  - ❌ May omit nuanced or implied requirements that improve match quality.
 
 **Decision:**  
 Adopt the **explicit or implied + short phrases** approach for now. This maintains full requirement coverage while reducing token usage. Future iterations may test **explicit-only** extraction if the total requirement count becomes too high.
 
 **Reflection:**  
-- The “short phrase” change provides a clear, low-risk cost optimization.  
-- The “explicit-only” change remains an optional lever for future fine-tuning based on observed performance.  
-- Requirement count can be tracked dynamically through model relationships rather than stored directly.
+The "short phrase" change provides a clear, low-risk cost optimization. The "explicit-only" change remains an optional lever for future fine-tuning based on observed performance. Requirement count can be tracked dynamically through model relationships rather than stored directly.
 
-### Bullet Generation Strategy: Per-Role Batching vs Per-Requirement + State
+---
 
-**Context:** 
-Needed a reliable, scalable, and token-efficient method to generate resume bullets from parsed job descriptions. Previous large-prompt approach (all roles + all requirements in one call) caused inconsistent bullet counts, irrelevant bullets, and token/throughput issues.
-
-**Options Considered:**
-1. **Per-requirement + full state tracking:** 
-   - Generate bullets one requirement at a time, maintaining full state of bullets generated so far.
-   - Input includes all work experience + accumulated bullets.
-2. **Per-role batching (simplified MVP):** 
-   - Generate all bullets for a single experience role in one call.
-   - Input includes only that role’s work history + sorted requirements.
-   - Use preconfigured max bullets per role and included roles for deterministic filtering.
-
-**Tradeoffs:**
-- Per-requirement + state:
-  - ✅ Maximum control over bullets and scoring.
-  - ✅ Can implement dynamic pruning based on weighted scores.
-  - ❌ High complexity (state management, token tracking, pruning logic).
-  - ❌ Likely hits API rate limits for output tokens if many requirements.
-  - ❌ Large token usage per request (input + output).
-- Per-role batching:
-  - ✅ Simple, deterministic pipeline.
-  - ✅ Token-efficient (each call small, under input/output limits).
-  - ✅ Avoids irrelevant bullets and inconsistent totals by preconfigured rules.
-  - ✅ Fewer API calls, no state tracking required.
-  - ❌ Less granular control over individual requirements (rely on LLM to map requirements to bullets effectively).
-
-**Decision:** Adopt per-role batching as the MVP approach. Use preconfigured included roles, max bullets per role, and sorted requirements to maintain quality.  
-
-**Reflection:** 
-If future use cases reveal very large JDs, unusually many requirements, or quality issues, consider revisiting per-requirement generation with state tracking and weighted scoring. For now, this approach balances quality, efficiency, and simplicity.
-
-### Modeling Application Status as a Separate Entity
-
-**Context**  
-I needed a way to represent the lifecycle of a job application — including whether it resulted in a callback, rejection, closure, or no response — while maintaining flexibility for tracking event timing, analytics, and future extensions (like interviews or offers). The model also had to allow for easily identifying the *latest* status of any given application.
-
-**Options Considered**  
-1. **Embed a `status` field directly in `Application`**  
-   - Store a simple `CharField` with predefined choices (e.g., rejected, callback, closed).  
-   - Quick to implement and easy to query.  
-   - However, limits historical tracking and timestamping of status changes.
-
-2. **Use separate models for each outcome type (e.g., `Rejection`, `Callback`, `Closure`)**  
-   - Provides flexibility for each event type to have custom fields.  
-   - But leads to repetitive boilerplate, scattered logic, and complex relationships.
-
-3. **Centralize statuses in a dedicated `ApplicationStatus` model** *(chosen)*  
-   - A single model to represent all state transitions.  
-   - Allows timestamping each status event (`status_date`).  
-   - Keeps the `Application` model clean with a single `status` FK pointing to the latest known status.
-
-**Tradeoffs**  
-- **Pros:**  
-  - Extensible and scalable as new states or events are added.  
-  - Simplifies analytics (e.g., querying all applications with a “callback” state).  
-  - Maintains historical integrity by decoupling state records from the main application entity.  
-- **Cons:**  
-  - Slightly more complex to manage (requires updating FK on `Application` when a new `ApplicationStatus` is created).  
-  - Indirect queries (need to traverse relationships to get the most recent status).
-
-**Decision**  
-Adopted a separate `ApplicationStatus` model linked via a foreign key to `Application`, with the following schema:
-
-#### Application
-| Field | Type | Description |
-|--------|------|-------------|
-| id | IntegerField (primary_key=True) | Primary key |
-| applied_date | DateField | When application was submitted |
-| resume_id | FK(Resume) | Resume used |
-| job_id | FK(Job) | Job applied to |
-| status | FK(ApplicationStatus) | Latest known status |
-
-#### ApplicationStatus
-| Field | Type | Description |
-|--------|------|-------------|
-| id | IntegerField (primary_key=True) | Primary key |
-| state | CharField(max_length=50, choices=STATUS_CHOICES) | Application state (e.g., rejected, callback, closed, etc.) |
-| application_id | FK(Application) | Associated application |
-| status_date | DateField | When the event occurred or was recorded |
-
-**Reflection**  
-This structure provides an elegant balance between normalization and practical usability. It keeps the system event-driven and analytics-ready without overcomplicating the schema or duplicating logic across models. As future events (like interviews or offers) are introduced, they can seamlessly integrate into this pattern or relate to `ApplicationStatus` entries.
-
-### Resume Bullet Editability
-
-**Context:**
-The system generates structured resume bullets from LLM outputs and stores them in the `ResumeBullet` model. Initially, the assumption was that these LLM-generated bullets would remain final and directly populate the markdown resume. However, in practice, users often want to reword or exclude certain bullets, making direct markdown editing insufficiently structured and data-destructive. A design was needed that preserves structured data while allowing flexible, manual control over bullet inclusion and wording.
-
-**Options Considered:**
-1. **Edit Markdown Directly**  
-   Users manually edit the markdown output and re-import or regenerate it as needed.
-2. **Add `exclude` and `override_text` Fields to `ResumeBullet`**  
-   Introduce structured fields allowing toggling and in-place text overrides.
-3. **Physically Edit/Delete `ResumeBullet` Records**  
-   Directly modify or remove bullet entries that are unsatisfactory.
-
-**Tradeoffs:**
-- **Option 1** offers simplicity but breaks the link between structured data and the final markdown output, making auditability and analytics impossible.  
-- **Option 2** adds minor schema complexity but maintains full traceability, allowing reversible edits and analytics on LLM accuracy and user edits.  
-- **Option 3** keeps the data minimal but sacrifices edit history and risks losing insights about LLM-generated versus human-edited content.
-
-**Decision:**
-Adopt **Option 2** by adding `exclude: BooleanField(default=False)` and `override_text: TextField(blank=True, null=True)` to the `ResumeBullet` model. Resume generation will include only non-excluded bullets and use `override_text` if present, otherwise defaulting to `text`.
-
-**Reflection:**
-This approach strikes the best balance between structure, flexibility, and future analytics. It allows iterative refinement of resume content without data loss or duplication, supporting both human-in-the-loop workflows and later evaluation of model output quality.
-
-### LLM Cost Management Strategy: Granularity and Token Optimization
+#### Prompt Placeholder Substitution: `.replace()` vs String Formatting
 
 **Context:**  
-As the system scaled to support multiple LLM services (JD parsing, bullet generation, and resume matching), costs became a critical consideration. Each call involves potentially thousands of tokens, making architectural cost discipline essential.
+Needed a reliable way to insert job descriptions into LLM prompt templates for the job description parser.
 
 **Options Considered:**  
-1. **Inline strategy within each service:**  
-   - Each LLM client manages its own token handling and budget logic independently.  
-2. **Centralized cost policy (chosen):**  
-   - Define a shared cost strategy (`llm_cost_strategy.md`) and enforce consistent batching, token estimation, and model selection across all services.
+1. **`.replace()` using a fixed placeholder** (e.g., `{{JOB_DESCRIPTION}}`)  
+2. **Python string formatting** (e.g., `.format()` or f-strings with `{JOB_DESCRIPTION}`)
 
 **Tradeoffs:**  
-- **Inline (per-service):**  
-  - ✅ Simple and isolated.  
-  - ❌ Inconsistent; duplicate logic across services.  
-  - ❌ Hard to globally tune or audit total token usage.  
-- **Centralized strategy:**  
-  - ✅ Enables unified cost governance and global tuning.  
-  - ✅ Easier to monitor and optimize with shared logging.  
-  - ✅ Scales across services and future models.  
-  - ❌ Requires maintaining a separate policy document and coordination layer.  
+- **`.replace()`:**  
+  - ✅ Safe from JSON brace conflicts.  
+  - ✅ Predictable behavior.  
+  - ✅ Simple to debug.  
+  - ❌ Less flexible for multi-placeholder templates.  
+- **String formatting:**  
+  - ✅ Scalable for multiple variables.  
+  - ✅ Clearer intent for dynamic fields.  
+  - ❌ Brittle if `{}` appear in JSON or Markdown.  
+  - ❌ Risk of `KeyError` or template corruption.
 
 **Decision:**  
-Adopt a **centralized LLM cost management strategy**, documented in `llm_cost_strategy.md`.  
-Each LLM client implements shared utilities for token estimation, logging, and model routing. The orchestration layer enforces consistent cost-aware execution across all services.
+Chose **`.replace()`** for stability and simplicity in LLM prompt handling, especially since prompts often include braces for JSON examples.
 
 **Reflection:**  
-This design trades slight coordination overhead for long-term scalability and predictability.  
-It future-proofs the system by allowing consistent upgrades in model selection, batching strategy, and analytics integration without rewriting individual service logic.
+If future prompts require multiple dynamic fields (e.g., `{COMPANY}`, `{ROLE}`), may revisit string formatting with careful brace escaping or use a templating library like Jinja2 for controlled substitution.
 
-### Resume Template Technology Stack: Markdown vs HTML + CSS + Jinja + WeasyPrint
+---
+
+### Resume Generation
+Decisions related to bullet generation and resume content creation.
+
+---
+
+#### Bullet Generation Strategy: Evolution from Bulk → Per-Requirement → Per-Role Batching
+
+**Context:**  
+The resume generation system needed a reliable, scalable, and token-efficient method to generate experience bullets from parsed job descriptions. The approach evolved through multiple iterations as practical limitations emerged.
+
+**Options Considered:**  
+1. **Bulk Generation (Initial Approach):**  
+   - Pass all requirements for all roles in a single LLM call.  
+2. **Per-Requirement + Full State Tracking:**  
+   - Generate bullets one requirement at a time, maintaining full state of bullets generated so far.  
+   - Input includes all work experience + accumulated bullets.  
+   - Track which bullets satisfy which requirements with weighted scoring.  
+3. **Per-Role Batching (Final Approach):**  
+   - Generate all bullets for a single experience role in one call.  
+   - Input includes only that role's work history + sorted requirements.  
+   - Use preconfigured max bullets per role and included roles for deterministic filtering.
+
+**Tradeoffs:**  
+- **Bulk Generation:**  
+  - ✅ Fewest API calls → lowest cost.  
+  - ✅ Simplest call structure.  
+  - ❌ High risk of irrelevant or excessive bullets.  
+  - ❌ Inconsistent bullet counts across runs.  
+  - ❌ Harder to track coverage of individual requirements.  
+- **Per-Requirement + State:**  
+  - ✅ Maximum control over bullets and scoring.  
+  - ✅ Can implement dynamic pruning based on weighted scores.  
+  - ✅ Consistent results even with older models.  
+  - ❌ High complexity (state management, token tracking, pruning logic).  
+  - ❌ Likely hits API rate limits for output tokens with many requirements.  
+  - ❌ Large token usage per request (input + output).  
+  - ❌ Higher API call count → higher cost.  
+- **Per-Role Batching:**  
+  - ✅ Simple, deterministic pipeline.  
+  - ✅ Token-efficient (each call small, under input/output limits).  
+  - ✅ Avoids irrelevant bullets and inconsistent totals via preconfigured rules.  
+  - ✅ Fewer API calls than per-requirement, no state tracking required.  
+  - ✅ Better quality than bulk generation.  
+  - ❌ Less granular control over individual requirements (rely on LLM to map requirements to bullets effectively).
+
+**Decision:**  
+Adopt **per-role batching** as the production approach. Use preconfigured included roles, max bullets per role, and sorted requirements to maintain quality while avoiding the complexity and token/cost issues of per-requirement generation.
+
+**Reflection:**  
+The system evolved from bulk generation (too unpredictable) through per-requirement generation (too complex/expensive) to per-role batching (optimal balance). This iterative refinement prioritized quality and predictability while managing cost and complexity. If future use cases reveal very large JDs, unusually many requirements, or quality issues, the per-requirement + state approach remains available as a more granular fallback, but current testing shows per-role batching meets all production needs.
+
+---
+
+#### Resume Bullet Editability
+
+**Context:**  
+The system generates structured resume bullets from LLM outputs and stores them in the `ResumeExperienceBullet` and `ResumeSkillBullet` models. Initially, the assumption was that these LLM-generated bullets would remain final and directly populate the resume output. However, in practice, users often want to reword or exclude certain bullets, making direct output editing insufficiently structured and data-destructive. A design was needed that preserves structured data while allowing flexible, manual control over bullet inclusion and wording.
+
+**Options Considered:**  
+1. **Edit Output Directly:**  
+   - Users manually edit the rendered output (Markdown/PDF) and re-import or regenerate it as needed.  
+2. **Add `exclude` and `override_text` Fields to Bullet Models:**  
+   - Introduce structured fields allowing toggling and in-place text overrides.  
+3. **Physically Edit/Delete Bullet Records:**  
+   - Directly modify or remove bullet entries that are unsatisfactory.
+
+**Tradeoffs:**  
+- **Option 1:**  
+  - ✅ Simple workflow.  
+  - ❌ Breaks the link between structured data and final output.  
+  - ❌ Makes auditability and analytics impossible.  
+- **Option 2:**  
+  - ✅ Maintains full traceability.  
+  - ✅ Allows reversible edits.  
+  - ✅ Enables analytics on LLM accuracy and user edits.  
+  - ❌ Adds minor schema complexity.  
+- **Option 3:**  
+  - ✅ Keeps data minimal.  
+  - ❌ Sacrifices edit history.  
+  - ❌ Risks losing insights about LLM-generated versus human-edited content.
+
+**Decision:**  
+Adopt **Option 2** by adding `exclude: BooleanField(default=False)` and `override_text: TextField(blank=True, null=True)` to both `ResumeExperienceBullet` and `ResumeSkillBullet` models. Resume generation will include only non-excluded bullets and use `override_text` if present, otherwise defaulting to `text`.
+
+**Reflection:**  
+This approach strikes the best balance between structure, flexibility, and future analytics. It allows iterative refinement of resume content without data loss or duplication, supporting both human-in-the-loop workflows and later evaluation of model output quality.
+
+---
+
+### Template & Output Rendering
+Decisions related to resume templates and PDF generation.
+
+---
+
+#### Resume Template Technology Stack: Markdown vs HTML + CSS + Jinja + WeasyPrint
 
 **Context:**  
 The resume generation system requires templates with both static content (name, contact info, section headers, experience titles) and dynamic content (experience bullets, skills) that changes per job application. Additionally, precise visual formatting is needed: consistent font family (Calibri throughout), varying font sizes (20pt for name, 14pt for section headers, 12pt for experience titles, 11pt for bullets), bold emphasis for headers and titles, and controlled spacing between sections. The system must produce professional PDFs suitable for both ATS parsing and human review.
@@ -324,20 +293,83 @@ The resume generation system requires templates with both static content (name, 
 
 **Tradeoffs:**  
 - **Markdown + CSS:**  
-  - **Pros:** Lightweight, human-readable templates; simple syntax for structure.  
-  - **Cons:** Limited typography control (no per-element font sizing); unpredictable spacing behavior; depends on Markdown renderer's CSS support; difficult to achieve pixel-perfect layouts.  
+  - ✅ Lightweight, human-readable templates.  
+  - ✅ Simple syntax for structure.  
+  - ❌ Limited typography control (no per-element font sizing).  
+  - ❌ Unpredictable spacing behavior.  
+  - ❌ Depends on Markdown renderer's CSS support.  
+  - ❌ Difficult to achieve pixel-perfect layouts.  
 - **HTML + CSS + Jinja + WeasyPrint:**  
-  - **Pros:** Complete control over typography (fonts, sizes, spacing, margins); supports template inheritance (base template for static data, child templates for variations); leverages familiar web technologies (HTML/CSS); DRY principle via Jinja2 blocks and inheritance; excellent for demonstrating SWE skills in a portfolio project; deterministic PDF rendering.  
-  - **Cons:** Slightly more verbose than Markdown; requires understanding of HTML/CSS (not a con for SWE roles).  
+  - ✅ Complete control over typography (fonts, sizes, spacing, margins).  
+  - ✅ Supports template inheritance (base template for static data, child templates for variations).  
+  - ✅ Leverages familiar web technologies (HTML/CSS).  
+  - ✅ DRY principle via Jinja2 blocks and inheritance.  
+  - ✅ Deterministic PDF rendering.  
+  - ❌ Slightly more verbose than Markdown.  
+  - ❌ Requires understanding of HTML/CSS.  
 - **DOCX templates:**  
-  - **Pros:** Native Word-style formatting; familiar to non-technical users.  
-  - **Cons:** Not human-readable or version-control friendly; harder to diff and review; adds external binary dependencies.  
+  - ✅ Native Word-style formatting.  
+  - ✅ Familiar to non-technical users.  
+  - ❌ Not human-readable or version-control friendly.  
+  - ❌ Harder to diff and review.  
+  - ❌ Adds external binary dependencies.  
 - **LaTeX:**  
-  - **Pros:** Publication-quality typography.  
-  - **Cons:** Steep learning curve; overkill for business resumes; doesn't demonstrate web-relevant SWE skills.
+  - ✅ Publication-quality typography.  
+  - ❌ Steep learning curve.  
+  - ❌ Overkill for business resumes.  
+  - ❌ Doesn't demonstrate web-relevant SWE skills.
 
 **Decision:**  
 Adopt **HTML + CSS + Jinja2 + WeasyPrint** as the resume template technology stack. Templates will be structured as HTML files with Jinja2 template inheritance (base template for static contact info and structure, child templates for role-specific variations). CSS will handle all visual styling (font family, sizes, bold, spacing). WeasyPrint will render the final HTML + CSS to PDF.
 
 **Reflection:**  
 This approach balances functional requirements (precise formatting, dynamic content) with portfolio goals (demonstrating modern SWE practices like templating, separation of concerns, DRY). HTML + CSS provides the control needed for professional resume formatting while remaining maintainable and extensible. Template inheritance eliminates duplication of static content across resume variations. The stack also aligns well with the target role (SWE) by showcasing relevant web technologies and design principles. While Markdown would technically work for basic structure, it cannot reliably deliver the spacing and typography control required for polished, professional output. Future iterations may explore optimizations like CSS minification or caching, but the core stack provides a solid foundation for both immediate needs and long-term scalability.
+
+---
+
+### Application Tracking
+Decisions related to job application lifecycle and status management.
+
+---
+
+#### Modeling Application Status as a Separate Entity
+
+**Context:**  
+The system needed a way to represent the lifecycle of a job application—including whether it resulted in a callback, rejection, closure, or no response—while maintaining flexibility for tracking event timing, analytics, and future extensions (like interviews or offers). The model also had to allow for easily identifying the *latest* status of any given application.
+
+**Options Considered:**  
+1. **Embed a `status` field directly in `Application`:**  
+   - Store a simple `CharField` with predefined choices (e.g., rejected, callback, closed).  
+   - Quick to implement and easy to query.  
+   - However, limits historical tracking and timestamping of status changes.  
+2. **Use separate models for each outcome type** (e.g., `Rejection`, `Callback`, `Closure`):  
+   - Provides flexibility for each event type to have custom fields.  
+   - But leads to repetitive boilerplate, scattered logic, and complex relationships.  
+3. **Centralize statuses in a dedicated `ApplicationStatus` model:**  
+   - A single model to represent all state transitions.  
+   - Allows timestamping each status event (`status_date`).  
+   - Keeps the `Application` model clean with a single `status` FK pointing to the latest known status.
+
+**Tradeoffs:**  
+- **Embedded status field:**  
+  - ✅ Simple implementation.  
+  - ✅ Easy to query current status.  
+  - ❌ No historical tracking of status changes.  
+  - ❌ Cannot timestamp individual transitions.  
+- **Separate models per outcome:**  
+  - ✅ Flexibility for custom fields per event type.  
+  - ❌ Repetitive boilerplate code.  
+  - ❌ Scattered logic and complex relationships.  
+  - ❌ Harder to maintain and extend.  
+- **Centralized `ApplicationStatus` model:**  
+  - ✅ Extensible and scalable as new states or events are added.  
+  - ✅ Simplifies analytics (e.g., querying all applications with a "callback" state).  
+  - ✅ Maintains historical integrity by decoupling state records from the main application entity.  
+  - ❌ Slightly more complex to manage (requires updating FK on `Application` when a new `ApplicationStatus` is created).  
+  - ❌ Indirect queries (need to traverse relationships to get the most recent status).
+
+**Decision:**  
+Adopted a separate **`ApplicationStatus` model** linked via a foreign key to `Application`. The `Application` model maintains a `status` FK pointing to the latest known status, while all historical status changes are preserved as individual `ApplicationStatus` records.
+
+**Reflection:**  
+This structure provides an elegant balance between normalization and practical usability. It keeps the system event-driven and analytics-ready without overcomplicating the schema or duplicating logic across models. As future events (like interviews or offers) are introduced, they can seamlessly integrate into this pattern or relate to `ApplicationStatus` entries. The design supports both current operational needs (tracking application outcomes) and future analytical capabilities (measuring time-to-callback, conversion rates, etc.).
