@@ -303,3 +303,41 @@ Each LLM client implements shared utilities for token estimation, logging, and m
 **Reflection:**  
 This design trades slight coordination overhead for long-term scalability and predictability.  
 It future-proofs the system by allowing consistent upgrades in model selection, batching strategy, and analytics integration without rewriting individual service logic.
+
+### Resume Template Technology Stack: Markdown vs HTML + CSS + Jinja + WeasyPrint
+
+**Context:**  
+The resume generation system requires templates with both static content (name, contact info, section headers, experience titles) and dynamic content (experience bullets, skills) that changes per job application. Additionally, precise visual formatting is needed: consistent font family (Calibri throughout), varying font sizes (20pt for name, 14pt for section headers, 12pt for experience titles, 11pt for bullets), bold emphasis for headers and titles, and controlled spacing between sections. The system must produce professional PDFs suitable for both ATS parsing and human review.
+
+**Options Considered:**  
+1. **Markdown + CSS + md2pdf/markdown-pdf:**  
+   - Use Markdown for content structure with Jinja2 for variable substitution.  
+   - Apply CSS styling via a Markdown-to-PDF converter.  
+2. **HTML + CSS + Jinja + WeasyPrint:**  
+   - Use HTML templates with Jinja2 for structure and variable substitution.  
+   - Apply CSS for precise typography and layout control.  
+   - Use WeasyPrint to render HTML + CSS to PDF.  
+3. **DOCX templates (python-docx or docxtpl):**  
+   - Use Microsoft Word templates with programmatic field replacement.  
+4. **LaTeX templates:**  
+   - Use LaTeX for typographically perfect PDFs.
+
+**Tradeoffs:**  
+- **Markdown + CSS:**  
+  - **Pros:** Lightweight, human-readable templates; simple syntax for structure.  
+  - **Cons:** Limited typography control (no per-element font sizing); unpredictable spacing behavior; depends on Markdown renderer's CSS support; difficult to achieve pixel-perfect layouts.  
+- **HTML + CSS + Jinja + WeasyPrint:**  
+  - **Pros:** Complete control over typography (fonts, sizes, spacing, margins); supports template inheritance (base template for static data, child templates for variations); leverages familiar web technologies (HTML/CSS); DRY principle via Jinja2 blocks and inheritance; excellent for demonstrating SWE skills in a portfolio project; deterministic PDF rendering.  
+  - **Cons:** Slightly more verbose than Markdown; requires understanding of HTML/CSS (not a con for SWE roles).  
+- **DOCX templates:**  
+  - **Pros:** Native Word-style formatting; familiar to non-technical users.  
+  - **Cons:** Not human-readable or version-control friendly; harder to diff and review; adds external binary dependencies.  
+- **LaTeX:**  
+  - **Pros:** Publication-quality typography.  
+  - **Cons:** Steep learning curve; overkill for business resumes; doesn't demonstrate web-relevant SWE skills.
+
+**Decision:**  
+Adopt **HTML + CSS + Jinja2 + WeasyPrint** as the resume template technology stack. Templates will be structured as HTML files with Jinja2 template inheritance (base template for static contact info and structure, child templates for role-specific variations). CSS will handle all visual styling (font family, sizes, bold, spacing). WeasyPrint will render the final HTML + CSS to PDF.
+
+**Reflection:**  
+This approach balances functional requirements (precise formatting, dynamic content) with portfolio goals (demonstrating modern SWE practices like templating, separation of concerns, DRY). HTML + CSS provides the control needed for professional resume formatting while remaining maintainable and extensible. Template inheritance eliminates duplication of static content across resume variations. The stack also aligns well with the target role (SWE) by showcasing relevant web technologies and design principles. While Markdown would technically work for basic structure, it cannot reliably deliver the spacing and typography control required for polished, professional output. Future iterations may explore optimizations like CSS minification or caching, but the core stack provides a solid foundation for both immediate needs and long-term scalability.
