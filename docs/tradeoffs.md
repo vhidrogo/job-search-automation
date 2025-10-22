@@ -11,7 +11,9 @@ Entries should focus on **architectural or system-level choices** — those that
 
 Minor implementation details (e.g., helper function naming, small API parameter choices) are excluded to keep this log focused on meaningful design reasoning.
 
-## Placeholder Substitution: `.replace()` vs String Formatting
+## Tradeoffs
+
+### Prompt Placeholder Substitution: `.replace()` vs String Formatting
 
 **Context:** Needed a reliable way to insert job descriptions into LLM prompt templates for the job description parser.
 
@@ -27,7 +29,7 @@ Minor implementation details (e.g., helper function naming, small API parameter 
 
 **Reflection:** If future prompts require multiple dynamic fields (e.g., `{COMPANY}`, `{ROLE}`), may revisit string formatting with careful brace escaping or use a templating library like Jinja2 for controlled substitution.
 
-### Tradeoff: Pydantic schema validation vs manual dictionary-based validation
+### Pydantic schema validation vs manual dictionary-based validation
 
 **Context**  
 The JDParser consumes JSON output from an LLM representing job metadata and requirements. This data must be validated before creating Django model instances to prevent schema mismatches or runtime errors.
@@ -50,7 +52,7 @@ Adopt **Pydantic** for structured, type-safe validation of LLM output before ORM
 **Reflection**  
 This improves reliability, readability, and alignment with modern Python practices. It also demonstrates familiarity with strongly typed design principles, which transfer well to larger-scale systems and typed languages like Java or TypeScript.
 
-## Requirement-Based Bullet Generation: Per-Requirement LLM Calls vs Bulk Generation
+### Requirement-Based Bullet Generation: Per-Requirement LLM Calls vs Bulk Generation
 
 **Context:**  
 When building the LLM-assisted resume writer, each requirement extracted from a job description must be satisfied with one or more bullets generated from structured work experience data. There is a decision to be made whether to generate bullets **per requirement** (many calls, fine-grained control) or **in bulk** (fewer calls, more general output).
@@ -91,7 +93,7 @@ Use **per-requirement calls** despite higher cost and complexity. This maximizes
 - Manual or lightweight preprocessing of job descriptions (e.g., stripping non-essential sections) is a safe cost-saving measure.  
 - This design prioritizes **quality and predictability over minimal cost**, which is appropriate for the resume-building use case.
 
-## Job Description Preprocessing: Full JD vs Relevant Sections Only
+### Job Description Preprocessing: Full JD vs Relevant Sections Only
 
 **Context:**  
 LLM API calls for parsing job descriptions and generating requirement-based bullets can become costly due to long input texts. Job descriptions often include sections like “About Us,” “Benefits,” and “Culture,” which are **not directly relevant** for extracting requirements or generating bullets.
@@ -128,7 +130,7 @@ For now, manually select relevant sections for each JD when copying/pasting into
 - Even partial preprocessing can meaningfully reduce input tokens, lowering per-call cost without sacrificing bullet quality.  
 - Maintaining a manual workflow initially ensures critical requirements are not accidentally omitted, with automation considered as a future improvement.
 
-## Requirement Extraction Granularity: Explicit vs Implied and Sentence vs Phrase Format
+### Requirement Extraction Granularity: Explicit vs Implied and Sentence vs Phrase Format
 
 **Context:**  
 When parsing job descriptions into structured requirements for the resume builder, the level of granularity and phrasing impacts both the quality and cost of downstream LLM calls. The original prompt extracted all explicit and implied requirements, expressed as full sentences.
@@ -163,7 +165,7 @@ Adopt the **explicit or implied + short phrases** approach for now. This maintai
 - The “explicit-only” change remains an optional lever for future fine-tuning based on observed performance.  
 - Requirement count can be tracked dynamically through model relationships rather than stored directly.
 
-## Bullet Generation Strategy: Per-Role Batching vs Per-Requirement + State
+### Bullet Generation Strategy: Per-Role Batching vs Per-Requirement + State
 
 **Context:** 
 Needed a reliable, scalable, and token-efficient method to generate resume bullets from parsed job descriptions. Previous large-prompt approach (all roles + all requirements in one call) caused inconsistent bullet counts, irrelevant bullets, and token/throughput issues.
@@ -196,7 +198,7 @@ Needed a reliable, scalable, and token-efficient method to generate resume bulle
 **Reflection:** 
 If future use cases reveal very large JDs, unusually many requirements, or quality issues, consider revisiting per-requirement generation with state tracking and weighted scoring. For now, this approach balances quality, efficiency, and simplicity.
 
-### Tradeoff: Modeling Application Status as a Separate Entity
+### Modeling Application Status as a Separate Entity
 
 **Context**  
 I needed a way to represent the lifecycle of a job application — including whether it resulted in a callback, rejection, closure, or no response — while maintaining flexibility for tracking event timing, analytics, and future extensions (like interviews or offers). The model also had to allow for easily identifying the *latest* status of any given application.
@@ -248,12 +250,12 @@ Adopted a separate `ApplicationStatus` model linked via a foreign key to `Applic
 **Reflection**  
 This structure provides an elegant balance between normalization and practical usability. It keeps the system event-driven and analytics-ready without overcomplicating the schema or duplicating logic across models. As future events (like interviews or offers) are introduced, they can seamlessly integrate into this pattern or relate to `ApplicationStatus` entries.
 
-## Resume Bullet Editability
+### Resume Bullet Editability
 
-### Context
+**Context:**
 The system generates structured resume bullets from LLM outputs and stores them in the `ResumeBullet` model. Initially, the assumption was that these LLM-generated bullets would remain final and directly populate the markdown resume. However, in practice, users often want to reword or exclude certain bullets, making direct markdown editing insufficiently structured and data-destructive. A design was needed that preserves structured data while allowing flexible, manual control over bullet inclusion and wording.
 
-### Options Considered
+**Options Considered:**
 1. **Edit Markdown Directly**  
    Users manually edit the markdown output and re-import or regenerate it as needed.
 2. **Add `exclude` and `override_text` Fields to `ResumeBullet`**  
@@ -261,18 +263,18 @@ The system generates structured resume bullets from LLM outputs and stores them 
 3. **Physically Edit/Delete `ResumeBullet` Records**  
    Directly modify or remove bullet entries that are unsatisfactory.
 
-### Tradeoffs
+**Tradeoffs:**
 - **Option 1** offers simplicity but breaks the link between structured data and the final markdown output, making auditability and analytics impossible.  
 - **Option 2** adds minor schema complexity but maintains full traceability, allowing reversible edits and analytics on LLM accuracy and user edits.  
 - **Option 3** keeps the data minimal but sacrifices edit history and risks losing insights about LLM-generated versus human-edited content.
 
-### Decision
+**Decision:**
 Adopt **Option 2** by adding `exclude: BooleanField(default=False)` and `override_text: TextField(blank=True, null=True)` to the `ResumeBullet` model. Resume generation will include only non-excluded bullets and use `override_text` if present, otherwise defaulting to `text`.
 
-### Reflection
+**Reflection:**
 This approach strikes the best balance between structure, flexibility, and future analytics. It allows iterative refinement of resume content without data loss or duplication, supporting both human-in-the-loop workflows and later evaluation of model output quality.
 
-## LLM Cost Management Strategy: Granularity and Token Optimization
+### LLM Cost Management Strategy: Granularity and Token Optimization
 
 **Context:**  
 As the system scaled to support multiple LLM services (JD parsing, bullet generation, and resume matching), costs became a critical consideration. Each call involves potentially thousands of tokens, making architectural cost discipline essential.
