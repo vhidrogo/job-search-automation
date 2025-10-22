@@ -75,9 +75,48 @@ job_search_automation/ (Django Project)
 ```
 
 ### Template Handling
-- Maintain Markdown templates for multiple roles in `resume/templates/`.  
-- Template selection is driven by `ResumeTemplate` + the `TemplateRoleConfig` rows (use `template.role_configs` to find which `ExperienceRole`s to include and the configured `max_bullet_count` per role).  
-- The orchestrator / resume-renderer should fetch `ResumeTemplate`, then `template.role_configs.filter(include=True).order_by(...)` to determine role order and bullet counts for generation and rendering.
+
+**Technology Stack:**  
+Resume templates use **HTML + CSS + Jinja2**, rendered to PDF via **WeasyPrint**.
+
+**Rationale:**  
+- **HTML + CSS** provides precise control over typography (font family, sizes, bold, spacing) required for professional resume formatting.  
+- **Jinja2** enables template inheritance and variable substitution, supporting DRY principles (base template for static content, child templates for variations).  
+- **WeasyPrint** reliably converts HTML + CSS to PDF with predictable rendering.
+
+**Template Structure:**  
+- **Base template** (`base.html`): Contains static content (name, contact info, education) and defines Jinja2 blocks for dynamic sections (experience, skills).  
+- **Child templates** (e.g., `software_engineer_ii.html`): Extend base template and override blocks with role-specific content.  
+- **CSS stylesheet** (`resume.css`): Defines all visual styling (Calibri font, 20pt name, 14pt section headers, 12pt experience titles, 11pt bullets, spacing, margins).
+
+**Template Selection:**  
+- Template selection is driven by `ResumeTemplate` + the `TemplateRoleConfig` rows.  
+- Use `template.role_configs.filter(include=True).order_by(...)` to determine which `ExperienceRole`s to include and the configured `max_bullet_count` per role.  
+- The orchestrator fetches the appropriate HTML template based on `Job.role` and `Job.level`, then renders it with Jinja2 using data from `Resume`, `ResumeExperienceBullet`, and `ResumeSkillBullet` models.
+
+**Rendering Pipeline:**  
+1. Fetch `ResumeTemplate` and associated `TemplateRoleConfig` entries.  
+2. Query `ResumeExperienceBullet` and `ResumeSkillBullet` objects (filtered by `exclude=False`), using `override_text` if present, otherwise `text`.  
+3. Render HTML template with Jinja2, injecting bullets and skills.  
+4. Pass rendered HTML + CSS to WeasyPrint for PDF generation.  
+5. Save output via `Resume.saveToPdf()`.
+
+**Template Directory Structure:**  
+```
+resume/
+  templates/
+    html/
+      base.html                      # Base template with static content
+      software_engineer_ii.html      # Child template for SWE II role
+      data_engineer_ii.html          # Child template for DE II role
+    css/
+      resume.css                     # Shared stylesheet for all templates
+```
+
+**Benefits:**  
+- **Separation of concerns:** Content (HTML), style (CSS), and data (models) are cleanly separated.  
+- **Maintainability:** Changes to styling require only CSS edits; structural changes are isolated to HTML templates.  
+- **Reusability:** Base template eliminates duplication of static content across role-specific templates. 
 
 ### Bullet Generation
 
