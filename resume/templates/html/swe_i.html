@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block experience %}
+<div class="experience-entry">
+    <div class="experience-header">
+        <span class="experience-title">Software Engineer</span>
+        <span class="experience-company">Nav.it</span>
+        <span class="experience-location">Seattle, WA</span>
+    </div>
+    <div class="experience-dates">May 2023 - May 2024</div>
+    <ul class="experience-bullets">
+        {{ first_role_bullets }}
+    </ul>
+</div>
+
+<div class="experience-entry">
+    <div class="experience-header">
+        <span class="experience-title">Software Development Engineer</span>
+        <span class="experience-company">Amazon.com</span>
+        <span class="experience-location">Remote</span>
+    </div>
+    <div class="experience-dates">January 2022 - March 2023</div>
+    <ul class="experience-bullets">
+        {{ second_role_bullets }}
+    </ul>
+</div>
+{% endblock %}
