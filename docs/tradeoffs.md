@@ -327,6 +327,44 @@ This approach balances functional requirements (precise formatting, dynamic cont
 
 ---
 
+#### Template Granularity: One Template Per Role/Level vs Dynamic Title Injection
+
+**Context:**  
+Resume templates need to display different experience roles with appropriate titles and formatting. The question was whether to create dedicated templates for each role/level combination or use fewer generic templates with dynamically injected titles and CSS styling via `TemplateRoleConfig`.
+
+**Options Considered:**  
+1. **One Template Per Role/Level (e.g., `swe_ii.html`, `data_engineer_ii.html`):**  
+   - Static titles, company names, dates, and CSS formatting baked into each HTML template. `TemplateRoleConfig` only controls which roles to include, their order, and bullet counts.
+
+2. **Dynamic Title Injection via Extended TemplateRoleConfig:**  
+   - Fewer generic templates (e.g., `generic_ii.html`) with `TemplateRoleConfig` extended to include title fields. Python rendering logic injects both titles and associated CSS classes at runtime.
+
+**Tradeoffs:**  
+- **One Template Per Role/Level:**  
+  - ✅ Maintains clean separation of concerns—presentation logic (titles, CSS) lives in templates, not Python code
+  - ✅ Zero runtime injection of static content—only dynamic bullets are filled in
+  - ✅ Self-documenting file structure—`swe_ii.html` immediately indicates purpose
+  - ✅ Simpler rendering logic and easier debugging—can visually inspect exact HTML without running code
+  - ✅ Type-safe template selection via deterministic `Job.role + Job.level` lookup
+  - ❌ More template files required (though mitigated by Jinja2 inheritance for shared structure)
+
+- **Dynamic Title Injection:**  
+  - ✅ Fewer template files to maintain
+  - ✅ Potentially more flexible for custom title variations per application
+  - ❌ Violates separation of concerns—CSS classes and formatting directives leak into Python rendering logic
+  - ❌ Repeats static presentation data across Resume instances for the same role/level
+  - ❌ Template naming becomes opaque—must query database to understand what `generic_ii.html` renders
+  - ❌ Increases rendering complexity—must handle both bullet injection and title formatting logic
+  - ❌ Harder to debug—final HTML must be mentally reconstructed from multiple sources
+
+**Decision:**  
+**Maintain one dedicated template per role/level combination.** The cost of additional template files is negligible compared to the architectural benefits of keeping presentation logic (titles, CSS) in templates and data logic (bullets) in models. This approach preserves clean separation of concerns, simplifies rendering, and maintains system debuggability.
+
+**Reflection:**  
+This decision reinforces that template proliferation is not inherently problematic when templates serve distinct purposes—especially with inheritance mechanisms like Jinja2. The temptation to "reduce files" through dynamic injection often introduces architectural complexity that outweighs storage savings. Future template variations (A/B testing layouts, level-specific formatting) remain trivial to implement with dedicated templates but would require significant refactoring with dynamic injection.
+
+---
+
 ### Application Tracking
 Decisions related to job application lifecycle and status management.
 
