@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume - Victor Hidrogo</title>
+    <link rel="stylesheet" href="../css/resume.css">
+</head>
+<body>
+    <div class="resume-container">
+        <header class="resume-header">
+            <h1 class="resume-name">Victor Hidrogo</h1>
+            <div class="contact-info">
+                Seattle, WA  |  (206) 593-7734  |  vhidrogo@uci.edu  |  linkedin.com/in/vhidrogo  |  github.com/vhidrogo
+            </div>
+        </header>
+
+        <main class="resume-content">
+            <section class="resume-section">
+                <h2 class="section-title">Professional Experience</h2>
+                <div class="section-content">
+                    {% block experience %}{% endblock %}
+                </div>
+            </section>
+
+            <section class="resume-section">
+                <h2 class="section-title">Technical Skills</h2>
+                <div class="section-content">
+                    {% block skills %}{% endblock %}
+                </div>
+            </section>
+
+            <section class="resume-section">
+                <h2 class="section-title">Education</h2>
+                <div class="section-content">
+                    <div class="education-entry">
+                        <div class="education-degree">B.S., Business Information Management</div>
+                        <div class="education-institution">University of California, Irvine</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
