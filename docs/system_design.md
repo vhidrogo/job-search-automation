@@ -91,7 +91,7 @@ Resume templates use **HTML + CSS + Jinja2**, rendered to PDF via **WeasyPrint**
 
 **Template Selection:**  
 - Template selection is driven by `ResumeTemplate` + the `TemplateRoleConfig` rows.  
-- Use `template.role_configs.filter(include=True).order_by(...)` to determine which `ExperienceRole`s to include and the configured `max_bullet_count` per role.  
+- Use `template.role_configs.filter().order_by("order")` to determine which `ExperienceRole`s to include and the configured `max_bullet_count` per role.  
 - The orchestrator fetches the appropriate HTML template based on `Job.role` and `Job.level`, then renders it with Jinja2 using data from `Resume`, `ResumeExperienceBullet`, and `ResumeSkillBullet` models.
 
 **Rendering Pipeline:**  
@@ -370,7 +370,7 @@ flowchart TD
 | id | IntegerField | Primary key |
 | template | FK(ResumeTemplate) | Which template |
 | experience_role | FK(ExperienceRole) | Which experience role |
-| include | BooleanField | Whether to include this role in this template |
+| order | IntegerField | Display order for this role within the template (lower values appear first) |
 | max_bullet_count | PositiveIntegerField | Max number of bullets to generate for this role |
 
 #### Application

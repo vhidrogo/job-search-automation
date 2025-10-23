@@ -9,6 +9,7 @@ class TestTemplateRoleConfigModel(TestCase):
     """Test suite for the TemplateRoleConfig model."""
 
     MAX_BULLET_COUNT = 5
+    ORDER = 1
 
     def setUp(self) -> None:
         """Set up test fixtures."""
@@ -28,31 +29,22 @@ class TestTemplateRoleConfigModel(TestCase):
         config = TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=self.role,
-            include=True,
+            order=self.ORDER,
             max_bullet_count=self.MAX_BULLET_COUNT,
         )
 
         self.assertEqual(config.template, self.template)
         self.assertEqual(config.experience_role, self.role)
-        self.assertTrue(config.include)
+        self.assertEqual(config.order, self.ORDER)
         self.assertEqual(config.max_bullet_count, self.MAX_BULLET_COUNT)
         self.assertIsNotNone(config.id)
-
-    def test_default_include_is_true(self) -> None:
-        """Test that include defaults to True."""
-        config = TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=self.role,
-            max_bullet_count=self.MAX_BULLET_COUNT,
-        )
-
-        self.assertTrue(config.include)
 
     def test_str_representation(self) -> None:
         """Test the string representation."""
         config = TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=self.role,
+            order=self.ORDER,
             max_bullet_count=self.MAX_BULLET_COUNT,
         )
 
@@ -63,6 +55,7 @@ class TestTemplateRoleConfigModel(TestCase):
         TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=self.role,
+            order=self.ORDER,
             max_bullet_count=self.MAX_BULLET_COUNT,
         )
 
@@ -70,6 +63,7 @@ class TestTemplateRoleConfigModel(TestCase):
             TemplateRoleConfig.objects.create(
                 template=self.template,
                 experience_role=self.role,
+                order=2,
                 max_bullet_count=3,
             )
 
@@ -84,11 +78,13 @@ class TestTemplateRoleConfigModel(TestCase):
         config1 = TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=self.role,
+            order=self.ORDER,
             max_bullet_count=self.MAX_BULLET_COUNT,
         )
         config2 = TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=role2,
+            order=2,
             max_bullet_count=4,
         )
 
@@ -106,11 +102,13 @@ class TestTemplateRoleConfigModel(TestCase):
         config1 = TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=self.role,
+            order=self.ORDER,
             max_bullet_count=self.MAX_BULLET_COUNT,
         )
         config2 = TemplateRoleConfig.objects.create(
             template=template2,
             experience_role=self.role,
+            order=3,
             max_bullet_count=7,
         )
 
@@ -122,6 +120,7 @@ class TestTemplateRoleConfigModel(TestCase):
         TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=self.role,
+            order=self.ORDER,
             max_bullet_count=self.MAX_BULLET_COUNT,
         )
 
@@ -134,6 +133,7 @@ class TestTemplateRoleConfigModel(TestCase):
         TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=self.role,
+            order=self.ORDER,
             max_bullet_count=self.MAX_BULLET_COUNT,
         )
 
@@ -141,47 +141,48 @@ class TestTemplateRoleConfigModel(TestCase):
         self.assertEqual(configs.count(), 1)
         self.assertEqual(configs.first().template, self.template)
 
-    def test_include_false(self) -> None:
-        """Test creating a config with include set to False."""
-        config = TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=self.role,
-            include=False,
-            max_bullet_count=self.MAX_BULLET_COUNT,
-        )
-
-        self.assertFalse(config.include)
-
-    def test_filter_by_include(self) -> None:
-        """Test filtering configs by include status."""
+    def test_order_by_order_field(self) -> None:
+        """Test ordering configs by the order field."""
         role2 = ExperienceRole.objects.create(
             key="amazon_sde",
             company="Amazon",
             title="Software Development Engineer",
         )
+        role3 = ExperienceRole.objects.create(
+            key="google_swe",
+            company="Google",
+            title="Software Engineer",
+        )
 
         TemplateRoleConfig.objects.create(
             template=self.template,
+            experience_role=role2,
+            order=2,
+            max_bullet_count=4,
+        )
+        TemplateRoleConfig.objects.create(
+            template=self.template,
             experience_role=self.role,
-            include=True,
+            order=1,
             max_bullet_count=self.MAX_BULLET_COUNT,
         )
         TemplateRoleConfig.objects.create(
             template=self.template,
-            experience_role=role2,
-            include=False,
+            experience_role=role3,
+            order=3,
             max_bullet_count=3,
         )
 
-        included_configs = self.template.role_configs.filter(include=True)
-        self.assertEqual(included_configs.count(), 1)
-        self.assertEqual(included_configs.first().experience_role, self.role)
+        configs = self.template.role_configs.order_by("order")
+        ordered_roles = [config.experience_role.key for config in configs]
+        self.assertEqual(ordered_roles, ["navit", "amazon_sde", "google_swe"])
 
     def test_cascade_delete_from_template(self) -> None:
         """Test that deleting a template cascades to its configs."""
         TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=self.role,
+            order=self.ORDER,
             max_bullet_count=self.MAX_BULLET_COUNT,
         )
 
@@ -194,9 +195,45 @@ class TestTemplateRoleConfigModel(TestCase):
         TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=self.role,
+            order=self.ORDER,
             max_bullet_count=self.MAX_BULLET_COUNT,
         )
 
         self.assertEqual(TemplateRoleConfig.objects.count(), 1)
         self.role.delete()
         self.assertEqual(TemplateRoleConfig.objects.count(), 0)
+
+    def test_order_field_zero_value(self) -> None:
+        """Test that order field accepts zero as a valid value."""
+        config = TemplateRoleConfig.objects.create(
+            template=self.template,
+            experience_role=self.role,
+            order=0,
+            max_bullet_count=self.MAX_BULLET_COUNT,
+        )
+
+        self.assertEqual(config.order, 0)
+
+    def test_multiple_configs_with_same_order(self) -> None:
+        """Test creating multiple configs with the same order value."""
+        role2 = ExperienceRole.objects.create(
+            key="amazon_sde",
+            company="Amazon",
+            title="Software Development Engineer",
+        )
+
+        config1 = TemplateRoleConfig.objects.create(
+            template=self.template,
+            experience_role=self.role,
+            order=1,
+            max_bullet_count=self.MAX_BULLET_COUNT,
+        )
+        config2 = TemplateRoleConfig.objects.create(
+            template=self.template,
+            experience_role=role2,
+            order=1,
+            max_bullet_count=4,
+        )
+
+        self.assertEqual(config1.order, config2.order)
+        self.assertEqual(self.template.role_configs.count(), 2)
