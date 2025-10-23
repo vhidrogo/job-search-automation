@@ -18,7 +18,7 @@ job_search_automation/ (Django Project)
 │   ├── schemas/                  # Pydantic schemas for validating all LLM outputs
 │   ├── services/                 # ResumeWriter, JDParser, ResumeMatcher
 │   ├── clients/                  # External API clients (ClaudeClient)
-│   ├── templates/                # Markdown templates per role
+│   ├── templates/                # HTML templates per role
 │   └── utils/                    # Shared helpers for the app (prompt manipulation, validation, content builders)
 ├── tracker/                      # Job/application logging and analytics
 │   ├── models/                   # Models for persisting job and application data
@@ -39,7 +39,8 @@ job_search_automation/ (Django Project)
 | **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skill_bullets()` to produce both experience and skill-section entries used by `Resume` rendering. |
 | **JDParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
 | **Orchestrator** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative match/repair flows. |
-| **Resume (model methods)** | Responsible for on-demand rendering: (assemble template + bullets), `printPdf()` — these use persisted models to render output when called. |
+| **Job (model methods)** | `generate_resume_pdf()` — entry point for on-demand PDF generation via Django admin; delegates to `Resume.render_to_pdf()` for actual rendering. |
+| **Resume (model methods)** | `render_to_pdf()` — assembles template with bullets and skills, renders HTML via Jinja2, converts to PDF via WeasyPrint. |
 | **ResumeMatcher** | LLM-assisted utility that, given a job's requirements and the current resume (bullets), returns which requirements are met/missing and enables iterative improvement of `match_ratio`. |
 
 ---
@@ -95,11 +96,13 @@ Resume templates use **HTML + CSS + Jinja2**, rendered to PDF via **WeasyPrint**
 - The orchestrator fetches the appropriate HTML template based on `Job.role` and `Job.level`, then renders it with Jinja2 using data from `Resume`, `ResumeExperienceBullet`, and `ResumeSkillBullet` models.
 
 **Rendering Pipeline:**  
-1. Fetch `ResumeTemplate` and associated `TemplateRoleConfig` entries.  
-2. Query `ResumeExperienceBullet` and `ResumeSkillBullet` objects (filtered by `exclude=False`), using `override_text` if present, otherwise `text`.  
-3. Render HTML template with Jinja2, injecting bullets and skills.  
-4. Pass rendered HTML + CSS to WeasyPrint for PDF generation.  
-5. Save output via `Resume.saveToPdf()`.
+1. User triggers PDF generation via Django admin action on a `Job` record.
+2. `Job.generate_resume_pdf()` fetches associated `Resume` and delegates to `Resume.render_to_pdf()`.
+3. `Resume.render_to_pdf()` fetches `ResumeTemplate` and associated `TemplateRoleConfig` entries.
+4. Query `ResumeExperienceBullet` and `ResumeSkillBullet` objects (filtered by `exclude=False`), using `override_text` if present, otherwise `text`.
+5. Render HTML template with Jinja2, injecting bullets and skills.
+6. Pass rendered HTML + CSS to WeasyPrint for PDF generation.
+7. Save output file with naming convention based on job details (e.g., `{company}_{listing_job_title}_{apply_date}.pdf`).
 
 **Template Directory Structure:**  
 ```
@@ -140,8 +143,8 @@ This approach:
 - Ensures validated, structured outputs for downstream persistence.
 
 ### Output Generation
-- Save Markdown resume.
-- Optional PDF conversion.
+- Generate PDF on-demand via Django admin action.
+- Trigger PDF generation through `Job.generate_resume_pdf()`.
 - Maintain versioning.
 
 ### Application Logging
@@ -405,11 +408,13 @@ flowchart TD
     G --> H["ResumeWriter.generate_skill_bullets()"]
     H --> I["Persist Resume + ResumeExperienceBullet + ResumeSkillBullet objects"]
     I --> J["ResumeMatcher.evaluate() → update match_ratio + unmet_requirements"]
-    J --> K["User reviews + edits bullets (override/exclude)"]
+    J --> K["User reviews + edits bullets (override/exclude) via Django admin"]
     K --> L["ResumeMatcher re-run (optional)"]
-    L --> M["User triggers application save (Application + Resume.saveToPdf())"]
-    M --> N["Admin updates ApplicationStatus for outcome tracking"]
-    N --> O["Analytics layer: compute feedback loops & high-ROI insights"]
+    L --> M["User triggers Job.generate_resume_pdf() via Django admin action"]
+    M --> N["Resume.render_to_pdf() → PDF saved to output directory"]
+    N --> O["User saves Application record via Django admin"]
+    O --> P["Admin updates ApplicationStatus for outcome tracking"]
+    P --> Q["Analytics layer: compute feedback loops & high-ROI insights"]
 ```
 
 ---
@@ -432,7 +437,7 @@ Incremental Build Plan
 | [x] Phase 4 | Skill-section generation | JSON output |
 | [x] Phase 5 | Iterative match utility | `ResumeMatcher` to evaluate & improve `match_ratio` |
 | [x] Phase 6 | Template selection | Correct HTML template (TemplateRoleConfig-based) |
-| [ ] Phase 7 | Resume rendering | `printPdf()` |
+| [ ] Phase 7 | Resume rendering | `Job.generate_resume_pdf()` + `Resume.render_to_pdf()` |
 | [ ] Phase 8 | orchestration app End-to-end automation | Persisted resume + tracker models |
 | [ ] Phase 9 | Analytics | dashboards: compute feedback loops & high-ROI insights |
 
