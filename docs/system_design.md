@@ -39,7 +39,7 @@ job_search_automation/ (Django Project)
 | **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skill_bullets()` to produce both experience and skill-section entries used by `Resume` rendering. |
 | **JDParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
 | **Orchestrator** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative match/repair flows. |
-| **Resume (model methods)** | Responsible for on-demand rendering: `_generate()` (assemble template + bullets), `saveToMarkdown()`, `saveToPdf()` — these use persisted models to render output when called. |
+| **Resume (model methods)** | Responsible for on-demand rendering: (assemble template + bullets), `printPdf()` — these use persisted models to render output when called. |
 | **ResumeMatcher** | LLM-assisted utility that, given a job's requirements and the current resume (bullets), returns which requirements are met/missing and enables iterative improvement of `match_ratio`. |
 
 ---
@@ -428,12 +428,13 @@ Incremental Build Plan
 |--------|--------|---------|
 | [x] Phase 1 | Django project + resume app setup | Working environment |
 | [x] Phase 2 | JD extraction (metadata + requirements) | JSON output |
-| [ ] Phase 3 | Template selection | Correct Markdown template (TemplateRoleConfig-based) |
-| [ ] Phase 4 | Bullet generation loop | Persisted Resume + ResumeBullet entries |
-| [ ] Phase 5 | Skill-section generation | Persisted ResumeSkillBullet entries (generated after experience bullets) |
-| [ ] Phase 6 | Resume rendering | `_generate()` + `saveToMarkdown()` / `saveToPdf()` |
-| [ ] Phase 7 | Iterative match utility | `ResumeMatcher` to evaluate & improve `match_ratio` |
-| [ ] Phase 8 | tracker app expansion | End-to-end automation, analytics, dashboards |
+| [x] Phase 3 | Bullet generation loop | JSON output |
+| [x] Phase 4 | Skill-section generation | JSON output |
+| [x] Phase 5 | Iterative match utility | `ResumeMatcher` to evaluate & improve `match_ratio` |
+| [x] Phase 6 | Template selection | Correct HTML template (TemplateRoleConfig-based) |
+| [ ] Phase 7 | Resume rendering | `printPdf()` |
+| [ ] Phase 8 | orchestration app End-to-end automation | Persisted resume + tracker models |
+| [ ] Phase 9 | Analytics | dashboards: compute feedback loops & high-ROI insights |
 
 ---
 
