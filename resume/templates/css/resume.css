@@ -1,0 +1,85 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Calibri, sans-serif;
+    font-size: 11pt;
+    line-height: 1.4;
+    color: #000;
+    background: #fff;
+}
+
+.resume-container {
+    max-width: 8.5in;
+    margin: 0 auto;
+    padding: 0.5in;
+}
+
+.resume-header {
+    margin-bottom: 0.3in;
+}
+
+.resume-name {
+    font-size: 20pt;
+    font-weight: bold;
+    margin-bottom: 0.1in;
+}
+
+.contact-info {
+    font-size: 12pt;
+    font-weight: normal;
+}
+
+.resume-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2in;
+}
+
+.resume-section {
+    page-break-inside: avoid;
+}
+
+.section-title {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-bottom: 0.1in;
+    border-bottom: 1px solid #000;
+    padding-bottom: 0.05in;
+}
+
+.section-content {
+    margin-top: 0.1in;
+}
+
+.education-entry {
+    margin-bottom: 0.15in;
+}
+
+.education-degree {
+    font-size: 12pt;
+    font-weight: bold;
+}
+
+.education-institution {
+    font-size: 12pt;
+    font-weight: normal;
+}
+
+@media print {
+    body {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .resume-container {
+        padding: 0.5in;
+    }
+    
+    .resume-section {
+        page-break-inside: avoid;
+    }
+}
