@@ -8,7 +8,7 @@ class TemplateRoleConfig(models.Model):
     Fields:
       - template: The resume template this configuration belongs to.
       - experience_role: The experience role to include in the template.
-      - include: Whether to include this role when rendering the template.
+      - order: Display order for this role within the template (lower values appear first).
       - max_bullet_count: Maximum number of bullets to generate for this role.
     """
 
@@ -24,9 +24,8 @@ class TemplateRoleConfig(models.Model):
         related_name="template_configs",
         help_text="The experience role to configure for this template.",
     )
-    include = models.BooleanField(
-        default=True,
-        help_text="Whether to include this role when rendering the template.",
+    order = models.PositiveIntegerField(
+        help_text="Display order for this role within the template (lower values appear first).",
     )
     max_bullet_count = models.PositiveIntegerField(
         help_text="Maximum number of bullets to generate for this role.",
