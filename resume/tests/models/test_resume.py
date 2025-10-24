@@ -6,7 +6,7 @@ from resume.models import Resume, ResumeTemplate
 from tracker.models.job import Job, JobLevel, JobRole, WorkSetting
 
 
-class TestResumeModel(TestCase):
+class TestResumeModelBasics(TestCase):
     """Test suite for the Resume model."""
 
     COMPANY = "Meta"
