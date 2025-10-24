@@ -253,7 +253,7 @@ class TestResumeRenderToPDF(TestCase):
     LEVEL = JobLevel.II
     LOCATION = "Seattle, WA"
     WORK_SETTING = WorkSetting.REMOTE
-    TEMPLATE_PATH = "templates/software_engineer_ii.html"
+    TEMPLATE_PATH = "html/software_engineer_ii.html"
     OUTPUT_DIR = "test_output/resumes"
 
     def setUp(self) -> None:
@@ -337,34 +337,6 @@ class TestResumeRenderToPDF(TestCase):
         
         result = resume._generate_pdf_filename()
         self.assertEqual(result, "Janes_Corp_C_Developer_Senior.pdf")
-
-    def test_get_template_name(self) -> None:
-        """Test template name generation."""
-        result = self.resume._get_template_name()
-        self.assertEqual(result, "html/software_engineer_ii.html")
-
-    def test_get_template_name_with_spaces(self) -> None:
-        """Test template name generation with spaces in role/level."""
-        template = ResumeTemplate.objects.create(
-            target_role=JobRole.DATA_ENGINEER,
-            target_level=JobLevel.SENIOR,
-            template_path="templates/data_engineer_senior.html",
-        )
-        job = Job.objects.create(
-            company="TestCo",
-            listing_job_title="Data Engineer",
-            role=JobRole.DATA_ENGINEER,
-            level=JobLevel.SENIOR,
-            location=self.LOCATION,
-            work_setting=self.WORK_SETTING,
-        )
-        resume = Resume.objects.create(
-            template=template,
-            job=job,
-        )
-        
-        result = resume._get_template_name()
-        self.assertEqual(result, "html/data_engineer_senior.html")
 
     def test_render_role_bullets_returns_empty_for_no_bullets(self) -> None:
         """Test rendering role bullets returns empty string when no bullets exist."""
@@ -607,6 +579,20 @@ class TestResumeRenderToPDF(TestCase):
 
         self.mock_html.assert_called_once_with(string=html_content)
         mock_html_instance.write_pdf.assert_called_once()
+
+    def test_render_to_pdf_uses_template_path(self) -> None:
+        """Test that render_to_pdf uses template.template_path for rendering."""
+        mock_path_instance = MagicMock()
+        self.mock_path.return_value = mock_path_instance
+        self.mock_render.return_value = "<html></html>"
+        mock_html_instance = MagicMock()
+        self.mock_html.return_value = mock_html_instance
+
+        self.resume.render_to_pdf(output_dir=self.OUTPUT_DIR)
+
+        self.mock_render.assert_called_once()
+        call_args = self.mock_render.call_args
+        self.assertEqual(call_args[0][0], self.TEMPLATE_PATH)
 
     def test_render_to_pdf_returns_correct_path(self) -> None:
         """Test that render_to_pdf returns correct PDF path."""

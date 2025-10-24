@@ -86,8 +86,7 @@ class Resume(models.Model):
         output_path.mkdir(parents=True, exist_ok=True)
         
         context = self._build_template_context()
-        template_name = self._get_template_name()
-        html_string = render_to_string(template_name, context)
+        html_string = render_to_string(self.template.template_path, context)
         
         pdf_filename = self._generate_pdf_filename()
         pdf_path = output_path / pdf_filename
@@ -170,13 +169,6 @@ class Resume(models.Model):
             skill_lines.append(f'<div class="skill-category"><strong>{category}:</strong> {skills}</div>')
         
         return "\n                    ".join(skill_lines)
-
-
-    def _get_template_name(self) -> str:
-        role_slug = self.job.role.lower().replace(" ", "_")
-        level_slug = self.job.level.lower().replace(" ", "_")
-        
-        return f"html/{role_slug}_{level_slug}.html"
 
 
     def _generate_pdf_filename(self) -> str:
