@@ -88,11 +88,12 @@ class Resume(models.Model):
         
         context = self._build_template_context()
         html_string = render_to_string(self.template.template_path, context)
-
+        html_with_css = self._inline_css(html_string)
+        
         pdf_filename = self._generate_pdf_filename()
         pdf_path = output_path / pdf_filename
         
-        HTML(string=html_string).write_pdf(str(pdf_path))
+        HTML(string=html_with_css).write_pdf(str(pdf_path))
         
         return str(pdf_path)
 
@@ -186,3 +187,30 @@ class Resume(models.Model):
         sanitized = "".join(c for c in sanitized if c.isalnum() or c in ("_", "-"))
 
         return sanitized
+    
+    def _inline_css(self, html_string: str) -> str:
+        """
+        Inline the CSS into the HTML by replacing the link tag with a style tag.
+        
+        Args:
+            html_string: The rendered HTML string.
+            
+        Returns:
+            HTML string with inlined CSS.
+        """
+        from django.conf import settings
+        
+        css_path = Path(settings.BASE_DIR) / "resume" / "templates" / "css" / "resume.css"
+        
+        if not css_path.exists():
+            raise FileNotFoundError(f"CSS file not found at {css_path}")
+        
+        css_content = css_path.read_text(encoding="utf-8")
+        
+        style_tag = f"<style>\n{css_content}\n</style>"
+        html_with_css = html_string.replace(
+            '<link rel="stylesheet" href="../css/resume.css">',
+            style_tag
+        )
+        
+        return html_with_css
