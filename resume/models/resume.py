@@ -4,6 +4,7 @@ from weasyprint import HTML
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.template.loader import render_to_string
 from django.db import models
+from django.utils.safestring import mark_safe
 
 from .experience_role import ExperienceRole
 
@@ -87,7 +88,7 @@ class Resume(models.Model):
         
         context = self._build_template_context()
         html_string = render_to_string(self.template.template_path, context)
-        
+
         pdf_filename = self._generate_pdf_filename()
         pdf_path = output_path / pdf_filename
         
@@ -146,8 +147,9 @@ class Resume(models.Model):
         for bullet in bullets:
             text = bullet.display_text()
             li_tags.append(f"<li>{text}</li>")
-        
-        return "\n        ".join(li_tags)
+        html = "\n        ".join(li_tags)
+
+        return mark_safe(html)
 
 
     def _render_skills(self) -> str:
@@ -167,8 +169,9 @@ class Resume(models.Model):
             category = skill_bullet.category
             skills = skill_bullet.skills_list_display()
             skill_lines.append(f'<div class="skill-category"><strong>{category}:</strong> {skills}</div>')
+        html = "\n                    ".join(skill_lines)
         
-        return "\n                    ".join(skill_lines)
+        return mark_safe(html)
 
 
     def _generate_pdf_filename(self) -> str:
