@@ -1,6 +1,8 @@
 from typing import List
+from unittest.mock import Mock, patch
 from django.test import TestCase
 
+from resume.models import Resume, ResumeTemplate
 from resume.schemas.jd_schema import Metadata
 from tracker.models import Job, JobLevel, JobRole, Requirement, WorkSetting
 
@@ -113,3 +115,69 @@ class TestJobModel(TestCase):
         self.assertEqual(len(related), 2)
         self.assertEqual(related[0].text, "Python experience")
         self.assertEqual(related[1].text, "Django experience")
+
+
+class TestJobGenerateResumePDF(TestCase):
+    """Test suite for Job.generate_resume_pdf() method."""
+
+    COMPANY = "Meta"
+    LISTING_JOB_TITLE = "Software Engineer"
+    ROLE = JobRole.SOFTWARE_ENGINEER
+    LEVEL = JobLevel.II
+    LOCATION = "Remote"
+    WORK_SETTING = WorkSetting.REMOTE
+    TEMPLATE_PATH = "templates/software_engineer_ii.html"
+    OUTPUT_DIR = "test_output/resumes"
+
+    def setUp(self) -> None:
+        self.template = ResumeTemplate.objects.create(
+            target_role=self.ROLE,
+            target_level=self.LEVEL,
+            template_path=self.TEMPLATE_PATH,
+        )
+        self.job = Job.objects.create(
+            company=self.COMPANY,
+            listing_job_title=self.LISTING_JOB_TITLE,
+            role=self.ROLE,
+            level=self.LEVEL,
+            location=self.LOCATION,
+            work_setting=self.WORK_SETTING,
+        )
+
+    @patch("resume.models.resume.Resume.render_to_pdf")
+    def test_generate_resume_pdf_delegates_to_resume(self, mock_render: Mock) -> None:
+        """Test that generate_resume_pdf delegates to Resume.render_to_pdf."""
+        Resume.objects.create(
+            template=self.template,
+            job=self.job,
+            match_ratio=0.85,
+        )
+        
+        expected_path = f"{self.OUTPUT_DIR}/Meta_Software_Engineer.pdf"
+        mock_render.return_value = expected_path
+
+        result = self.job.generate_resume_pdf(output_dir=self.OUTPUT_DIR)
+
+        mock_render.assert_called_once_with(output_dir=self.OUTPUT_DIR)
+        self.assertEqual(result, expected_path)
+
+    def test_generate_resume_pdf_raises_error_when_no_resume(self) -> None:
+        """Test that generate_resume_pdf raises ValueError when no resume exists."""
+        with self.assertRaises(ValueError) as context:
+            self.job.generate_resume_pdf()
+
+        self.assertIn("No resume found for job", str(context.exception))
+
+    @patch("resume.models.resume.Resume.render_to_pdf")
+    def test_generate_resume_pdf_uses_default_output_dir(self, mock_render: Mock) -> None:
+        """Test that generate_resume_pdf uses default output directory."""
+        Resume.objects.create(
+            template=self.template,
+            job=self.job,
+        )
+        
+        mock_render.return_value = "output/resumes/Meta_Software_Engineer.pdf"
+
+        self.job.generate_resume_pdf()
+
+        mock_render.assert_called_once_with(output_dir="output/resumes")
