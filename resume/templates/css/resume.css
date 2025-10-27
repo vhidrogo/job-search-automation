@@ -8,13 +8,9 @@ body {
     font-family: Calibri, sans-serif;
     font-size: 11pt;
     line-height: 1.4;
-    color: #000;
-    background: #fff;
 }
 
 .resume-container {
-    max-width: 8.5in;
-    margin: 0 auto;
     padding: 0.5in;
 }
 
@@ -30,7 +26,6 @@ body {
 
 .contact-info {
     font-size: 12pt;
-    font-weight: normal;
 }
 
 .resume-content {
@@ -66,7 +61,6 @@ body {
 
 .education-institution {
     font-size: 12pt;
-    font-weight: normal;
 }
 
 .experience-entry {
@@ -87,19 +81,16 @@ body {
 
 .experience-company {
     font-size: 12pt;
-    font-weight: normal;
     margin-left: 0.15in;
 }
 
 .experience-location {
     font-size: 12pt;
-    font-weight: normal;
     margin-left: auto;
 }
 
 .experience-dates {
     font-size: 11pt;
-    font-weight: normal;
     margin-bottom: 0.08in;
 }
 
