@@ -15,24 +15,24 @@ body {
 }
 
 .resume-header {
-    margin-bottom: 0.3in;
+    margin-bottom: 0.2in;
 }
 
 .resume-name {
-    font-size: 20pt;
+    font-size: 16pt;
     font-weight: bold;
-    margin-bottom: 0.1in;
+    margin-bottom: 0.08in;
 }
 
 .contact-info {
-    font-size: 12pt;
+    font-size: 11pt;
     line-height: 1.0;
 }
 
 .resume-content {
     display: flex;
     flex-direction: column;
-    gap: 0.2in;
+    gap: 0.12in;
 }
 
 .resume-section {
@@ -40,19 +40,19 @@ body {
 }
 
 .section-title {
-    font-size: 14pt;
+    font-size: 12pt;
     font-weight: bold;
-    margin-bottom: 0.1in;
+    margin-bottom: 0.08in;
     border-bottom: 1px solid #000;
-    padding-bottom: 0.05in;
+    padding-bottom: 0.04in;
 }
 
 .section-content {
-    margin-top: 0.1in;
+    margin-top: 0.08in;
 }
 
 .experience-entry {
-    margin-bottom: 0.15in;
+    margin-bottom: 0.12in;
 }
 
 .experience-header {
@@ -89,8 +89,8 @@ body {
 
 .experience-bullets li {
     font-size: 11pt;
-    margin-bottom: 0.04in;
-    line-height: 1.2;
+    margin-bottom: 0.03in;
+    line-height: 1.15;
 }
 
 .education-entry {
