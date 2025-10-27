@@ -29,6 +29,11 @@ body {
     line-height: 1.0;
 }
 
+.contact-info-secondary {
+    font-size: 10pt;
+    line-height: 1.0;
+}
+
 .resume-content {
     display: flex;
     flex-direction: column;
