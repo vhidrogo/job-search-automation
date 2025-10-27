@@ -50,19 +50,6 @@ body {
     margin-top: 0.1in;
 }
 
-.education-entry {
-    margin-bottom: 0.15in;
-}
-
-.education-degree {
-    font-size: 12pt;
-    font-weight: bold;
-}
-
-.education-institution {
-    font-size: 12pt;
-}
-
 .experience-entry {
     margin-bottom: 0.2in;
 }
@@ -103,6 +90,19 @@ body {
     font-size: 11pt;
     margin-bottom: 0.06in;
     line-height: 1.3;
+}
+
+.education-entry {
+    margin-bottom: 0.15in;
+}
+
+.education-degree {
+    font-size: 12pt;
+    font-weight: bold;
+}
+
+.education-institution {
+    font-size: 12pt;
 }
 
 @media print {
