@@ -40,10 +40,6 @@ body {
     gap: 0.12in;
 }
 
-.resume-section {
-    page-break-inside: avoid;
-}
-
 .section-title {
     font-size: 12pt;
     font-weight: bold;
@@ -129,9 +125,5 @@ body {
     
     .resume-container {
         padding: 0.5in;
-    }
-    
-    .resume-section {
-        page-break-inside: avoid;
     }
 }
