@@ -66,6 +66,12 @@ body {
     margin-bottom: 0.02in;
 }
 
+.experience-subheader {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.04in;
+}
+
 .experience-title {
     font-size: 12pt;
     font-weight: bold;
