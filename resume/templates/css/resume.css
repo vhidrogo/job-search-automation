@@ -63,8 +63,7 @@ body {
 .experience-header {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 0.05in;
+    margin-bottom: 0.02in;
 }
 
 .experience-title {
