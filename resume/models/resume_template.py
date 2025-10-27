@@ -10,7 +10,8 @@ class ResumeTemplate(models.Model):
     Fields:
       - target_role: The role this template targets (e.g., 'Software Engineer').
       - target_level: The seniority level this template targets (e.g., 'II', 'Senior').
-      - template_path: File path to the Markdown template used for rendering.
+      - template_path: File path to the HTML template used for rendering.
+      - style_path: File path to the CSS stylesheet used for styling.
     """
 
     target_role = models.CharField(
@@ -25,7 +26,11 @@ class ResumeTemplate(models.Model):
     )
     template_path = models.CharField(
         max_length=255,
-        help_text="Path to the Markdown template file.",
+        help_text="Path to the HTML template file.",
+    )
+    style_path = models.CharField(
+        max_length=255,
+        help_text="Path to the CSS stylesheet file.",
     )
 
     class Meta:
@@ -38,4 +43,4 @@ class ResumeTemplate(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.target_role} ({self.target_level}) — {self.template_path}"
+        return f"{self.target_role} ({self.target_level})"
