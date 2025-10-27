@@ -79,12 +79,13 @@ body {
 
 .experience-company {
     font-size: 12pt;
+    font-weight: bold;
     margin-left: 0.15in;
 }
 
 .experience-location {
     font-size: 12pt;
-    margin-left: auto;
+    font-style: italic;
 }
 
 .experience-dates {
