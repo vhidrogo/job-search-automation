@@ -101,8 +101,12 @@ body {
     font-weight: bold;
 }
 
-.education-institution {
+.education-university {
     font-size: 12pt;
+}
+
+.education-school {
+    font-size: 11pt;
 }
 
 @media print {
