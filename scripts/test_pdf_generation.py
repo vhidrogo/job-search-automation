@@ -136,6 +136,35 @@ tests = [
             ]
         ]
     },
+    {
+        "target_role": JobRole.SOFTWARE_ENGINEER,
+        "target_level": JobLevel.II,
+        "template_path": "html/software_engineer_ii.html",
+        "style_path": "css/resume.css",
+        "max_bullets_per_role": [4, 4, 2, 2],
+        "bullets": [
+            [
+                "Owned end-to-end migration of interactive financial dashboards, reducing load times by 90% and code complexity by 60%, by integrating Plotly Dash visualizations into a scalable Django platform with abstracted query layers.",
+                "Designed and implemented scalable goal-setting, rewards, and transaction syncing systems, ensuring data consistency and reliability, by developing RESTful APIs using Python (Django) and PostgreSQL.",
+                "Delivered an extensible async notification framework using Django, Celery, and object-oriented design patterns, enabling automated, real-time goal progress alerts across multiple goal types.",
+                "Improved admin tooling performance by optimizing ORM queries with raw SQL, reducing load times from 12s to under 2s while maintaining data integrity and traceability.",
+            ],
+            [
+                "Led development of scalable microservices and APIs supporting Prime Rewards lifecycle management, enabling real-time promotion tracking across North America, Europe, and Asia-Pacific using Java, DynamoDB, and AWS.",
+                "Improved operational efficiency by delivering full-stack features in Vue.js and Java for internal promotion management tools, streamlining CRUD operations on promotions, incentives, and rewards.",
+                "Ensured backend system reliability and scalability by deploying microservices across three AWS regions and integrating asynchronous workflows to meet strict availability SLAs.",
+                "Eliminated manual test account provisioning and deactivation by engineering a centralized configuration store, improving development velocity and operational stability.",
+            ],
+            [
+                "Delivered on-time executive dashboards for Amazon Transportation Services by optimizing SQL queries and data pipelines, reducing query execution time by 30% to meet early-morning SLAs.",
+                "Built scalable data pipelines using Amazon S3, Glue, and Redshift, reducing third-party vendor onboarding time and enabling operational growth through standardized SOPs.",
+            ],
+            [
+                "Saved 5+ hours weekly by developing a desktop GUI application using Python (tkinter) and SQL to automate PDF report generation.",
+                "Improved large-scale data processing efficiency by applying Python chunking techniques to handle datasets exceeding 20M records."
+            ],
+        ]
+    },
 ]
 
 def main():
