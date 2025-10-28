@@ -86,18 +86,29 @@ class Resume(models.Model):
         """
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
+        pdf_filename = self._generate_pdf_filename()
+        pdf_path = output_path.joinpath(pdf_filename)
         
         context = self._build_template_context()
         html_string = render_to_string(self.template.template_path, context)
         html_with_css = self._inline_css(self.template.style_path, html_string)
-        
-        pdf_filename = self._generate_pdf_filename()
-        pdf_path = output_path / pdf_filename
-        
+
         HTML(string=html_with_css).write_pdf(str(pdf_path))
         
         return str(pdf_path)
 
+    def _generate_pdf_filename(self) -> str:
+        company = self._sanitize_filename(self.job.company)
+        title = self._sanitize_filename(self.job.listing_job_title)
+        
+        return f"{company}_{title}.pdf"
+
+
+    def _sanitize_filename(self, text: str) -> str:
+        sanitized = text.replace(" ", "_")
+        sanitized = "".join(c for c in sanitized if c.isalnum() or c in ("_", "-"))
+
+        return sanitized
 
     def _build_template_context(self) -> Dict[str, str]:
         """
@@ -110,7 +121,7 @@ class Resume(models.Model):
         context = {}
         
         role_configs = self.template.role_configs.select_related("experience_role").order_by("order")
-        
+
         ordinal_map = ["first", "second", "third", "fourth", "fifth", "sixth"]
         
         for idx, config in enumerate(role_configs):
@@ -125,7 +136,6 @@ class Resume(models.Model):
         context["skills"] = self._render_skills()
         
         return context
-
 
     def _render_role_bullets(self, experience_role: ExperienceRole) -> str:
         """
@@ -153,7 +163,6 @@ class Resume(models.Model):
 
         return mark_safe(html)
 
-
     def _render_skills(self) -> str:
         """
         Render HTML for skills section.
@@ -174,20 +183,6 @@ class Resume(models.Model):
         html = "\n                    ".join(skill_lines)
         
         return mark_safe(html)
-
-
-    def _generate_pdf_filename(self) -> str:
-        company = self._sanitize_filename(self.job.company)
-        title = self._sanitize_filename(self.job.listing_job_title)
-        
-        return f"{company}_{title}.pdf"
-
-
-    def _sanitize_filename(self, text: str) -> str:
-        sanitized = text.replace(" ", "_")
-        sanitized = "".join(c for c in sanitized if c.isalnum() or c in ("_", "-"))
-
-        return sanitized
     
     def _inline_css(self, style_path: str, html_string: str) -> str:
         """
@@ -200,7 +195,7 @@ class Resume(models.Model):
             HTML string with inlined CSS.
         """
         css_path = Path(settings.BASE_DIR).joinpath("resume", "templates", style_path)
-        
+
         if not css_path.exists():
             raise FileNotFoundError(f"CSS file not found at {css_path}")
         
