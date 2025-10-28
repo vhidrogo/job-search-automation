@@ -124,18 +124,11 @@ class Resume(models.Model):
         """
         context = {}
         
-        role_configs = self.template.role_configs.select_related("experience_role").order_by("order")
-
-        ordinal_map = ["first", "second", "third", "fourth", "fifth", "sixth"]
+        configs = self.template.role_configs.select_related("experience_role").order_by("order")
         
-        for idx, config in enumerate(role_configs):
-            if idx >= len(ordinal_map):
-                placeholder_key = f"role_{idx + 1}_bullets"
-            else:
-                placeholder_key = f"{ordinal_map[idx]}_role_bullets"
-            
+        for i, config in enumerate(configs):
             bullets_html = self._render_role_bullets(config.experience_role)
-            context[placeholder_key] = bullets_html
+            context[f"experience_bullets_{i + 1}"] = bullets_html
         
         context["skills"] = self._render_skills()
         
@@ -158,12 +151,8 @@ class Resume(models.Model):
         
         if not bullets.exists():
             return ""
-        
-        li_tags: List[str] = []
-        for bullet in bullets:
-            text = bullet.display_text()
-            li_tags.append(f"<li>{text}</li>")
-        html = "\n        ".join(li_tags)
+
+        html = "\n ".join(f"<li>{x.display_text()}</li>" for x in bullets)
 
         return mark_safe(html)
 
@@ -178,12 +167,9 @@ class Resume(models.Model):
         
         if not skill_bullets.exists():
             return ""
-        
-        skill_lines: List[str] = []
-        for skill_bullet in skill_bullets:
-            category = skill_bullet.category
-            skills = skill_bullet.skills_list_display()
-            skill_lines.append(f'<div class="skill-category"><strong>{category}:</strong> {skills}</div>')
-        html = "\n                    ".join(skill_lines)
+
+        html = "\n".join(
+            f'<div class="skill-category"><strong>{x.category}:</strong> {x.skills_text}</div>' for x in skill_bullets
+        )
         
         return mark_safe(html)
