@@ -33,6 +33,9 @@ from resume.models import (
 )
 from tracker.models import Job, JobLevel, JobRole, WorkSetting
 
+
+OUTPUT_DIR = "test_output"
+
 def reset_db():
     models = [
         ExperienceRole,
@@ -143,7 +146,7 @@ def main():
         print("Creating test data...")
         job = create_test_data(role, level, template_path, style_path, max_bullets, bullets)
         print("Generating PDF...")
-        pdf_path = job.generate_resume_pdf(output_dir="test_output")
+        pdf_path = job.generate_resume_pdf(OUTPUT_DIR)
         print(f"PDF generated at: {pdf_path}")
         reset_db()
         subprocess.run(["open", pdf_path])
@@ -155,4 +158,4 @@ except Exception as e:
     reset_db()
     sys.exit(1)
 
-print("Test complete - check the PDF and then delete test_output/ directory\n")
+print(f"Test complete - check the PDF at {OUTPUT_DIR}\n")
