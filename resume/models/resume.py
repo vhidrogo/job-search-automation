@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Dict, List, Optional
-from weasyprint import HTML
+from weasyprint import CSS, HTML
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.template.loader import render_to_string
@@ -91,9 +91,13 @@ class Resume(models.Model):
         
         context = self._build_template_context()
         html_string = render_to_string(self.template.template_path, context)
-        html_with_css = self._inline_css(self.template.style_path, html_string)
 
-        HTML(string=html_with_css).write_pdf(str(pdf_path))
+        css_path = Path(settings.BASE_DIR).joinpath("resume", "templates", self.template.style_path)
+        
+        HTML(string=html_string).write_pdf(
+            str(pdf_path), 
+            stylesheets=[CSS(filename=css_path)]
+        )
         
         return str(pdf_path)
 
@@ -183,28 +187,3 @@ class Resume(models.Model):
         html = "\n                    ".join(skill_lines)
         
         return mark_safe(html)
-    
-    def _inline_css(self, style_path: str, html_string: str) -> str:
-        """
-        Inline the CSS into the HTML by replacing the link tag with a style tag.
-        
-        Args:
-            html_string: The rendered HTML string.
-            
-        Returns:
-            HTML string with inlined CSS.
-        """
-        css_path = Path(settings.BASE_DIR).joinpath("resume", "templates", style_path)
-
-        if not css_path.exists():
-            raise FileNotFoundError(f"CSS file not found at {css_path}")
-        
-        css_content = css_path.read_text(encoding="utf-8")
-        
-        style_tag = f"<style>\n{css_content}\n</style>"
-        html_with_css = html_string.replace(
-            '<link rel="stylesheet" href="../css/resume.css">',
-            style_tag
-        )
-        
-        return html_with_css
