@@ -51,7 +51,7 @@ class Resume(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"Resume for {self.job.company} — {self.job.listing_job_title} (match: {self.match_ratio:.0%})"
+        return f"Resume for {self.job.company} - {self.job.listing_job_title} (match: {self.match_ratio:.0%})"
 
     def match_percentage(self) -> str:
         """
