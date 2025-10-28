@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, Optional
-from weasyprint import HTML
+from weasyprint import CSS, HTML
+from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.template.loader import render_to_string
 from django.db import models
@@ -50,7 +51,7 @@ class Resume(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"Resume for {self.job.company} — {self.job.listing_job_title} (match: {self.match_ratio:.0%})"
+        return f"Resume for {self.job.company} - {self.job.listing_job_title} (match: {self.match_ratio:.0%})"
 
     def match_percentage(self) -> str:
         """
@@ -85,18 +86,33 @@ class Resume(models.Model):
         """
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
+        pdf_filename = self._generate_pdf_filename()
+        pdf_path = output_path.joinpath(pdf_filename)
         
         context = self._build_template_context()
         html_string = render_to_string(self.template.template_path, context)
-        html_with_css = self._inline_css(html_string)
+
+        css_path = Path(settings.BASE_DIR).joinpath("resume", "templates", self.template.style_path)
         
-        pdf_filename = self._generate_pdf_filename()
-        pdf_path = output_path / pdf_filename
-        
-        HTML(string=html_with_css).write_pdf(str(pdf_path))
+        HTML(string=html_string).write_pdf(
+            str(pdf_path), 
+            stylesheets=[CSS(filename=css_path)]
+        )
         
         return str(pdf_path)
 
+    def _generate_pdf_filename(self) -> str:
+        company = self._sanitize_filename(self.job.company)
+        title = self._sanitize_filename(self.job.listing_job_title)
+        
+        return f"{company}_{title}.pdf"
+
+
+    def _sanitize_filename(self, text: str) -> str:
+        sanitized = text.replace(" ", "_")
+        sanitized = "".join(c for c in sanitized if c.isalnum() or c in ("_", "-"))
+
+        return sanitized
 
     def _build_template_context(self) -> Dict[str, str]:
         """
@@ -108,23 +124,15 @@ class Resume(models.Model):
         """
         context = {}
         
-        role_configs = self.template.role_configs.select_related("experience_role").order_by("order")
+        configs = self.template.role_configs.select_related("experience_role").order_by("order")
         
-        ordinal_map = ["first", "second", "third", "fourth", "fifth", "sixth"]
-        
-        for idx, config in enumerate(role_configs):
-            if idx >= len(ordinal_map):
-                placeholder_key = f"role_{idx + 1}_bullets"
-            else:
-                placeholder_key = f"{ordinal_map[idx]}_role_bullets"
-            
+        for i, config in enumerate(configs):
             bullets_html = self._render_role_bullets(config.experience_role)
-            context[placeholder_key] = bullets_html
+            context[f"experience_bullets_{i + 1}"] = bullets_html
         
         context["skills"] = self._render_skills()
         
         return context
-
 
     def _render_role_bullets(self, experience_role: ExperienceRole) -> str:
         """
@@ -143,15 +151,10 @@ class Resume(models.Model):
         
         if not bullets.exists():
             return ""
-        
-        li_tags: List[str] = []
-        for bullet in bullets:
-            text = bullet.display_text()
-            li_tags.append(f"<li>{text}</li>")
-        html = "\n        ".join(li_tags)
+
+        html = "\n ".join(f"<li>{x.display_text()}</li>" for x in bullets)
 
         return mark_safe(html)
-
 
     def _render_skills(self) -> str:
         """
@@ -164,53 +167,9 @@ class Resume(models.Model):
         
         if not skill_bullets.exists():
             return ""
-        
-        skill_lines: List[str] = []
-        for skill_bullet in skill_bullets:
-            category = skill_bullet.category
-            skills = skill_bullet.skills_list_display()
-            skill_lines.append(f'<div class="skill-category"><strong>{category}:</strong> {skills}</div>')
-        html = "\n                    ".join(skill_lines)
-        
-        return mark_safe(html)
 
-
-    def _generate_pdf_filename(self) -> str:
-        company = self._sanitize_filename(self.job.company)
-        title = self._sanitize_filename(self.job.listing_job_title)
-        
-        return f"{company}_{title}.pdf"
-
-
-    def _sanitize_filename(self, text: str) -> str:
-        sanitized = text.replace(" ", "_")
-        sanitized = "".join(c for c in sanitized if c.isalnum() or c in ("_", "-"))
-
-        return sanitized
-    
-    def _inline_css(self, html_string: str) -> str:
-        """
-        Inline the CSS into the HTML by replacing the link tag with a style tag.
-        
-        Args:
-            html_string: The rendered HTML string.
-            
-        Returns:
-            HTML string with inlined CSS.
-        """
-        from django.conf import settings
-        
-        css_path = Path(settings.BASE_DIR) / "resume" / "templates" / "css" / "resume.css"
-        
-        if not css_path.exists():
-            raise FileNotFoundError(f"CSS file not found at {css_path}")
-        
-        css_content = css_path.read_text(encoding="utf-8")
-        
-        style_tag = f"<style>\n{css_content}\n</style>"
-        html_with_css = html_string.replace(
-            '<link rel="stylesheet" href="../css/resume.css">',
-            style_tag
+        html = "\n".join(
+            f'<div class="skill-category"><strong>{x.category}:</strong> {x.skills_text}</div>' for x in skill_bullets
         )
         
-        return html_with_css
+        return mark_safe(html)
