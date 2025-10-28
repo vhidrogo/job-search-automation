@@ -119,7 +119,7 @@ tests = [
         "target_role": JobRole.SOFTWARE_ENGINEER,
         "target_level": JobLevel.I,
         "template_path": "html/software_engineer_i.html",
-        "style_path": "css/resume.css",
+        "style_path": "css/resume_standard.css",
         "max_bullets_per_role": [4, 4],
         "bullets": [
             [
@@ -140,7 +140,7 @@ tests = [
         "target_role": JobRole.SOFTWARE_ENGINEER,
         "target_level": JobLevel.II,
         "template_path": "html/software_engineer_ii.html",
-        "style_path": "css/resume.css",
+        "style_path": "css/resume_compact.css",
         "max_bullets_per_role": [4, 4, 2, 2],
         "bullets": [
             [
