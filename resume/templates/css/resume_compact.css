@@ -1,0 +1,122 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Calibri, sans-serif;
+    font-size: 10pt;
+    line-height: 1.15;
+}
+
+.resume-header {
+    margin-bottom: 0.2in;
+}
+
+.resume-name {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-bottom: 0.04in;
+}
+
+.contact-info {
+    font-size: 10pt;
+    line-height: 1.0;
+}
+
+.contact-info-secondary {
+    font-size: 9pt;
+    line-height: 1.0;
+}
+
+.resume-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.07in;
+}
+
+.section-title {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-bottom: 0.05in;
+    border-bottom: 1px solid #000;
+    padding-bottom: 0.04in;
+}
+
+.section-content {
+    margin-top: 0.05in;
+}
+
+.experience-entry {
+    margin-bottom: 0.08in;
+}
+
+.experience-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.experience-subheader {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.04in;
+}
+
+.experience-title {
+    font-size: 11pt;
+    font-weight: bold;
+}
+
+.experience-company {
+    font-size: 11pt;
+    font-weight: bold;
+    margin-left: 0.15in;
+}
+
+.experience-location {
+    font-size: 11pt;
+    font-style: italic;
+}
+
+.experience-dates {
+    font-size: 11pt;
+}
+
+.experience-bullets {
+    margin-left: 0.25in;
+}
+
+.experience-bullets li {
+    font-size: 10pt;
+    margin-bottom: 0.03in;
+    line-height: 1.15;
+}
+
+.education-entry {
+    margin-bottom: 0.15in;
+}
+
+.education-degree {
+    font-size: 11pt;
+    font-weight: bold;
+}
+
+.education-university {
+    font-size: 11pt;
+}
+
+.education-school {
+    font-size: 10pt;
+}
+
+@media print {
+    body {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .resume-container {
+        padding: 0in;
+    }
+}
