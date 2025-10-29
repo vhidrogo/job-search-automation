@@ -6,12 +6,8 @@
 
 body {
     font-family: Calibri, sans-serif;
-    font-size: 11pt;
+    font-size: 10pt;
     line-height: 1.15;
-}
-
-.resume-container {
-    padding: 0.5in;
 }
 
 .resume-header {
@@ -19,47 +15,46 @@ body {
 }
 
 .resume-name {
-    font-size: 16pt;
+    font-size: 14pt;
     font-weight: bold;
-    margin-bottom: 0.08in;
+    margin-bottom: 0.04in;
 }
 
 .contact-info {
-    font-size: 11pt;
+    font-size: 10pt;
     line-height: 1.0;
 }
 
 .contact-info-secondary {
-    font-size: 10pt;
+    font-size: 9pt;
     line-height: 1.0;
 }
 
 .resume-content {
     display: flex;
     flex-direction: column;
-    gap: 0.12in;
+    gap: 0.07in;
 }
 
 .section-title {
     font-size: 12pt;
     font-weight: bold;
-    margin-bottom: 0.08in;
+    margin-bottom: 0.05in;
     border-bottom: 1px solid #000;
     padding-bottom: 0.04in;
 }
 
 .section-content {
-    margin-top: 0.08in;
+    margin-top: 0.05in;
 }
 
 .experience-entry {
-    margin-bottom: 0.12in;
+    margin-bottom: 0.08in;
 }
 
 .experience-header {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 0.02in;
 }
 
 .experience-subheader {
@@ -69,33 +64,31 @@ body {
 }
 
 .experience-title {
-    font-size: 12pt;
+    font-size: 11pt;
     font-weight: bold;
 }
 
 .experience-company {
-    font-size: 12pt;
+    font-size: 11pt;
     font-weight: bold;
     margin-left: 0.15in;
 }
 
 .experience-location {
-    font-size: 12pt;
+    font-size: 11pt;
     font-style: italic;
 }
 
 .experience-dates {
     font-size: 11pt;
-    margin-bottom: 0.08in;
 }
 
 .experience-bullets {
     margin-left: 0.25in;
-    padding-left: 0;
 }
 
 .experience-bullets li {
-    font-size: 11pt;
+    font-size: 10pt;
     margin-bottom: 0.03in;
     line-height: 1.15;
 }
@@ -105,16 +98,16 @@ body {
 }
 
 .education-degree {
-    font-size: 12pt;
+    font-size: 11pt;
     font-weight: bold;
 }
 
 .education-university {
-    font-size: 12pt;
+    font-size: 11pt;
 }
 
 .education-school {
-    font-size: 11pt;
+    font-size: 10pt;
 }
 
 @media print {
@@ -124,6 +117,6 @@ body {
     }
     
     .resume-container {
-        padding: 0.5in;
+        padding: 0in;
     }
 }
