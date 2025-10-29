@@ -9,7 +9,7 @@ Useful for:
 - Iterating on formatting without incurring API costs
 
 Usage:
-    python manage.py shell < scripts/test_pdf_generation.py
+    python manage.py shell < scripts/generate_test_pdfs.py
 
 The script will:
 1. Create test data (templates, jobs, resumes, bullets, skills)
