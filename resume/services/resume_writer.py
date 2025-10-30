@@ -137,6 +137,29 @@ class ResumeWriter:
         
         return validated_skills
     
+    def _format_projects_for_prompt(self, projects) -> str:
+        """Format experience projects into structured prompt text blocks.
+        
+        Args:
+            projects: QuerySet of ExperienceProject instances.
+            
+        Returns:
+            Formatted string with project blocks containing problem, actions, tools, outcomes, and impact.
+        """
+        project_blocks = []
+        for project in projects:
+            project_block = (
+                f"**{project.short_name}**\n"
+                f"- Problem: {project.problem_context}\n"
+                f"- Actions: {project.actions}\n"
+                f"- Tools: {project.tools}\n"
+                f"- Outcomes: {project.outcomes}\n"
+                f"- Impact Area: {project.impact_area}"
+            )
+            project_blocks.append(project_block)
+        
+        return "\n\n".join(project_blocks)
+    
     def _format_requirements_for_prompt(self, requirements: List[RequirementSchema]) -> str:
         """Format requirements list into numbered prompt text with relevance scores.
         
@@ -179,27 +202,3 @@ class ResumeWriter:
                 unique_keywords.append(keyword)
         
         return ", ".join(unique_keywords) if unique_keywords else "No specific keywords provided"
-    
-    def _format_projects_for_prompt(self, projects) -> str:
-        """Format experience projects into structured prompt text blocks.
-        
-        Args:
-            projects: QuerySet of ExperienceProject instances.
-            
-        Returns:
-            Formatted string with project blocks containing problem, actions, tools, outcomes, and impact.
-        """
-        project_blocks = []
-        for project in projects:
-            project_block = (
-                f"**{project.short_name}**\n"
-                f"- Problem: {project.problem_context}\n"
-                f"- Actions: {project.actions}\n"
-                f"- Tools: {project.tools}\n"
-                f"- Outcomes: {project.outcomes}\n"
-                f"- Impact Area: {project.impact_area}"
-            )
-            project_blocks.append(project_block)
-        
-        return "\n\n".join(project_blocks)
-  
