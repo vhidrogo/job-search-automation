@@ -1,10 +1,8 @@
 from typing import Dict, List
+
 from resume.clients.llm_client import ClaudeClient
-from resume.models.experience_project import ExperienceProject
-from resume.models.experience_role import ExperienceRole
-from resume.models.resume import Resume
-from resume.schemas.experience_bullet_schema import BulletListModel
-from resume.schemas.skill_bullet_schema import SkillBulletListModel
+from resume.models import ExperienceProject, ExperienceRole, Resume
+from resume.schemas import BulletListModel, SkillBulletListModel
 from resume.utils.prompt import fill_placeholders, load_prompt
 from resume.utils.prompt_content_builders import build_experience_bullets_for_prompt
 from resume.utils.validation import parse_llm_json, validate_with_schema
