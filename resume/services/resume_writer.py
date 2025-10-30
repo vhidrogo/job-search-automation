@@ -2,7 +2,7 @@ from typing import Dict, List
 
 from resume.clients.llm_client import ClaudeClient
 from resume.models import ExperienceProject, ExperienceRole, Resume
-from resume.schemas import BulletListModel, SkillBulletListModel
+from resume.schemas import BulletListModel, RequirementSchema, SkillBulletListModel
 from resume.utils.prompt import fill_placeholders, load_prompt
 from resume.utils.prompt_content_builders import build_experience_bullets_for_prompt
 from resume.utils.validation import parse_llm_json, validate_with_schema
@@ -37,7 +37,7 @@ class ResumeWriter:
     def generate_experience_bullets(
         self,
         experience_role: ExperienceRole,
-        requirements: List[Dict[str, any]],
+        requirements: List[RequirementSchema],
         target_role: str,
         max_bullet_count: int,
         model: str = None,
@@ -91,7 +91,7 @@ class ResumeWriter:
     def generate_skill_bullets(
         self,
         resume: Resume,
-        requirements: List[Dict[str, any]],
+        requirements: List[RequirementSchema],
         target_role: str,
         max_category_count: int,
         model: str = None,
@@ -137,7 +137,7 @@ class ResumeWriter:
         
         return validated_skills
     
-    def _format_requirements_for_prompt(self, requirements: List[Dict[str, any]]) -> str:
+    def _format_requirements_for_prompt(self, requirements: List[RequirementSchema]) -> str:
         """Format requirements list into numbered prompt text with relevance scores.
         
         Args:
@@ -157,7 +157,7 @@ class ResumeWriter:
         
         return "\n".join(requirements_lines)
     
-    def _format_keywords_for_prompt(self, requirements: List[Dict[str, any]]) -> str:
+    def _format_keywords_for_prompt(self, requirements: List[RequirementSchema]) -> str:
         """Extract and format keywords from requirements into comma-separated text.
         
         Args:
