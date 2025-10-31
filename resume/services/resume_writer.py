@@ -46,8 +46,7 @@ class ResumeWriter:
         
         Args:
             experience_role: The ExperienceRole instance to generate bullets for.
-            requirements: List of requirement dictionaries with 'text', 'keywords', 
-                         and 'relevance' keys, sorted by relevance (highest first).
+            requirements: List of RequirementSchema objects sorted by relevance.
             target_role: The target job role string (e.g., "Software Engineer").
             max_bullet_count: Maximum number of bullets to generate.
             model: Optional LLM model identifier to use for generation.
@@ -100,8 +99,7 @@ class ResumeWriter:
         
         Args:
             resume: The Resume instance whose experience bullets will be analyzed.
-            requirements: List of requirement dictionaries with 'text', 'keywords',
-                         and 'relevance' keys, sorted by relevance (highest first).
+            requirements: List of RequirementSchema objects sorted by relevance.
             target_role: The target job role string (e.g., "Software Engineer").
             max_category_count: Maximum number of skill categories to generate.
             model: Optional LLM model identifier to use for generation.
@@ -164,7 +162,7 @@ class ResumeWriter:
         """Format requirements list into numbered prompt text with relevance scores.
         
         Args:
-            requirements: List of requirement dicts with 'text', 'keywords', and 'relevance'.
+            requirements: List of RequirementSchema objects sorted by relevance.
             
         Returns:
             Formatted string with numbered requirements, relevance percentages, and keywords.
@@ -184,7 +182,7 @@ class ResumeWriter:
         """Extract and format keywords from requirements into comma-separated text.
         
         Args:
-            requirements: List of requirement dicts with 'keywords' field.
+            requirements: List of RequirementSchema objects sorted by relevance.
             
         Returns:
             Comma-separated string of unique keywords from all requirements.
