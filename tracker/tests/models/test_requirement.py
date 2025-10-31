@@ -1,8 +1,14 @@
-from typing import List
 from django.test import TestCase
+from typing import List
 
-from resume.schemas.jd_schema import RequirementSchema
-from tracker.models import Job, JobLevel, JobRole, Requirement, WorkSetting
+from resume.schemas import RequirementSchema
+from tracker.models import (
+    Job,
+    JobLevel,
+    JobRole,
+    Requirement,
+    WorkSetting,
+)
 
 
 class TestRequirementModel(TestCase):
