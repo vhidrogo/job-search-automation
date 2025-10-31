@@ -1,5 +1,4 @@
+from .experience_bullet_schema import BulletListModel
 from .jd_schema import RequirementSchema
 from .match_result_schema import MatchResultSchema
-from .experience_bullet_schema import BulletListModel
 from .skill_bullet_schema import SkillBulletListModel
-from .jd_schema import RequirementSchema
