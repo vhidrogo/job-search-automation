@@ -23,8 +23,7 @@ You are a job description parser. Your task is to extract **structured metadata*
     {
       "text": "<short phrase describing a requirement>",
       "keywords": ["<keyword1>", "<keyword2>", "..."],
-      "relevance": <float 0-1, higher means more important>,
-      "order": <integer>
+      "relevance": <float 0-1, higher means more important>
     },
     ...
   ]
@@ -47,7 +46,6 @@ You are a job description parser. Your task is to extract **structured metadata*
 4. **Formatting Rules:**  
    - JSON must be syntactically correct.  
    - Return **only JSON**, no extra text or explanations.  
-   - Sort `requirements` in descending order by `relevance`.
 
 5. **Input:**  
    The job description will be provided as plain text below. Parse it according to the above rules.
