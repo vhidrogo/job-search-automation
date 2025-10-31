@@ -16,7 +16,6 @@ class Requirement(models.Model):
       - text: The human-readable requirement text (e.g., "Strong Python skills").
       - keywords: List of short tokenized keywords or concepts associated with the requirement.
       - relevance: Float in [0, 1] representing how important/relevant this requirement is.
-      - order: Integer ordering of the requirement as returned by the parser (lower = earlier).
     """
 
     job = models.ForeignKey("tracker.Job", on_delete=models.CASCADE, related_name="requirements")
@@ -26,18 +25,12 @@ class Requirement(models.Model):
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
         help_text="Relevance score in the range [0.0, 1.0].",
     )
-    order = models.PositiveIntegerField(help_text="Ordering index from the parser.")
 
     class Meta:
         app_label = "tracker"
         indexes = [
             models.Index(fields=["job", "relevance"]),
-            models.Index(fields=["job", "order"]),
         ]
-        ordering = ["job", "order"]
-
-    def __str__(self) -> str:
-        return f"Requirement(job_id={self.job_id}, order={self.order}, relevance={self.relevance})"
 
     @classmethod
     def bulk_create_from_parsed(cls, job: "Job", parsed_requirements: List[RequirementSchema], batch_size: int = 100) -> List["Requirement"]:
@@ -62,7 +55,6 @@ class Requirement(models.Model):
                     text=pr.text,
                     keywords=pr.keywords,
                     relevance=pr.relevance,
-                    order=pr.order,
                 )
             )
         created = cls.objects.bulk_create(objs, batch_size=batch_size)

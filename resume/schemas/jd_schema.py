@@ -19,7 +19,6 @@ class RequirementSchema(BaseModel):
     text: str
     keywords: List[str]
     relevance: Annotated[float, Field(ge=0, le=1)]
-    order: int
 
 class JDModel(BaseModel):
     metadata: Metadata
