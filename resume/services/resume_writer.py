@@ -5,7 +5,7 @@ from resume.clients import ClaudeClient
 from resume.models import ExperienceProject, ExperienceRole, Resume
 from resume.schemas import BulletListModel, RequirementSchema, SkillBulletListModel
 from resume.utils.prompt import fill_placeholders, load_prompt
-from resume.utils.prompt_content_builders import build_experience_bullets_for_prompt
+from resume.utils.prompt_content_builders import build_experience_bullets_for_prompt, build_requirement_json
 from resume.utils.validation import parse_llm_json, validate_with_schema
 
 
@@ -64,7 +64,7 @@ class ResumeWriter:
         ).order_by('id')
         
         experience_projects_text = self._format_projects_for_prompt(projects)
-        requirements_text = self._format_requirements_for_prompt(requirements)
+        requirements_text = build_requirement_json(requirements)
         
         prompt_template = load_prompt(self.experience_prompt_path)
         prompt = fill_placeholders(
@@ -159,26 +159,6 @@ class ResumeWriter:
             for p in projects
         ]
         return json.dumps(data, ensure_ascii=False)
-    
-    def _format_requirements_for_prompt(self, requirements: List[RequirementSchema]) -> str:
-        """Format requirements list into numbered prompt text with relevance scores.
-        
-        Args:
-            requirements: List of RequirementSchema objects sorted by relevance.
-            
-        Returns:
-            Formatted string with numbered requirements, relevance percentages, and keywords.
-        """
-        requirements_lines = []
-        for idx, req in enumerate(requirements, start=1):
-            relevance_pct = int(req.get('relevance', 0) * 100)
-            keywords_str = ", ".join(req.get('keywords', []))
-            req_line = f"{idx}. [{relevance_pct}%] {req['text']}"
-            if keywords_str:
-                req_line += f" (Keywords: {keywords_str})"
-            requirements_lines.append(req_line)
-        
-        return "\n".join(requirements_lines)
     
     def _format_keywords_for_prompt(self, requirements: List[RequirementSchema]) -> str:
         """Extract and format keywords from requirements into comma-separated text.
