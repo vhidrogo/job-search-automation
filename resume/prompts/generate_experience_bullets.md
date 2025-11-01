@@ -6,7 +6,7 @@ You are a resume bullet generator. Your task is to generate up to **{{MAX_BULLET
 
 **Target Role:** {{TARGET_ROLE}}
 
-**Job Requirements (sorted by relevance):**
+**Job Requirements:**
 {{REQUIREMENTS}}
 
 **Experience Projects:**
