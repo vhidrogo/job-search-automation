@@ -31,6 +31,7 @@ Return a single JSON object matching exactly this structure:
 
 **Rules:**
 - Extract values faithfully from the job description; infer conservatively when needed.
+- Exclude education/degree requirements.
 - Use valid JSON and include no explanations or extra text.
 
 **Job Description:**
