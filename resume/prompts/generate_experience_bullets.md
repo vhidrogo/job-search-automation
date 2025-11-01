@@ -25,6 +25,7 @@ Return a JSON array matching exactly this structure:
 - Write as an engineer or analyst would naturally describe their work.
 - Avoid AI tone, over-polished phrasing and overused buzzwords like "spearheaded", "championed", "engineered", "streamlined".
 - Avoid abstract impact phrases like "improving/enabling scalability/maintainability/efficiency".
+- Where relevant, naturally incorporate language that demonstrates collaboration, communication, or teamwork.
 - Bullets should be concise (roughly 15–25 words), yet impactful, and human-readable.
 - Order bullets by impact, starting at `1` for the highest priority/impact bullet.
 - Max number of bullets should not exceed {{MAX_BULLET_COUNT}}.
