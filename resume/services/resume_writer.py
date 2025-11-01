@@ -1,6 +1,6 @@
-from typing import Dict, List
+from typing import List
 
-from resume.clients.llm_client import ClaudeClient
+from resume.clients import ClaudeClient
 from resume.models import ExperienceProject, ExperienceRole, Resume
 from resume.schemas import BulletListModel, RequirementSchema, SkillBulletListModel
 from resume.utils.prompt import fill_placeholders, load_prompt
