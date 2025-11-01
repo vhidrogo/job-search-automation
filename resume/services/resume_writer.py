@@ -1,3 +1,4 @@
+import json
 from typing import List
 
 from resume.clients import ClaudeClient
@@ -135,28 +136,29 @@ class ResumeWriter:
         
         return validated_skills
     
-    def _format_projects_for_prompt(self, projects) -> str:
-        """Format experience projects into structured prompt text blocks.
-        
-        Args:
-            projects: QuerySet of ExperienceProject instances.
-            
-        Returns:
-            Formatted string with project blocks containing problem, actions, tools, outcomes, and impact.
+    def _format_projects_for_prompt(self, projects: List[ExperienceProject]) -> str:
         """
-        project_blocks = []
-        for project in projects:
-            project_block = (
-                f"**{project.short_name}**\n"
-                f"- Problem: {project.problem_context}\n"
-                f"- Actions: {project.actions}\n"
-                f"- Tools: {project.tools}\n"
-                f"- Outcomes: {project.outcomes}\n"
-                f"- Impact Area: {project.impact_area}"
-            )
-            project_blocks.append(project_block)
-        
-        return "\n\n".join(project_blocks)
+        Convert a list of ExperienceProject instances into JSON for LLM prompts.
+
+        Args:
+            projects: List of ExperienceProject Django model instances.
+
+        Returns:
+            JSON string suitable for the EXPERIENCE_PROJECTS placeholder in the LLM prompt.
+            Only includes the fields relevant for bullet generation.
+        """
+        data = [
+            {
+                "short_name": p.short_name,
+                "problem_context": p.problem_context,
+                "actions": p.actions,
+                "tools": p.tools,
+                "outcomes": p.outcomes,
+                "impact_area": p.impact_area,
+            }
+            for p in projects
+        ]
+        return json.dumps(data, ensure_ascii=False)
     
     def _format_requirements_for_prompt(self, requirements: List[RequirementSchema]) -> str:
         """Format requirements list into numbered prompt text with relevance scores.
