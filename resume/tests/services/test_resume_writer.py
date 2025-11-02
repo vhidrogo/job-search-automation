@@ -22,6 +22,7 @@ class TestResumeWriter(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.experience_role = ExperienceRole.objects.create(
+            key="role1",
             title="Software Engineer",
             company="Nav.it",
         )
@@ -240,10 +241,20 @@ class TestResumeWriter(TestCase):
         self.assertIn(f"maximum allowed is {max_category_count}", str(cm.exception))
 
     def test_generate_skill_bullets_builds_prompt_with_data(self):
-        tools = ["Python", "Django"]
+        role1_tools = ["Python", "Django"]
         ExperienceProject.objects.create(
             experience_role=self.experience_role,
-            tools=tools,
+            tools=role1_tools,
+        )
+        role2 = ExperienceRole.objects.create(
+            key="role2",
+            title="Software Development Engineer",
+            company="Amazon.com",
+        )
+        role2_tools = ["Java", "AWS"]
+        ExperienceProject.objects.create(
+            experience_role=role2,
+            tools=role2_tools,
         )
         self.mock_client.generate.return_value = self.skill_response
         
@@ -256,8 +267,15 @@ class TestResumeWriter(TestCase):
         self.mock_client.generate.assert_called_once()
         prompt = self.mock_client.generate.call_args[0][0]
         
-        # Verify all experience tools included in prompt
-        self.assertTrue(all(tool in prompt for tool in tools))
+        # Verify all experience tools for all roles on the resume included in prompt
+        self.assertTrue(
+            all(tool in prompt for tool in role1_tools),
+            f"Prompt does not include all unique tools from role: {self.experience_role}.",
+        )
+        self.assertTrue(
+            all(tool in prompt for tool in role2_tools),
+            f"Prompt does not include all unique tools from role: {role2}.",
+        )
 
         # Verify requirement keywords included in prompt
         self.assertIn(self.requirement_keyword1, prompt)
