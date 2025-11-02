@@ -34,16 +34,11 @@ class TestResumeModel(TestCase):
         self.resume = Resume.objects.create(
             job=job,
             template=self.template,
-            match_ratio=.99,
             )
         self.role = ExperienceRole.objects.create(key="key1")
 
     def test_str(self):
-        self.assertEqual(str(self.resume), "Resume for Meta - Software Engineer (match: 99%)")
-
-    def test_match_percentage(self):
-        result = self.resume.match_percentage()
-        self.assertEqual(result, "99%")
+        self.assertEqual(str(self.resume), "Resume for Meta - Software Engineer")
 
     @patch("resume.models.resume.CSS")
     @patch.object(HTML, "write_pdf")
