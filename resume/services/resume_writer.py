@@ -92,16 +92,16 @@ class ResumeWriter:
     
     def generate_skill_bullets(
         self,
-        resume: Resume,
+        experience_role: ExperienceRole,
         requirements: List[RequirementSchema],
         target_role: str,
-        max_category_count: int,
+        max_category_count: int = 4,
         model: str = None,
     ) -> SkillBulletListModel:
         """Generate skill category bullets for a resume based on requirements and experience bullets.
         
         Args:
-            resume: The Resume instance whose experience bullets will be analyzed.
+            experience_role: The ExperienceRole instance to generate skills for.
             requirements: List of RequirementSchema objects sorted by relevance.
             target_role: The target job role string (e.g., "Software Engineer").
             max_category_count: Maximum number of skill categories to generate.
@@ -114,16 +114,31 @@ class ResumeWriter:
             ValueError: If LLM output is truncated or malformed.
             ValueError: If parsed JSON fails schema validation.
         """
-        bullets_text = build_experience_bullets_for_prompt(resume)
-        keywords_text = self._format_keywords_for_prompt(requirements)
+        projects = ExperienceProject.objects.filter(
+            experience_role=experience_role
+        ).order_by('id')
+
+        if not projects.exists():
+            raise ValueError(
+                f"No experience projects found for role '{experience_role}'. "
+                "Populate the database with relevant projects before generating skills."
+            )
+        
+        requirement_keywords = json.dumps(list({
+            keyword for req in requirements for keyword in req.keywords
+        }))
+
+        experience_tools = json.dumps(list({
+            tool for p in projects for tool in p.tools
+        }))
         
         prompt_template = load_prompt(self.skill_prompt_path)
         prompt = fill_placeholders(
             prompt_template,
             {
                 "TARGET_ROLE": target_role,
-                "REQUIREMENTS": keywords_text,
-                "BULLETS": bullets_text,
+                "REQUIREMENTS": requirement_keywords,
+                "TOOLS": experience_tools,
             }
         )
         
@@ -161,26 +176,3 @@ class ResumeWriter:
             for p in projects
         ]
         return json.dumps(data, ensure_ascii=False)
-    
-    def _format_keywords_for_prompt(self, requirements: List[RequirementSchema]) -> str:
-        """Extract and format keywords from requirements into comma-separated text.
-        
-        Args:
-            requirements: List of RequirementSchema objects sorted by relevance.
-            
-        Returns:
-            Comma-separated string of unique keywords from all requirements.
-        """
-        all_keywords = []
-        for req in requirements:
-            keywords = req.get('keywords', [])
-            all_keywords.extend(keywords)
-        
-        unique_keywords = []
-        seen = set()
-        for keyword in all_keywords:
-            if keyword.lower() not in seen:
-                seen.add(keyword.lower())
-                unique_keywords.append(keyword)
-        
-        return ", ".join(unique_keywords) if unique_keywords else "No specific keywords provided"
