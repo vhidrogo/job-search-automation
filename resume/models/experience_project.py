@@ -9,7 +9,7 @@ class ExperienceProject(models.Model):
       - experience_role: The associated role during which this project was completed.
       - short_name: Short label for the project or task.
       - problem_context: Concise problem statement describing the challenge addressed.
-      - actions: Comma-separated list of action items (e.g., "implemented X, rewrote Y").
+      - actions: List of action items ["implemented X", "rewrote Y"].
       - tools: Comma-separated list of tools/technologies used (e.g., "Django,Postgres").
       - outcomes: Comma-separated list of short outcomes (e.g., "reduced latency 80%").
       - impact_area: Category describing the type of impact (e.g., "Performance Optimization").
@@ -28,18 +28,9 @@ class ExperienceProject(models.Model):
     problem_context = models.TextField(
         help_text="Concise problem statement describing the challenge addressed.",
     )
-    actions = models.CharField(
-        max_length=1000,
-        help_text="Comma-separated list of action items (e.g., 'implemented X, rewrote Y').",
-    )
-    tools = models.CharField(
-        max_length=500,
-        help_text="Comma-separated list of tools/technologies (e.g., 'Django,Postgres').",
-    )
-    outcomes = models.CharField(
-        max_length=1000,
-        help_text="Comma-separated list of short outcomes (e.g., 'reduced latency 80%').",
-    )
+    actions = models.JSONField(default=list)
+    tools = models.JSONField(default=list)
+    outcomes = models.JSONField(default=list)
     impact_area = models.CharField(
         max_length=255,
         help_text="Category describing the type of impact (e.g., 'Performance Optimization', 'User Engagement').",
