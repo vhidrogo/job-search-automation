@@ -4,16 +4,18 @@ You are a resume bullet generator. Your task is to generate up to **{{MAX_BULLET
 Return a JSON array matching exactly this structure:
 
 ```json
-[
-  {
-    "order": 1,
-    "text": "<bullet text>"
-  },
-  {
-    "order": 2,
-    "text": "<bullet text>"
-  }
-]
+{
+  "bullets": [
+    {
+      "order": 1,
+      "text": "<bullet text>"
+    },
+    {
+      "order": 2,
+      "text": "<bullet text>"
+    }
+  ]
+}
 ```
 
 **Rules:**
