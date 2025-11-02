@@ -9,7 +9,7 @@ class ExperienceRole(models.Model):
       - key: Stable identifier used by templates to reference this role.
       - company: Employer name.
       - title: Job title.
-      - display_name: Optional human-facing name; if null, renders as "title – company".
+      - display_name: Optional human-facing name; if null, renders as "title - company".
     """
 
     key = models.CharField(
@@ -29,7 +29,7 @@ class ExperienceRole(models.Model):
         max_length=255,
         blank=True,
         default="",
-        help_text="Optional human-facing name; if empty, renders as 'title – company'.",
+        help_text="Optional human-facing name; if empty, renders as 'title - company'.",
     )
 
     class Meta:
@@ -38,4 +38,4 @@ class ExperienceRole(models.Model):
     def __str__(self) -> str:
         if self.display_name:
             return self.display_name
-        return f"{self.title} – {self.company}"
+        return f"{self.title} - {self.company}"

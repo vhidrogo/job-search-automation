@@ -1,12 +1,11 @@
-from typing import Dict, List
-from resume.clients.llm_client import ClaudeClient
-from resume.models.experience_project import ExperienceProject
-from resume.models.experience_role import ExperienceRole
-from resume.models.resume import Resume
-from resume.schemas.experience_bullet_schema import BulletListModel
-from resume.schemas.skill_bullet_schema import SkillBulletListModel
+import json
+from typing import List
+
+from resume.clients import ClaudeClient
+from resume.models import ExperienceProject, ExperienceRole, Resume
+from resume.schemas import BulletListModel, RequirementSchema, SkillBulletListModel
 from resume.utils.prompt import fill_placeholders, load_prompt
-from resume.utils.prompt_content_builders import build_experience_bullets_for_prompt
+from resume.utils.prompt_content_builders import build_experience_bullets_for_prompt, build_requirement_json
 from resume.utils.validation import parse_llm_json, validate_with_schema
 
 
@@ -39,7 +38,7 @@ class ResumeWriter:
     def generate_experience_bullets(
         self,
         experience_role: ExperienceRole,
-        requirements: List[Dict[str, any]],
+        requirements: List[RequirementSchema],
         target_role: str,
         max_bullet_count: int,
         model: str = None,
@@ -48,8 +47,7 @@ class ResumeWriter:
         
         Args:
             experience_role: The ExperienceRole instance to generate bullets for.
-            requirements: List of requirement dictionaries with 'text', 'keywords', 
-                         and 'relevance' keys, sorted by relevance (highest first).
+            requirements: List of RequirementSchema objects sorted by relevance.
             target_role: The target job role string (e.g., "Software Engineer").
             max_bullet_count: Maximum number of bullets to generate.
             model: Optional LLM model identifier to use for generation.
@@ -64,9 +62,15 @@ class ResumeWriter:
         projects = ExperienceProject.objects.filter(
             experience_role=experience_role
         ).order_by('id')
+
+        if not projects.exists():
+            raise ValueError(
+                f"No experience projects found for role '{experience_role}'. "
+                "Populate the database with relevant projects before generating bullets."
+            )
         
         experience_projects_text = self._format_projects_for_prompt(projects)
-        requirements_text = self._format_requirements_for_prompt(requirements)
+        requirements_text = build_requirement_json(requirements)
         
         prompt_template = load_prompt(self.experience_prompt_path)
         prompt = fill_placeholders(
@@ -81,10 +85,6 @@ class ResumeWriter:
         
         response_text = self.client.generate(prompt, model=model, max_tokens=4000)
         parsed_data = parse_llm_json(response_text)
-        
-        if isinstance(parsed_data, list):
-            parsed_data = {"bullets": parsed_data}
-        
         validated_bullets = validate_with_schema(parsed_data, BulletListModel)
         validated_bullets.validate_max_count(max_bullet_count)
         
@@ -92,18 +92,17 @@ class ResumeWriter:
     
     def generate_skill_bullets(
         self,
-        resume: Resume,
-        requirements: List[Dict[str, any]],
+        experience_role: ExperienceRole,
+        requirements: List[RequirementSchema],
         target_role: str,
-        max_category_count: int,
+        max_category_count: int = 4,
         model: str = None,
     ) -> SkillBulletListModel:
         """Generate skill category bullets for a resume based on requirements and experience bullets.
         
         Args:
-            resume: The Resume instance whose experience bullets will be analyzed.
-            requirements: List of requirement dictionaries with 'text', 'keywords',
-                         and 'relevance' keys, sorted by relevance (highest first).
+            experience_role: The ExperienceRole instance to generate skills for.
+            requirements: List of RequirementSchema objects sorted by relevance.
             target_role: The target job role string (e.g., "Software Engineer").
             max_category_count: Maximum number of skill categories to generate.
             model: Optional LLM model identifier to use for generation.
@@ -115,16 +114,31 @@ class ResumeWriter:
             ValueError: If LLM output is truncated or malformed.
             ValueError: If parsed JSON fails schema validation.
         """
-        bullets_text = build_experience_bullets_for_prompt(resume)
-        keywords_text = self._format_keywords_for_prompt(requirements)
+        projects = ExperienceProject.objects.filter(
+            experience_role=experience_role
+        ).order_by('id')
+
+        if not projects.exists():
+            raise ValueError(
+                f"No experience projects found for role '{experience_role}'. "
+                "Populate the database with relevant projects before generating skills."
+            )
+        
+        requirement_keywords = json.dumps(list({
+            keyword for req in requirements for keyword in req.keywords
+        }))
+
+        experience_tools = json.dumps(list({
+            tool for p in projects for tool in p.tools
+        }))
         
         prompt_template = load_prompt(self.skill_prompt_path)
         prompt = fill_placeholders(
             prompt_template,
             {
                 "TARGET_ROLE": target_role,
-                "REQUIREMENTS": keywords_text,
-                "BULLETS": bullets_text,
+                "REQUIREMENTS": requirement_keywords,
+                "TOOLS": experience_tools,
             }
         )
         
@@ -139,69 +153,26 @@ class ResumeWriter:
         
         return validated_skills
     
-    def _format_requirements_for_prompt(self, requirements: List[Dict[str, any]]) -> str:
-        """Format requirements list into numbered prompt text with relevance scores.
-        
-        Args:
-            requirements: List of requirement dicts with 'text', 'keywords', and 'relevance'.
-            
-        Returns:
-            Formatted string with numbered requirements, relevance percentages, and keywords.
+    def _format_projects_for_prompt(self, projects: List[ExperienceProject]) -> str:
         """
-        requirements_lines = []
-        for idx, req in enumerate(requirements, start=1):
-            relevance_pct = int(req.get('relevance', 0) * 100)
-            keywords_str = ", ".join(req.get('keywords', []))
-            req_line = f"{idx}. [{relevance_pct}%] {req['text']}"
-            if keywords_str:
-                req_line += f" (Keywords: {keywords_str})"
-            requirements_lines.append(req_line)
-        
-        return "\n".join(requirements_lines)
-    
-    def _format_keywords_for_prompt(self, requirements: List[Dict[str, any]]) -> str:
-        """Extract and format keywords from requirements into comma-separated text.
-        
+        Convert a list of ExperienceProject instances into JSON for LLM prompts.
+
         Args:
-            requirements: List of requirement dicts with 'keywords' field.
-            
+            projects: List of ExperienceProject Django model instances.
+
         Returns:
-            Comma-separated string of unique keywords from all requirements.
+            JSON string suitable for the EXPERIENCE_PROJECTS placeholder in the LLM prompt.
+            Only includes the fields relevant for bullet generation.
         """
-        all_keywords = []
-        for req in requirements:
-            keywords = req.get('keywords', [])
-            all_keywords.extend(keywords)
-        
-        unique_keywords = []
-        seen = set()
-        for keyword in all_keywords:
-            if keyword.lower() not in seen:
-                seen.add(keyword.lower())
-                unique_keywords.append(keyword)
-        
-        return ", ".join(unique_keywords) if unique_keywords else "No specific keywords provided"
-    
-    def _format_projects_for_prompt(self, projects) -> str:
-        """Format experience projects into structured prompt text blocks.
-        
-        Args:
-            projects: QuerySet of ExperienceProject instances.
-            
-        Returns:
-            Formatted string with project blocks containing problem, actions, tools, outcomes, and impact.
-        """
-        project_blocks = []
-        for project in projects:
-            project_block = (
-                f"**{project.short_name}**\n"
-                f"- Problem: {project.problem_context}\n"
-                f"- Actions: {project.actions}\n"
-                f"- Tools: {project.tools}\n"
-                f"- Outcomes: {project.outcomes}\n"
-                f"- Impact Area: {project.impact_area}"
-            )
-            project_blocks.append(project_block)
-        
-        return "\n\n".join(project_blocks)
-  
+        data = [
+            {
+                "short_name": p.short_name,
+                "problem_context": p.problem_context,
+                "actions": p.actions,
+                "tools": p.tools,
+                "outcomes": p.outcomes,
+                "impact_area": p.impact_area,
+            }
+            for p in projects
+        ]
+        return json.dumps(data, ensure_ascii=False)
