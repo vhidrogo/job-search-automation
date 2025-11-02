@@ -38,4 +38,4 @@ class ExperienceRole(models.Model):
     def __str__(self) -> str:
         if self.display_name:
             return self.display_name
-        return f"{self.title} – {self.company}"
+        return f"{self.title} - {self.company}"
