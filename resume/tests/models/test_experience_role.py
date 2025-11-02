@@ -46,7 +46,7 @@ class TestExperienceRoleModel(TestCase):
             title=self.TITLE,
         )
 
-        self.assertEqual(str(role), "Software Engineer – Nav.it")
+        self.assertEqual(str(role), "Software Engineer - Nav.it")
 
     def test_default_display_name(self) -> None:
         """Test that display_name defaults to empty string."""

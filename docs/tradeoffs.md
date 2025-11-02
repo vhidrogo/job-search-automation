@@ -411,3 +411,75 @@ Adopted a separate **`ApplicationStatus` model** linked via a foreign key to `Ap
 
 **Reflection:**  
 This structure provides an elegant balance between normalization and practical usability. It keeps the system event-driven and analytics-ready without overcomplicating the schema or duplicating logic across models. As future events (like interviews or offers) are introduced, they can seamlessly integrate into this pattern or relate to `ApplicationStatus` entries. The design supports both current operational needs (tracking application outcomes) and future analytical capabilities (measuring time-to-callback, conversion rates, etc.).
+
+### Analytics & Evaluation
+Decisions related to measuring resume quality and tracking application outcomes.
+
+---
+
+#### Post-Generation Resume Analysis: Automated Matching vs Manual Review
+
+**Context:**  
+The original system design included an automated post-generation analysis step to:
+1. Identify which job requirements were not satisfied by the generated resume (for gap analysis and potential input data improvements)
+2. Calculate a match ratio (met requirements / total requirements) for analytics and correlation with callback rates
+
+The intended implementation was `ResumeMatcher`—an LLM-assisted utility that would compare job requirements against generated resume bullets and skills to produce `unmet_requirements` (CSV string) and `match_ratio` (float) fields on the `Resume` model.
+
+Initial approach: Pass requirement keywords and skill keywords to the LLM for simple matching.  
+Evolved consideration: Realized this would require passing full requirement text + full resume bullets for reliable evaluation, significantly increasing token usage.
+
+**Options Considered:**  
+1. **Automated matching with requirement/skill keywords only:**  
+   - Pass extracted requirement keywords (e.g., `["Python", "Go", "Java"]`) and skill keywords from resume.  
+   - LLM determines which requirements are met based on keyword presence.  
+2. **Automated matching with full context:**  
+   - Pass full requirement text + full resume bullets (and potentially dates/context).  
+   - LLM makes nuanced determination of whether requirements like "3+ years building backend systems" are satisfied.  
+3. **Manual review before generation:**  
+   - Carefully read JD before deciding to apply and generating resume.  
+   - Identify gaps in input data at that stage.  
+4. **Periodic manual spot-checks:**  
+   - Occasionally pass full JD + generated resume to a chatbot with manual prompt.  
+   - Request gap analysis and improvement suggestions.
+
+**Tradeoffs:**  
+- **Automated matching (keywords only):**  
+  - ✅ Low token usage.  
+  - ✅ Fast and cheap.  
+  - ❌ Unreliable—cannot determine if requirements are truly met from keywords alone.  
+  - ❌ Cannot handle soft skills, experience duration, or nuanced requirements.  
+  - ❌ Likely to produce false positives/negatives.  
+- **Automated matching (full context):**  
+  - ✅ More reliable evaluation.  
+  - ✅ Can handle nuanced requirements.  
+  - ❌ High token cost (requires full JD text + full resume bullets).  
+  - ❌ LLM determination still subjective—different models/runs may give different answers.  
+  - ❌ Cost compounds across multiple applications.  
+  - ❌ Diminishing returns—once input data is complete, unmet requirements only reflect genuine lack of experience (not actionable).  
+- **Manual review before generation:**  
+  - ✅ Zero token cost.  
+  - ✅ Already part of workflow (deciding whether to apply).  
+  - ✅ Human judgment more reliable for identifying relevant gaps.  
+  - ✅ Enables updating input data before generation rather than after.  
+  - ❌ No automated analytics.  
+  - ❌ Requires careful attention per JD.  
+- **Periodic manual spot-checks:**  
+  - ✅ Low cost (only occasional).  
+  - ✅ Human judgment + LLM assistance for improvement ideas.  
+  - ✅ Can be done retroactively since data is persisted.  
+  - ❌ Not systematic or automated.
+
+**Decision:**  
+**Reject automated post-generation resume analysis** (`ResumeMatcher`, `match_ratio`, `unmet_requirements`). Rely on **manual JD review before generation** as the primary mechanism for identifying input data gaps, with **periodic manual spot-checks** using chatbots for improvement suggestions.
+
+**Reasoning:**  
+1. **Token cost not justified:** Even with full context, the evaluation would be expensive and of uncertain value. The gap analysis use case has diminishing returns—eventually all input data will be complete, leaving only unmet requirements for experiences genuinely not possessed.  
+2. **LLM inconsistency:** Determining "requirement met" is subjective. Different models or runs might give different answers for the same input, making analytics unreliable.  
+3. **Analytics unlikely to yield insights:** Since the system is designed to only apply to jobs where the user feels qualified (to justify API costs), match ratios would cluster at 80-100%. Little variation means little analytical value.  
+4. **Manual review is more effective:** Reading JDs carefully before deciding to apply is already necessary and is the optimal time to spot input data gaps—before generation, not after.  
+5. **Data is persisted for future backfill:** If a concrete analytical use case emerges later, the system can easily backfill match analysis using custom scripts since all JDs and resumes are stored in the database.  
+6. **Premature optimization:** Shipping the core resume generation product and using it in practice will reveal whether post-hoc analysis provides real value. Building it upfront risks wasting effort on unused features.
+
+**Reflection:**  
+This decision exemplifies the principle of building for current concrete needs rather than speculative future requirements. The original design assumed automated matching would be valuable, but deeper analysis revealed high cost and low ROI. Manual workflows—already necessary for job selection—provide better gap identification at zero additional cost. The system architecture (persisted data, modular services) enables adding automated analysis later if real-world usage demonstrates a clear need, making this a low-risk deferral rather than a permanent rejection.

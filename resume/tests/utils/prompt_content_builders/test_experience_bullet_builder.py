@@ -34,7 +34,6 @@ class TestBuildExperienceBulletsForPrompt:
         return Resume.objects.create(
             template=template,
             job=job,
-            match_ratio=0.85
         )
     
     @pytest.fixture

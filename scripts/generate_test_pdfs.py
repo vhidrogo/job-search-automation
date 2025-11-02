@@ -70,7 +70,6 @@ def create_test_data(role, level, template_path, style_path, max_bullets, bullet
     resume = Resume.objects.create(
         template=template,
         job=job,
-        match_ratio=0.85,
     )
 
     for i in range(len(bullets)):

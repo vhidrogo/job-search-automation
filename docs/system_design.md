@@ -16,7 +16,7 @@ job_search_automation/ (Django Project)
 │   ├── models/                   # Models for persisting resume data
 │   ├── prompts/                  # Reusable and versioned LLM prompts
 │   ├── schemas/                  # Pydantic schemas for validating all LLM outputs
-│   ├── services/                 # ResumeWriter, JDParser, ResumeMatcher
+│   ├── services/                 # ResumeWriter, JDParser
 │   ├── clients/                  # External API clients (ClaudeClient)
 │   ├── templates/                # HTML templates per role
 │   └── utils/                    # Shared helpers for the app (prompt manipulation, validation, content builders)
@@ -38,10 +38,9 @@ job_search_automation/ (Django Project)
 | **ClaudeClient** | Wraps LLM API calls (`generate()`, `count_tokens()`), handles configuration and model defaults. |
 | **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skill_bullets()` to produce both experience and skill-section entries used by `Resume` rendering. |
 | **JDParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
-| **Orchestrator** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative match/repair flows. |
+| **Orchestrator** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative flows. |
 | **Job (model methods)** | `generate_resume_pdf()` — entry point for on-demand PDF generation via Django admin; delegates to `Resume.render_to_pdf()` for actual rendering. |
 | **Resume (model methods)** | `render_to_pdf()` — assembles template with bullets and skills, renders HTML via Jinja2, converts to PDF via WeasyPrint. |
-| **ResumeMatcher** | LLM-assisted utility that, given a job's requirements and the current resume (bullets), returns which requirements are met/missing and enables iterative improvement of `match_ratio`. |
 
 ---
 
@@ -155,7 +154,7 @@ This approach:
 
 ## Validation Layer
 
-All LLM outputs—whether from **JDParser** (requirements extraction), **ResumeWriter** (bullet generation), or **ResumeMatcher** (evaluation)—undergo **schema validation via Pydantic** before any persistence or downstream processing.
+All LLM outputs—whether from **JDParser** (requirements extraction) or **ResumeWriter** (bullet generation)—undergo **schema validation via Pydantic** before any persistence or downstream processing.
 
 ### Purpose
 - Guarantee structured and type-safe data flowing into the Django model layer.
@@ -163,7 +162,7 @@ All LLM outputs—whether from **JDParser** (requirements extraction), **ResumeW
 - Standardize validation logic across all services interacting with the LLM.
 
 ### Implementation Summary
-- Each LLM service defines its corresponding Pydantic schema (e.g., `JDModel`, `BulletListModel`, `MatchResultModel`).
+- Each LLM service defines its corresponding Pydantic schema (e.g., `JDModel`, `BulletListModel`).
 - Validation occurs immediately after receiving LLM output and before ORM operations.
 - Validation failures raise descriptive exceptions to prevent silent data corruption or inconsistent states.
 
@@ -173,10 +172,10 @@ This validation step is mandatory across all LLM-integrated modules.
 
 ## LLM Cost Strategy
 
-LLM cost management is a core part of the system’s architecture due to the multi-step pipeline (parsing → generation → matching).  
+LLM cost management is a core part of the system's architecture due to the multi-step pipeline (parsing → generation).  
 Rather than embedding all details in this design document, a dedicated reference is provided in [`llm_cost_strategy.md`](./llm_cost_strategy.md).
 
-At a high level, the system’s **cost control principles** are:
+At a high level, the system's **cost control principles** are:
 - Use **per-role batching** for predictable and token-efficient bullet generation.
 - Express requirements as **short phrases** instead of full sentences.
 - Estimate and log token usage before every call using `ClaudeClient.count_tokens()`.
@@ -323,8 +322,6 @@ flowchart TD
 | id | IntegerField | Primary key |
 | template_id | FK(ResumeTemplate) | Which template was used |
 | job_id | FK(Job) | Job description source |
-| unmet_requirements | CharField | CSV string of unmatched tools/technologies (e.g., "Go,Ruby on Rails") |
-| match_ratio | FloatField | (Met requirements / total requirements) |
 
 #### ResumeExperienceBullet
 | Field | Type | Description |
@@ -406,14 +403,12 @@ flowchart TD
     F --> G["For each ExperienceRole: ResumeWriter.generate_experience_bullets()"]
     G --> H["ResumeWriter.generate_skill_bullets()"]
     H --> I["Persist Resume + ResumeExperienceBullet + ResumeSkillBullet objects"]
-    I --> J["ResumeMatcher.evaluate() → update match_ratio + unmet_requirements"]
-    J --> K["User reviews + edits bullets (override/exclude) via Django admin"]
-    K --> L["ResumeMatcher re-run (optional)"]
-    L --> M["User triggers Job.generate_resume_pdf() via Django admin action"]
-    M --> N["Resume.render_to_pdf() → PDF saved to output directory"]
-    N --> O["User saves Application record via Django admin"]
-    O --> P["Admin updates ApplicationStatus for outcome tracking"]
-    P --> Q["Analytics layer: compute feedback loops & high-ROI insights"]
+    I --> J["User reviews + edits bullets (override/exclude) via Django admin"]
+    J --> K["User triggers Job.generate_resume_pdf() via Django admin action"]
+    K --> L["Resume.render_to_pdf() → PDF saved to output directory"]
+    L --> M["User saves Application record via Django admin"]
+    M --> N["Admin updates ApplicationStatus for outcome tracking"]
+    N --> O["Analytics layer: compute feedback loops & high-ROI insights"]
 ```
 
 ---
@@ -434,29 +429,44 @@ Incremental Build Plan
 | [x] Phase 2 | JD extraction (metadata + requirements) | JSON output |
 | [x] Phase 3 | Bullet generation loop | JSON output |
 | [x] Phase 4 | Skill-section generation | JSON output |
-| [x] Phase 5 | Iterative match utility | `ResumeMatcher` to evaluate & improve `match_ratio` |
-| [x] Phase 6 | Template selection | Correct HTML template (TemplateRoleConfig-based) |
-| [ ] Phase 7 | Resume rendering | `Job.generate_resume_pdf()` + `Resume.render_to_pdf()` |
-| [ ] Phase 8 | orchestration app End-to-end automation | Persisted resume + tracker models |
-| [ ] Phase 9 | Analytics | dashboards: compute feedback loops & high-ROI insights |
+| [x] Phase 5 | Template selection | Correct HTML template (TemplateRoleConfig-based) |
+| [x] Phase 6 | Resume rendering | `Job.generate_resume_pdf()` + `Resume.render_to_pdf()` |
+| [ ] Phase 7 | orchestration app End-to-end automation | Persisted resume + tracker models |
+| [ ] Phase 8 | Analytics | dashboards: compute feedback loops & high-ROI insights |
+
+---
+
+## Considered and Rejected
+
+### Post-Generation Resume Analysis
+
+**Considered:** Automated matching of generated resumes against JD requirements to identify gaps (unmet requirements) and calculate match ratios for analytics.
+
+**Rejected because:**
+- Requires full JD text + full resume context for reliable evaluation (high token cost)
+- LLM determination of "requirement met" is subjective and inconsistent across models/runs
+- Diminishing returns once experience input data is complete—unmet requirements eventually reflect genuine lack of experience rather than generation gaps
+- Manual JD review before generation is more effective for identifying input data gaps
+- Analytics unlikely to yield meaningful insights due to high-match clustering (only applying to qualified jobs)
+- Data is persisted and can be backfilled later if a concrete use case emerges
+
+**Alternative:** Periodically pass full JD + generated resume to ChatGPT with manual prompt for spot-check gap analysis and improvement suggestions.
 
 ---
 
 ## Future Enhancements
-- *Iterative Match Workflow:* add `ResumeMatcher` (LLM-assisted) to enable on-demand evaluation of which requirements are satisfied, drive iterative `ExperienceProject` additions/overrides, and update `match_ratio`.
 - Batch generation for multiple JDs.
-- *Resume feedback analytics:* correlate application outcomes (rejected/callback) with resume features (match_ratio, template, overrides) to identify high-ROI targets and guide generation improvements. 
+- *Resume feedback analytics:* correlate application outcomes (rejected/callback) with resume features (template, overrides) to identify high-ROI targets and guide generation improvements. 
 - Analytics/Dashboarding
 - **General and Company-Tailored Resume Modes:**
-  - *General Target Role Resume:* Generate a “framed” resume for a target role (e.g., *Data Engineer*) when limited or no requirements are provided — such as when a recruiter message lacks a full JD. The system leverages the role-specific template and weighted prior experience configurations to infer likely requirements and produce a strong generic framing.
-  - *Company-Tailored Resume:* Generate resumes explicitly aligned with a company’s known leadership principles or values (e.g., Amazon LPs, Meta Leadership). This mode enriches bullet phrasing and ordering to reflect organizational priorities without requiring a full job description.
+  - *General Target Role Resume:* Generate a "framed" resume for a target role (e.g., *Data Engineer*) when limited or no requirements are provided — such as when a recruiter message lacks a full JD. The system leverages the role-specific template and weighted prior experience configurations to infer likely requirements and produce a strong generic framing.
+  - *Company-Tailored Resume:* Generate resumes explicitly aligned with a company's known leadership principles or values (e.g., Amazon LPs, Meta Leadership). This mode enriches bullet phrasing and ordering to reflect organizational priorities without requiring a full job description.
 - **Model Flexibility and Benchmarking:**
   - Introduce configurable model selection to allow using different LLM providers (e.g., Anthropic, OpenAI) and versions (e.g., `claude-sonnet-4-5`, `claude-haiku-4-5`, `gpt-4.1`, etc.).
   - Support per-utility model selection so that modules can use optimal models for their complexity:
-    - Example: more context-heavy tasks (e.g., `generate_experience_bullets()` or iterative match evaluation) may use higher-capacity models like `claude-sonnet-4-5`.
+    - Example: more context-heavy tasks (e.g., `generate_experience_bullets()`) may use higher-capacity models like `claude-sonnet-4-5`.
     - Example: `generate_skill_bullets()` may use a faster, cheaper model like `claude-haiku-4-5`.
   - Implement a benchmarking and metrics layer to track model **cost**, **latency**, and **output quality** (e.g., validation success rate, token usage).
   - Aggregate and visualize results to guide model selection decisions and cost-performance optimization over time.
-
 
 ---
