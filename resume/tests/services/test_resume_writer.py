@@ -29,16 +29,17 @@ class TestResumeWriter(TestCase):
 
         cls.requirement_text1 = "5+ years of Python experience"
         cls.requirement_text2 = "Experience with Django web framework"
-        cls.requirement_keyword1, cls.requirement_keyword2 = "Python", "Django"
+        cls.requirement_keywords1 = ["Python", "experience"]
+        cls.requirement_keywords2 = ["Django", "web framework"]
         cls.requirements = [
             RequirementSchema(
                 text=cls.requirement_text1,
-                keywords=[cls.requirement_keyword1, "experience"],
+                keywords=cls.requirement_keywords1,
                 relevance=0.95,
             ),
             RequirementSchema(
                 text=cls.requirement_text2,
-                keywords=[cls.requirement_keyword2, "web framework"],
+                keywords=cls.requirement_keywords2,
                 relevance=0.90,
             ),
         ]
@@ -240,7 +241,28 @@ class TestResumeWriter(TestCase):
 
         self.assertIn(f"maximum allowed is {max_category_count}", str(cm.exception))
 
-    def test_generate_skill_bullets_builds_prompt_with_data(self):
+    def test_generate_skill_bullets_builds_prompt_with_requirement_keywords(self):
+        ExperienceProject.objects.create(experience_role=self.experience_role)
+        self.mock_client.generate.return_value = self.skill_response
+        
+        self.resume_writer.generate_skill_bullets(
+            experience_role=self.experience_role,
+            requirements=self.requirements,
+            target_role=self.TARGET_ROLE,
+        )
+        
+        self.mock_client.generate.assert_called_once()
+        prompt = self.mock_client.generate.call_args[0][0]
+        self.assertTrue(
+            all(keyword in prompt for keyword in self.requirement_keywords1),
+            f"Prompt does not include all unique keywords from requirement: {self.requirement_text1}.",
+        )
+        self.assertTrue(
+            all(keyword in prompt for keyword in self.requirement_keywords2),
+            f"Prompt does not include all unique keywords from requirement: {self.requirement_text2}.",
+        )
+
+    def test_generate_skill_bullets_builds_prompt_with_related_project_tools(self):
         role1_tools = ["Python", "Django"]
         ExperienceProject.objects.create(
             experience_role=self.experience_role,
@@ -266,8 +288,6 @@ class TestResumeWriter(TestCase):
         
         self.mock_client.generate.assert_called_once()
         prompt = self.mock_client.generate.call_args[0][0]
-        
-        # Verify all experience tools for all roles on the resume included in prompt
         self.assertTrue(
             all(tool in prompt for tool in role1_tools),
             f"Prompt does not include all unique tools from role: {self.experience_role}.",
@@ -276,7 +296,3 @@ class TestResumeWriter(TestCase):
             all(tool in prompt for tool in role2_tools),
             f"Prompt does not include all unique tools from role: {role2}.",
         )
-
-        # Verify requirement keywords included in prompt
-        self.assertIn(self.requirement_keyword1, prompt)
-        self.assertIn(self.requirement_keyword2, prompt)
