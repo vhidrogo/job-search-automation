@@ -20,7 +20,6 @@ class TestResumeExperienceBulletModel(TestCase):
     WORK_SETTING = WorkSetting.REMOTE
     MIN_EXPERIENCE_YEARS = 3
     TEMPLATE_PATH = "templates/software_engineer_ii.md"
-    MATCH_RATIO = 0.85
     EXPERIENCE_KEY = "navit_swe"
     EXPERIENCE_COMPANY = "Nav.it"
     EXPERIENCE_TITLE = "Software Engineer"
@@ -47,7 +46,6 @@ class TestResumeExperienceBulletModel(TestCase):
         self.resume = Resume.objects.create(
             template=self.template,
             job=self.job,
-            match_ratio=self.MATCH_RATIO,
         )
         self.experience_role = ExperienceRole.objects.create(
             key=self.EXPERIENCE_KEY,

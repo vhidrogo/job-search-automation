@@ -57,7 +57,7 @@ class TestExperienceProjectModel(TestCase):
             impact_area=self.IMPACT_AREA,
         )
 
-        self.assertEqual(str(project), "Search API Redesign (Software Engineer – Nav.it)")
+        self.assertEqual(str(project), "Search API Redesign (Software Engineer - Nav.it)")
 
     def test_foreign_key_relationship(self) -> None:
         """Test the foreign key relationship with ExperienceRole."""

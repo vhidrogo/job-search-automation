@@ -15,7 +15,6 @@ class TestResumeSkillBulletModel(TestCase):
     WORK_SETTING = WorkSetting.REMOTE
     MIN_EXPERIENCE_YEARS = 3
     TEMPLATE_PATH = "templates/software_engineer_ii.md"
-    MATCH_RATIO = 0.85
     CATEGORY = "Programming Languages"
     SKILLS_TEXT = "Python, Java, TypeScript"
 
@@ -38,7 +37,6 @@ class TestResumeSkillBulletModel(TestCase):
         self.resume = Resume.objects.create(
             template=self.template,
             job=self.job,
-            match_ratio=self.MATCH_RATIO,
         )
 
     def test_create_skill_bullet(self) -> None:
@@ -229,7 +227,6 @@ class TestResumeSkillBulletModel(TestCase):
         other_resume = Resume.objects.create(
             template=self.template,
             job=other_job,
-            match_ratio=0.75,
         )
 
         bullet1 = ResumeSkillBullet.objects.create(
