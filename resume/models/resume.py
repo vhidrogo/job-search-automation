@@ -1,11 +1,11 @@
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from weasyprint import CSS, HTML
+
 from django.conf import settings
-from django.core.validators import MaxValueValidator, MinValueValidator
-from django.template.loader import render_to_string
 from django.db import models
 from django.utils.safestring import mark_safe
+from django.template.loader import render_to_string
 
 from .experience_role import ExperienceRole
 
