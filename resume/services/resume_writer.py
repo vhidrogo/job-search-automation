@@ -79,10 +79,6 @@ class ResumeWriter:
         
         response_text = self.client.generate(prompt, model=model, max_tokens=4000)
         parsed_data = parse_llm_json(response_text)
-        
-        if isinstance(parsed_data, list):
-            parsed_data = {"bullets": parsed_data}
-        
         validated_bullets = validate_with_schema(parsed_data, BulletListModel)
         validated_bullets.validate_max_count(max_bullet_count)
         
