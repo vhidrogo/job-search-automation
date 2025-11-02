@@ -62,6 +62,12 @@ class ResumeWriter:
         projects = ExperienceProject.objects.filter(
             experience_role=experience_role
         ).order_by('id')
+
+        if not projects.exists():
+            raise ValueError(
+                f"No experience projects found for role '{experience_role}'. "
+                "Populate the database with relevant projects before generating bullets."
+            )
         
         experience_projects_text = self._format_projects_for_prompt(projects)
         requirements_text = build_requirement_json(requirements)
