@@ -2,10 +2,10 @@ import json
 from typing import List
 
 from resume.clients import ClaudeClient
-from resume.models import ExperienceProject, ExperienceRole, Resume
+from resume.models import ExperienceProject, ExperienceRole, ResumeTemplate
 from resume.schemas import BulletListModel, RequirementSchema, SkillBulletListModel
 from resume.utils.prompt import fill_placeholders, load_prompt
-from resume.utils.prompt_content_builders import build_experience_bullets_for_prompt, build_requirement_json
+from resume.utils.prompt_content_builders import build_requirement_json
 from resume.utils.validation import parse_llm_json, validate_with_schema
 
 
@@ -92,13 +92,13 @@ class ResumeWriter:
     
     def generate_skill_bullets(
         self,
-        experience_role: ExperienceRole,
+        template: ResumeTemplate,
         requirements: List[RequirementSchema],
         target_role: str,
         max_category_count: int = 4,
         model: str = None,
     ) -> SkillBulletListModel:
-        """Generate skill category bullets for a resume based on requirements and experience bullets.
+        """Generate skill category bullets for a resume based on requirements and included experience roles.
         
         Args:
             experience_role: The ExperienceRole instance to generate skills for.
@@ -111,25 +111,14 @@ class ResumeWriter:
             Validated SkillBulletListModel instance containing generated skill categories.
             
         Raises:
+            ValueError: If no tools can be extracted from template's configured roles.
             ValueError: If LLM output is truncated or malformed.
             ValueError: If parsed JSON fails schema validation.
         """
-        projects = ExperienceProject.objects.filter(
-            experience_role=experience_role
-        ).order_by('id')
-
-        if not projects.exists():
-            raise ValueError(
-                f"No experience projects found for role '{experience_role}'. "
-                "Populate the database with relevant projects before generating skills."
-            )
+        experience_tools = self._format_project_tools_for_prompt(template)
         
         requirement_keywords = json.dumps(list({
             keyword for req in requirements for keyword in req.keywords
-        }))
-
-        experience_tools = json.dumps(list({
-            tool for p in projects for tool in p.tools
         }))
         
         prompt_template = load_prompt(self.skill_prompt_path)
@@ -176,3 +165,41 @@ class ResumeWriter:
             for p in projects
         ]
         return json.dumps(data, ensure_ascii=False)
+    
+    def _format_project_tools_for_prompt(self, template: ResumeTemplate) -> str:
+        """
+        Extract and format all tools from projects associated with a resume template.
+        
+        Retrieves all tools used across ExperienceProjects for ExperienceRoles configured
+        in the given template, deduplicates them, and returns as a JSON-formatted string.
+        
+        Args:
+            template: ResumeTemplate instance to extract tools from
+            
+        Returns:
+            JSON string containing a list of unique tool names
+            
+        Raises:
+            ValueError: If no role configs exist for the template
+            ValueError: If no projects exist for the configured roles
+            ValueError: If no tools are found in any projects
+        """
+        role_ids = template.role_configs.values_list("experience_role_id", flat=True)
+
+        if not role_ids.exists():
+            raise ValueError(f"No role configs found for template {template}")
+
+        project_tools = ExperienceProject.objects.filter(
+            experience_role_id__in=role_ids
+        ).values_list('tools', flat=True)
+        if not project_tools:
+            raise ValueError(f"No projects found for roles in template {template}")
+        
+        all_tools = set()
+        for tools_list in project_tools:
+            all_tools.update(tools_list)
+        
+        if not all_tools:
+            raise ValueError(f"No tools found in projects for template {template}")
+        
+        return json.dumps(list(all_tools))
