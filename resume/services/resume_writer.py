@@ -94,7 +94,6 @@ class ResumeWriter:
         self,
         template: ResumeTemplate,
         requirements: List[RequirementSchema],
-        target_role: str,
         max_category_count: int = 4,
         model: str = None,
     ) -> SkillBulletListModel:
@@ -103,7 +102,6 @@ class ResumeWriter:
         Args:
             experience_role: The ExperienceRole instance to generate skills for.
             requirements: List of RequirementSchema objects sorted by relevance.
-            target_role: The target job role string (e.g., "Software Engineer").
             max_category_count: Maximum number of skill categories to generate.
             model: Optional LLM model identifier to use for generation.
             
@@ -125,7 +123,7 @@ class ResumeWriter:
         prompt = fill_placeholders(
             prompt_template,
             {
-                "TARGET_ROLE": target_role,
+                "TARGET_ROLE": template.target_role,
                 "REQUIREMENTS": requirement_keywords,
                 "TOOLS": experience_tools,
             }

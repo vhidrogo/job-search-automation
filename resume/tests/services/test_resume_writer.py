@@ -207,7 +207,6 @@ class TestResumeWriter(TestCase):
         result = self.resume_writer.generate_skill_bullets(
             template=self.template,
             requirements=self.requirements,
-            target_role=self.TARGET_ROLE,
         )
 
         self.mock_client.generate.assert_called_once()
@@ -232,7 +231,6 @@ class TestResumeWriter(TestCase):
             self.resume_writer.generate_skill_bullets(
                 template=template,
                 requirements=self.requirements,
-                target_role=self.TARGET_ROLE,
             )
 
         error_msg = str(cm.exception)
@@ -244,7 +242,6 @@ class TestResumeWriter(TestCase):
             self.resume_writer.generate_skill_bullets(
                 template=self.template,
                 requirements=self.requirements,
-                target_role=self.TARGET_ROLE,
             )
 
         error_msg = str(cm.exception)
@@ -255,7 +252,6 @@ class TestResumeWriter(TestCase):
             self.resume_writer.generate_skill_bullets(
                 template=self.template,
                 requirements=self.requirements,
-                target_role=self.TARGET_ROLE,
             )
 
         error_msg = str(cm.exception)
@@ -269,7 +265,6 @@ class TestResumeWriter(TestCase):
             self.resume_writer.generate_skill_bullets(
                 template=self.template,
                 requirements=self.requirements,
-                target_role=self.TARGET_ROLE,
             )
 
     def test_generate_skill_bullets_raises_on_excess_categories(self):
@@ -281,7 +276,6 @@ class TestResumeWriter(TestCase):
             self.resume_writer.generate_skill_bullets(
                 template=self.template,
                 requirements=self.requirements,
-                target_role=self.TARGET_ROLE,
                 max_category_count=max_category_count,
             )
 
@@ -294,7 +288,6 @@ class TestResumeWriter(TestCase):
         self.resume_writer.generate_skill_bullets(
             template=self.template,
             requirements=self.requirements,
-            target_role=self.TARGET_ROLE,
         )
         
         self.mock_client.generate.assert_called_once()
@@ -331,7 +324,6 @@ class TestResumeWriter(TestCase):
         self.resume_writer.generate_skill_bullets(
             template=self.template,
             requirements=self.requirements,
-            target_role=self.TARGET_ROLE,
         )
         
         self.mock_client.generate.assert_called_once()
@@ -362,7 +354,6 @@ class TestResumeWriter(TestCase):
         self.resume_writer.generate_skill_bullets(
             template=self.template,
             requirements=self.requirements,
-            target_role=self.TARGET_ROLE,
         )
         
         self.mock_client.generate.assert_called_once()
