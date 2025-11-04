@@ -1,1 +1,1 @@
-from .llm_client import ClaudeClient
+from .claude_client import ClaudeClient
