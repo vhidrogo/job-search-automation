@@ -2,9 +2,9 @@ import anthropic
 
 
 class ClaudeClient:
-    def __init__(self, default_model: str = "claude-sonnet-4-5"):
+    def __init__(self, default_model: str = "claude-sonnet-4-5", client: anthropic.Anthropic = None):
         self.default_model = default_model
-        self.client = anthropic.Anthropic()
+        self.client = client or anthropic.Anthropic()
 
     def generate(self, prompt: str, model: str = None, max_tokens: int = 1024) -> str:
         model = model or self.default_model
