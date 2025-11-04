@@ -1,5 +1,5 @@
 import subprocess
-from typing import Dict, List
+from typing import List
 
 from django.db import transaction
 
@@ -9,9 +9,8 @@ from resume.models import (
     ResumeSkillBullet,
     ResumeTemplate,
 )
-from resume.services.jd_parser import JDParser
-from resume.services.resume_matcher import ResumeMatcher
-from resume.services.resume_writer import ResumeWriter
+from resume.schemas import RequirementSchema
+from resume.services import JDParser, ResumeWriter
 from tracker.models import Job, Requirement
 
 
@@ -23,30 +22,23 @@ class Orchestrator:
     2. Persist job and requirement records
     3. Generate experience bullets for each configured role
     4. Generate skill bullets based on experience content
-    5. Evaluate match quality and update resume metadata
-    6. Render initial PDF for user review
+    5. Render initial PDF for user review
     
-    The orchestrator enables iterative improvement by exposing match scores
-    and unmet requirements, allowing users to refine resume content before
-    final submission.
     """
     
     def __init__(
         self,
         jd_parser: JDParser = None,
         resume_writer: ResumeWriter = None,
-        resume_matcher: ResumeMatcher = None,
     ):
         """Initialize orchestrator with service dependencies.
         
         Args:
             jd_parser: Service for parsing job descriptions. Defaults to JDParser().
             resume_writer: Service for generating resume content. Defaults to ResumeWriter().
-            resume_matcher: Service for evaluating match quality. Defaults to ResumeMatcher().
         """
         self.jd_parser = jd_parser or JDParser()
         self.resume_writer = resume_writer or ResumeWriter()
-        self.resume_matcher = resume_matcher or ResumeMatcher()
     
     def run(
         self,
@@ -58,44 +50,39 @@ class Orchestrator:
         
         Args:
             jd_path: Path to job description file.
-            jd_text: Raw job description text.
             output_dir: Directory for PDF output.
             auto_open_pdf: Whether to automatically open the generated PDF.
             
         Returns:
-            Generated Resume instance with populated bullets and match evaluation.
+            Generated Resume instance with populated bullets and skills.
             
         Raises:
             ValueError: If neither jd_source nor jd_text is provided.
             ValueError: If no matching template exists for the job role and level.
         """
         parsed_jd = self.jd_parser.parse(jd_path)
-        
+        print(f"\n{'='*60}")
+        print(f"Parsed job description for {parsed_jd.metadata.company} - {parsed_jd.metadata.listing_job_title}")
+
         job = self._persist_job_and_requirements(parsed_jd)
         template = self._get_template(job)
         resume = self._create_resume(job, template)
-        print('resume:', resume)
-        # TODO: refactor ResumeWriter to take in list of pydantic schemas (for requirements) and access the attributes accordingly (currently using dict access patterns)
-        # TODO: mock ResumeWriter before continuing, but check if _prepare_requirements_data is needed (the plan was to use the one from parsed_jd)
-        # self._generate_and_persist_bullets(resume, job, template)
+        print("Persisted Job and Resume")
         
-        # job.evaluate_and_update_match()
+        bullets = self._generate_and_persist_experience_bullets(resume, template, parsed_jd.requirements)
+        print(f"\n{'='*60}")
+        print(f"Created {len(bullets)} resume bullets")
+        skills = self._generate_and_persist_skills(resume, template, parsed_jd.requirements)
+        print(f"Created {len(skills)} resume skills")
         
-        # pdf_path = resume.render_to_pdf(output_dir=output_dir)
+        pdf_path = resume.render_to_pdf(output_dir=output_dir)
+        print(f"\n{'='*60}")
+        print(f"Resume generated successfully!")
+        print(f"PDF Location: {pdf_path}")
+        print(f"\n{'='*60}")
         
-        # print(f"\n{'='*60}")
-        # print(f"Resume generated successfully!")
-        # print(f"{'='*60}")
-        # print(f"Company: {job.company}")
-        # print(f"Role: {job.listing_job_title}")
-        # print(f"Match Score: {resume.match_percentage()}")
-        # if resume.unmet_list():
-        #     print(f"Unmet Requirements: {', '.join(resume.unmet_list())}")
-        # print(f"PDF Location: {pdf_path}")
-        # print(f"{'='*60}\n")
-        
-        # if auto_open_pdf:
-        #     self._open_pdf(pdf_path)
+        if auto_open_pdf:
+            self._open_pdf(pdf_path)
     
     def _persist_job_and_requirements(self, parsed_jd) -> Job:
         """Persist job metadata and requirements to database.
@@ -163,71 +150,28 @@ class Orchestrator:
         )
         return resume
     
-    def _generate_and_persist_bullets(
-        self,
-        resume: Resume,
-        job: Job,
-        template: ResumeTemplate,
-    ) -> None:
-        """Generate and persist experience and skill bullets.
-        
-        Args:
-            resume: Resume instance to populate.
-            job: Job instance with requirements.
-            template: Template with role configurations.
-        """
-        requirements_data = self._prepare_requirements_data(job)
-        
-        self._generate_experience_bullets(resume, template, requirements_data)
-        
-        self._generate_skill_bullets(resume, requirements_data, job.role)
-    
-    def _prepare_requirements_data(self, job: Job) -> List[Dict]:
-        """Prepare requirements data sorted by relevance.
-        
-        Args:
-            job: Job instance to extract requirements from.
-            
-        Returns:
-            List of requirement dictionaries sorted by relevance (highest first).
-        """
-        requirements = Requirement.objects.filter(job=job).order_by(
-            "-relevance", "order"
-        )
-        
-        requirements_data = []
-        for req in requirements:
-            requirements_data.append({
-                "text": req.text,
-                "keywords": req.keywords,
-                "relevance": req.relevance,
-            })
-        
-        return requirements_data
-    
-    def _generate_experience_bullets(
+    def _generate_and_persist_experience_bullets(
         self,
         resume: Resume,
         template: ResumeTemplate,
-        requirements_data: List[Dict],
+        requirements: List[RequirementSchema],
     ) -> None:
         """Generate and persist experience bullets for all configured roles.
         
         Args:
             resume: Resume instance to populate.
             template: Template with role configurations.
-            requirements_data: Sorted list of requirement dictionaries.
+            requirements: List of RequirementSchema objects.
         """
         role_configs = template.role_configs.select_related(
             "experience_role"
         ).order_by("order")
         
         bullets_to_create = []
-        
         for config in role_configs:
             bullet_list = self.resume_writer.generate_experience_bullets(
                 experience_role=config.experience_role,
-                requirements=requirements_data,
+                requirements=requirements,
                 target_role=template.target_role,
                 max_bullet_count=config.max_bullet_count,
             )
@@ -242,27 +186,24 @@ class Orchestrator:
                     )
                 )
         
-        ResumeExperienceBullet.objects.bulk_create(bullets_to_create)
+        created = ResumeExperienceBullet.objects.bulk_create(bullets_to_create)
+
+        return created
     
-    def _generate_skill_bullets(
+    def _generate_and_persist_skills(
         self,
         resume: Resume,
-        requirements_data: List[Dict],
-        target_role: str,
+        template: ResumeTemplate,
+        requirements: List[RequirementSchema],
     ) -> None:
         """Generate and persist skill bullets.
         
         Args:
             resume: Resume instance to populate.
-            requirements_data: Sorted list of requirement dictionaries.
-            target_role: Target job role string.
+            requirements: List of RequirementSchema objects.
+            template: Template with role configurations.
         """
-        skill_bullet_list = self.resume_writer.generate_skill_bullets(
-            resume=resume,
-            requirements=requirements_data,
-            target_role=target_role,
-            max_category_count=6,
-        )
+        skill_bullet_list = self.resume_writer.generate_skill_bullets(template, requirements)
         
         skills_to_create = []
         for skill_category in skill_bullet_list.skill_categories:
@@ -270,11 +211,13 @@ class Orchestrator:
                 ResumeSkillBullet(
                     resume=resume,
                     category=skill_category.category,
-                    skills_text=skill_category.skills_text,
+                    skills_text=skill_category.skills,
                 )
             )
         
-        ResumeSkillBullet.objects.bulk_create(skills_to_create)
+        created = ResumeSkillBullet.objects.bulk_create(skills_to_create)
+
+        return created
     
     def _open_pdf(self, pdf_path: str) -> None:
         """Open generated PDF with system default viewer.
