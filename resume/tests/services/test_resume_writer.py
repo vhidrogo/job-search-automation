@@ -2,9 +2,14 @@ import json
 from django.test import TestCase
 from unittest.mock import Mock
 
-from tracker.models import JobRole
+from tracker.models import JobRole, JobLevel
 from resume.clients import ClaudeClient
-from resume.models import ExperienceProject, ExperienceRole
+from resume.models import (
+    ExperienceProject,
+    ExperienceRole,
+    ResumeTemplate,
+    TemplateRoleConfig,
+)
 from resume.schemas import (
     BulletListModel,
     ExperienceBullet,
@@ -22,22 +27,35 @@ class TestResumeWriter(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.experience_role = ExperienceRole.objects.create(
+            key="role1",
             title="Software Engineer",
             company="Nav.it",
         )
+        cls.template = ResumeTemplate.objects.create(
+            target_role=JobRole.SOFTWARE_ENGINEER,
+            target_level=JobLevel.II,
+        )
+        TemplateRoleConfig.objects.create(
+            template=cls.template,
+            experience_role=cls.experience_role,
+            order=1,
+            max_bullet_count=1,
+        )
+        cls.tools = ["Python", "Django"]
 
         cls.requirement_text1 = "5+ years of Python experience"
         cls.requirement_text2 = "Experience with Django web framework"
-        cls.requirement_keyword1, cls.requirement_keyword2 = "Python", "Django"
+        cls.requirement_keywords1 = ["Python", "experience"]
+        cls.requirement_keywords2 = ["Django", "web framework"]
         cls.requirements = [
             RequirementSchema(
                 text=cls.requirement_text1,
-                keywords=[cls.requirement_keyword1, "experience"],
+                keywords=cls.requirement_keywords1,
                 relevance=0.95,
             ),
             RequirementSchema(
                 text=cls.requirement_text2,
-                keywords=[cls.requirement_keyword2, "web framework"],
+                keywords=cls.requirement_keywords2,
                 relevance=0.90,
             ),
         ]
@@ -176,14 +194,19 @@ class TestResumeWriter(TestCase):
         self.assertIn(short_name, prompt)
         self.assertIn(actions, prompt)
 
+    def _create_default_project_with_tools(self):
+        ExperienceProject.objects.create(
+            experience_role=self.experience_role,
+            tools=self.tools,
+        )
+
     def test_generate_skill_bullets_returns_validated_bullets(self):
-        ExperienceProject.objects.create(experience_role=self.experience_role)
+        self._create_default_project_with_tools()
         self.mock_client.generate.return_value = self.skill_response
 
         result = self.resume_writer.generate_skill_bullets(
-            experience_role=self.experience_role,
+            template=self.template,
             requirements=self.requirements,
-            target_role=self.TARGET_ROLE,
         )
 
         self.mock_client.generate.assert_called_once()
@@ -201,64 +224,138 @@ class TestResumeWriter(TestCase):
         )
         self.assertEqual(result, expected)
 
-    def test_generate_skill_bullets_raises_when_no_projects(self):
+    def test_generate_skill_bullets_raises_when_no_role_configs(self):
+        self._create_default_project_with_tools()
+        template = ResumeTemplate.objects.create()
         with self.assertRaises(ValueError) as cm:
             self.resume_writer.generate_skill_bullets(
-                experience_role=self.experience_role,
+                template=template,
                 requirements=self.requirements,
-                target_role=self.TARGET_ROLE,
             )
 
         error_msg = str(cm.exception)
-        self.assertIn("No experience ", error_msg)
-        self.assertIn(str(self.experience_role), error_msg)
+        self.assertIn("No role configs found", error_msg)
+
+    def test_generate_skill_bullets_raises_when_no_tools(self):
+        ExperienceProject.objects.create(experience_role=self.experience_role)
+        with self.assertRaises(ValueError) as cm:
+            self.resume_writer.generate_skill_bullets(
+                template=self.template,
+                requirements=self.requirements,
+            )
+
+        error_msg = str(cm.exception)
+        self.assertIn("No tools found", error_msg)
+    
+    def test_generate_skill_bullets_raises_when_no_projects(self):
+        with self.assertRaises(ValueError) as cm:
+            self.resume_writer.generate_skill_bullets(
+                template=self.template,
+                requirements=self.requirements,
+            )
+
+        error_msg = str(cm.exception)
+        self.assertIn("No projects found", error_msg)
 
     def test_generate_skill_bullets_raises_on_invalid_json(self):
-        ExperienceProject.objects.create(experience_role=self.experience_role)
+        self._create_default_project_with_tools()
         self.mock_client.generate.return_value = "invalid json"
 
         with self.assertRaises(ValueError):
             self.resume_writer.generate_skill_bullets(
-                experience_role=self.experience_role,
+                template=self.template,
                 requirements=self.requirements,
-                target_role=self.TARGET_ROLE,
             )
 
     def test_generate_skill_bullets_raises_on_excess_categories(self):
-        ExperienceProject.objects.create(experience_role=self.experience_role)
+        self._create_default_project_with_tools()
         self.mock_client.generate.return_value = self.skill_response
         max_category_count = 1
 
         with self.assertRaises(ValueError) as cm:
             self.resume_writer.generate_skill_bullets(
-                experience_role=self.experience_role,
+                template=self.template,
                 requirements=self.requirements,
-                target_role=self.TARGET_ROLE,
                 max_category_count=max_category_count,
             )
 
         self.assertIn(f"maximum allowed is {max_category_count}", str(cm.exception))
 
-    def test_generate_skill_bullets_builds_prompt_with_data(self):
-        tools = ["Python", "Django"]
-        ExperienceProject.objects.create(
-            experience_role=self.experience_role,
-            tools=tools,
-        )
+    def test_generate_skill_bullets_builds_prompt_with_requirement_keywords(self):
+        self._create_default_project_with_tools()
         self.mock_client.generate.return_value = self.skill_response
         
         self.resume_writer.generate_skill_bullets(
-            experience_role=self.experience_role,
+            template=self.template,
             requirements=self.requirements,
-            target_role=self.TARGET_ROLE,
         )
         
         self.mock_client.generate.assert_called_once()
         prompt = self.mock_client.generate.call_args[0][0]
-        
-        # Verify all experience tools included in prompt
-        self.assertTrue(all(tool in prompt for tool in tools))
+        self.assertTrue(
+            all(keyword in prompt for keyword in self.requirement_keywords1),
+            f"Prompt does not include all unique keywords from requirement: {self.requirement_text1}.",
+        )
+        self.assertTrue(
+            all(keyword in prompt for keyword in self.requirement_keywords2),
+            f"Prompt does not include all unique keywords from requirement: {self.requirement_text2}.",
+        )
 
-        # Verify requirement keywords included in prompt
-        self.assertIn(self.requirement_keyword1, prompt)
-        self.assertIn(self.requirement_keyword2, prompt)
+    def test_generate_skill_bullets_prompt_includes_all_tools_for_all_included_roles(self):
+        self._create_default_project_with_tools()
+        role2 = ExperienceRole.objects.create(
+            key="role2",
+            title="Software Development Engineer",
+            company="Amazon.com",
+        )
+        TemplateRoleConfig.objects.create(
+            template=self.template,
+            experience_role=role2,
+            order=2,
+            max_bullet_count=1,
+        )
+        role2_tools = ["Java", "AWS"]
+        ExperienceProject.objects.create(
+            experience_role=role2,
+            tools=role2_tools,
+        )
+        self.mock_client.generate.return_value = self.skill_response
+        
+        self.resume_writer.generate_skill_bullets(
+            template=self.template,
+            requirements=self.requirements,
+        )
+        
+        self.mock_client.generate.assert_called_once()
+        prompt = self.mock_client.generate.call_args[0][0]
+        self.assertTrue(
+            all(tool in prompt for tool in self.tools),
+            f"Prompt does not include all unique tools from role: {self.experience_role}.",
+        )
+        self.assertTrue(
+            all(tool in prompt for tool in role2_tools),
+            f"Prompt does not include all unique tools from role: {role2}.",
+        )
+
+    def test_generate_skill_bullets_prompt_excludes_tools_for_excluded_roles(self):
+        self._create_default_project_with_tools()
+        role2 = ExperienceRole.objects.create(
+            key="role2",
+            title="Software Development Engineer",
+            company="Amazon.com",
+        )
+        role2_tools = ["Java", "AWS"]
+        ExperienceProject.objects.create(
+            experience_role=role2,
+            tools=role2_tools,
+        )
+        self.mock_client.generate.return_value = self.skill_response
+        
+        self.resume_writer.generate_skill_bullets(
+            template=self.template,
+            requirements=self.requirements,
+        )
+        
+        self.mock_client.generate.assert_called_once()
+        prompt = self.mock_client.generate.call_args[0][0]
+        self.assertTrue(all(tool not in prompt for tool in role2_tools))
