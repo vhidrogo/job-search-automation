@@ -87,7 +87,7 @@ class Resume(models.Model):
         company = self._sanitize_filename(self.job.company)
         title = self._sanitize_filename(self.job.listing_job_title)
         
-        return f"{company}_{title}.pdf"
+        return f"{company}_{title}_{self.job.level}.pdf"
 
 
     def _sanitize_filename(self, text: str) -> str:
