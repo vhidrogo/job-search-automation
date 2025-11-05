@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
 
-from resume.models import ResumeTemplate
+from resume.models import ResumeTemplate, StylePath, TemplatePath
 from tracker.models.job import JobLevel, JobRole
 
 
@@ -11,12 +11,12 @@ class TestResumeTemplateModel(TestCase):
 
     TARGET_ROLE = JobRole.SOFTWARE_ENGINEER
     TARGET_LEVEL = JobLevel.II
-    TEMPLATE_PATH = "templates/software_engineer_ii.html"
-    STYLE_PATH = "css/resume.css"
+    TEMPLATE_PATH = TemplatePath.SOFTWARE_ENGINEER_I
+    STYLE_PATH = StylePath.STANDARD
     ALT_TARGET_ROLE = JobRole.DATA_ENGINEER
     ALT_TARGET_LEVEL = JobLevel.SENIOR
-    ALT_TEMPLATE_PATH = "templates/data_engineer_senior.html"
-    ALT_STYLE_PATH = "css/resume_alt.css"
+    ALT_TEMPLATE_PATH = TemplatePath.SOFTWARE_ENGINEER_II
+    ALT_STYLE_PATH = StylePath.COMPACT
 
     def test_create_resume_template(self) -> None:
         """Test creating a ResumeTemplate instance."""
