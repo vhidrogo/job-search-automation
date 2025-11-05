@@ -363,6 +363,46 @@ Resume templates need to display different experience roles with appropriate tit
 **Reflection:**  
 This decision reinforces that template proliferation is not inherently problematic when templates serve distinct purposes—especially with inheritance mechanisms like Jinja2. The temptation to "reduce files" through dynamic injection often introduces architectural complexity that outweighs storage savings. Future template variations (A/B testing layouts, level-specific formatting) remain trivial to implement with dedicated templates but would require significant refactoring with dynamic injection.
 
+#### Template Path Validation: TextChoices vs Separate Models vs Free Text
+
+**Context:**  
+The `ResumeTemplate` model stores file paths to HTML templates and CSS stylesheets. While flexibility to name files arbitrarily was initially desired, free-text path fields risk typos, invalid paths, and stale references in the database.
+
+**Options Considered:**  
+1. **Free-text CharField:**  
+   - Allow arbitrary path strings to be entered when creating `ResumeTemplate` instances.  
+2. **Separate models (TemplatePath, CssPath):**  
+   - Create dedicated models to store valid paths as database records.  
+   - Reference these via foreign keys from `ResumeTemplate`.  
+3. **TextChoices enums:**  
+   - Define `TemplatePath` and `StylePath` TextChoices classes listing all valid paths.  
+   - Use as `choices` parameter on `template_path` and `style_path` fields.
+
+**Tradeoffs:**  
+- **Free-text CharField:**  
+  - ✅ Maximum flexibility for arbitrary naming.  
+  - ❌ No validation—typos and invalid paths can be saved.  
+  - ❌ Risk of stale/orphaned references.  
+  - ❌ Poor admin UX (no dropdown guidance).  
+- **Separate models:**  
+  - ✅ Avoids code changes when adding new templates/stylesheets.  
+  - ✅ Database-enforced referential integrity.  
+  - ❌ Overkill for files created in code anyway.  
+  - ❌ Still allows invalid paths to be entered (just in a different model).  
+  - ❌ Adds schema complexity and indirection.  
+- **TextChoices enums:**  
+  - ✅ Validation at database and form level—prevents invalid paths.  
+  - ✅ Self-documenting—code explicitly lists available templates.  
+  - ✅ Clean admin UX with dropdown selectors.  
+  - ✅ Type-safe and easy to debug.  
+  - ❌ Requires code change when adding new templates (but templates are code artifacts anyway).
+
+**Decision:**  
+Adopt **TextChoices enums** (`TemplatePath`, `StylePath`) for path validation. Since templates and stylesheets are code artifacts requiring code changes to create, adding entries to TextChoices is a trivial extension of that workflow and enforces intentionality about available templates.
+
+**Reflection:**  
+The "code change required" aspect is a feature, not a bug—it keeps the codebase in sync with filesystem reality. The separate models approach would only make sense for user-uploaded templates or multi-tenant systems, neither of which apply here. TextChoices provides the optimal balance of safety, usability, and maintainability for developer-created template assets.
+
 ---
 
 ### Application Tracking
