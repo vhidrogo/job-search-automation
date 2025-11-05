@@ -17,6 +17,8 @@ from resume.models import (
     ResumeExperienceBullet,
     ResumeSkillBullet,
     ResumeTemplate,
+    StylePath,
+    TemplatePath,
     TemplateRoleConfig,
 )
 from tracker.models import Job, JobLevel, JobRole, WorkSetting
@@ -94,8 +96,8 @@ class TestResumeModelIntegration(TestCase):
         template = ResumeTemplate.objects.create(
             target_role=target_level,
             target_level=target_role,
-            template_path="html/software_engineer_i.html",
-            style_path="css/resume_standard.css",
+            template_path=TemplatePath.SOFTWARE_ENGINEER_I,
+            style_path=StylePath.STANDARD,
         )
 
         job = self._create_job(target_role, target_level)
@@ -131,8 +133,8 @@ class TestResumeModelIntegration(TestCase):
         template = ResumeTemplate.objects.create(
             target_role=target_level,
             target_level=target_role,
-            template_path="html/software_engineer_ii.html",
-            style_path="css/resume_compact.css",
+            template_path=TemplatePath.SOFTWARE_ENGINEER_II,
+            style_path=StylePath.COMPACT,
         )
 
         job = self._create_job(target_role, target_level)
