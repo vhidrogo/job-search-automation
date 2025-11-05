@@ -30,6 +30,7 @@ class TestResumeModel(TestCase):
         job = Job.objects.create(
             company=self.COMPANY,
             listing_job_title=self.LISTING_JOB_TITLE,
+            level=JobLevel.II,
         )
         self.resume = Resume.objects.create(
             job=job,
@@ -51,7 +52,7 @@ class TestResumeModel(TestCase):
 
         mock_mkdir.assert_called_once()
         mock_render.assert_called_once_with(self.TEMPLATE_PATH, ANY)
-        self.assertEqual(result, "output/resumes/Meta_Software_Engineer.pdf")
+        self.assertEqual(result, "output/resumes/Meta_Software_Engineer_II.pdf")
 
     @patch("resume.models.resume.CSS")
     @patch.object(HTML, "write_pdf")
@@ -70,7 +71,7 @@ class TestResumeModel(TestCase):
 
         result = resume.render_to_pdf()
 
-        self.assertEqual(result, "output/resumes/Has_space_special_chars.pdf")
+        self.assertEqual(result, "output/resumes/Has_space_special_chars_.pdf")
 
     @patch("resume.models.resume.CSS")
     @patch.object(HTML, "write_pdf")
