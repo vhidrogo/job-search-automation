@@ -29,6 +29,8 @@ class TestResumeModelIntegration(TestCase):
 
     NAVIT_KEY = "navit"
     AMAZON_SDE_KEY = "amazon_sde"
+    AMAZON_BIE_KEY = "amazon_bie"
+    AVENU_KEY = "avenu" 
 
     BULLETS = {
         NAVIT_KEY: [
@@ -42,6 +44,14 @@ class TestResumeModelIntegration(TestCase):
             "Developed event-driven serverless workflows using AWS Lambda and DynamoDB, implementing stateless token-based promotion flows with fault-tolerant reward delivery logic",
             "Created full-stack admin portal with Vue.js and Java backend, enabling non-technical stakeholders to manage promotions and configurations through CRUD operations on DynamoDB",
             "Collaborated with cross-functional teams using Git for version control, participated in code reviews and sprint planning to deliver scalable features on schedule",
+        ],
+        AMAZON_BIE_KEY: [
+            "Delivered on-time executive dashboards for Amazon Transportation Services by optimizing SQL queries and data pipelines, reducing query execution time by 30% to meet early-morning SLAs.",
+            "Built scalable data pipelines using Amazon S3, Glue, and Redshift, reducing third-party vendor onboarding time and enabling operational growth through standardized SOPs.",
+        ],
+        AVENU_KEY: [
+            "Saved 5+ hours weekly by developing a desktop GUI application using Python (tkinter) and SQL to automate PDF report generation.",
+            "Improved large-scale data processing efficiency by applying Python chunking techniques to handle datasets exceeding 20M records.",
         ],
     }
 
@@ -62,11 +72,20 @@ class TestResumeModelIntegration(TestCase):
             company="Nav.it",
             title="Software Engineer",
         )
-
         cls.amazon_sde_role = ExperienceRole.objects.create(
             key=cls.AMAZON_SDE_KEY,
             company="Amazon.com",
             title="Software Development Engineer",
+        )
+        cls.amazon_bie_role = ExperienceRole.objects.create(
+            key=cls.AMAZON_BIE_KEY,
+            company="Amazon.com",
+            title="Business Intelligence Engineer II",
+        )
+        cls.avenu_role = ExperienceRole.objects.create(
+            key=cls.AVENU_KEY,
+            company="Avenu Insight & Analytics",
+            title="Business Analyst"
         )
 
     def test_render_to_pdf_software_engineer_i(self):
@@ -99,6 +118,61 @@ class TestResumeModelIntegration(TestCase):
             max_bullet_count=amazon_sde_bullet_count,
         )
         self._create_experience_bullets(resume, self.amazon_sde_role, amazon_sde_bullet_count, self.AMAZON_SDE_KEY)
+
+        self._create_skills(resume)
+
+        pdf_path = resume.render_to_pdf(self.OUTPUT_DIR)
+        
+        self.assertTrue(Path(pdf_path).exists())
+
+    def test_render_to_pdf_software_engineer_ii(self):
+        target_role, target_level = JobRole.SOFTWARE_ENGINEER, JobLevel.II
+        
+        template = ResumeTemplate.objects.create(
+            target_role=target_level,
+            target_level=target_role,
+            template_path="html/software_engineer_ii.html",
+            style_path="css/resume_compact.css",
+        )
+
+        job = self._create_job(target_role, target_level)
+        resume = self._create_resume(template, job)
+       
+        navit_bullet_count = 4
+        TemplateRoleConfig.objects.create(
+            template=template,
+            experience_role=self.navit_role,
+            order=1,
+            max_bullet_count=navit_bullet_count,
+        )
+        self._create_experience_bullets(resume, self.navit_role, navit_bullet_count, self.NAVIT_KEY)
+
+        amazon_sde_bullet_count = 4
+        TemplateRoleConfig.objects.create(
+            template=template,
+            experience_role=self.amazon_sde_role,
+            order=2,
+            max_bullet_count=amazon_sde_bullet_count,
+        )
+        self._create_experience_bullets(resume, self.amazon_sde_role, amazon_sde_bullet_count, self.AMAZON_SDE_KEY)
+
+        amazon_bie_bullet_count = 2
+        TemplateRoleConfig.objects.create(
+            template=template,
+            experience_role=self.amazon_bie_role,
+            order=3,
+            max_bullet_count=amazon_bie_bullet_count,
+        )
+        self._create_experience_bullets(resume, self.amazon_bie_role, amazon_bie_bullet_count, self.AMAZON_BIE_KEY)
+
+        avenu_bullet_count = 2
+        TemplateRoleConfig.objects.create(
+            template=template,
+            experience_role=self.avenu_role,
+            order=4,
+            max_bullet_count=avenu_bullet_count,
+        )
+        self._create_experience_bullets(resume, self.avenu_role, avenu_bullet_count, self.AVENU_KEY)
 
         self._create_skills(resume)
 
