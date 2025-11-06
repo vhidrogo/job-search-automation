@@ -18,6 +18,11 @@ class TemplateRoleConfigInline(admin.TabularInline):
     extra = 1
 
 
+class ExperienceProjectAdmin(admin.ModelAdmin):
+    list_filter = ['experience_role']
+    search_fields = ['short_name', 'tools']
+
+
 class ExperienceRoleAdmin(admin.ModelAdmin):
     inlines = [
         ExperienceProjectInline,
@@ -30,7 +35,7 @@ class ResumeTemplateAdmin(admin.ModelAdmin):
     ]
 
 
-admin.site.register(ExperienceProject)
+admin.site.register(ExperienceProject, ExperienceProjectAdmin)
 admin.site.register(ExperienceRole, ExperienceRoleAdmin)
 admin.site.register(ResumeTemplate, ResumeTemplateAdmin)
 admin.site.register(TemplateRoleConfig)
