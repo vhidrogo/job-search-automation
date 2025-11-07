@@ -1,7 +1,9 @@
-from django.test import TestCase
 from pathlib import Path
 from unittest.mock import ANY, patch
 from weasyprint import HTML
+
+from django.test import TestCase
+from django.utils import timezone
 
 from resume.models import (
     ExperienceRole,
@@ -36,7 +38,11 @@ class TestResumeModel(TestCase):
             job=job,
             template=self.template,
             )
-        self.role = ExperienceRole.objects.create(key="key1")
+        self.role = ExperienceRole.objects.create(
+            key="key1",
+            start_date=timezone.now(),
+            end_date=timezone.now(),
+        )
 
     def test_str(self):
         self.assertEqual(str(self.resume), "Resume for Meta - Software Engineer")
@@ -126,7 +132,11 @@ class TestResumeModel(TestCase):
             order=1,
             text=bullet_text2,
         )
-        role = ExperienceRole.objects.create(key="other role")
+        role = ExperienceRole.objects.create(
+            key="other role",
+            start_date=timezone.now(),
+            end_date=timezone.now(),
+        )
         bullet_text1 = "role 1 bullet"
         ResumeExperienceBullet.objects.create(
             resume=self.resume,

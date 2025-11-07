@@ -1,6 +1,7 @@
 from unittest.mock import call, Mock, patch
 
 from django.test import TestCase
+from django.utils import timezone
 
 from orchestration.orchestrator import Orchestrator
 from resume.models import (
@@ -206,8 +207,16 @@ class TestOrchestrator(TestCase):
 
         # Create test roles and configs
         max_bullet_count = 2
-        role1 = ExperienceRole.objects.create(key="role1")
-        role2 = ExperienceRole.objects.create(key="role2")
+        role1 = ExperienceRole.objects.create(
+            key="role1",
+            start_date=timezone.now(),
+            end_date=timezone.now(),
+        )
+        role2 = ExperienceRole.objects.create(
+            key="role2",
+            start_date=timezone.now(),
+            end_date=timezone.now(),
+        )
         for i, role in enumerate([role1, role2], start=1):
             TemplateRoleConfig.objects.create(
                 template=self.template,
