@@ -43,8 +43,12 @@ class TemplateRoleConfig(models.Model):
             models.UniqueConstraint(
                 fields=["template", "experience_role"],
                 name="unique_template_experience_role",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["template", "order"],
+                name="unique_template_order",
+            ),
         ]
 
     def __str__(self) -> str:
-        return f"{self.template} ({self.experience_role}"
+        return f"{self.template} ({self.experience_role})"
