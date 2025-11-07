@@ -10,6 +10,8 @@ class ExperienceRole(models.Model):
       - company: Employer name.
       - title: Job title.
       - display_name: Optional human-facing name; if null, renders as "title - company".
+      - start_date: The date the role began.
+      - end_date: The date the role ended.
     """
 
     key = models.CharField(
@@ -25,17 +27,16 @@ class ExperienceRole(models.Model):
         max_length=255,
         help_text="Job title (e.g., 'Software Engineer').",
     )
-    display_name = models.CharField(
-        max_length=255,
-        blank=True,
-        default="",
-        help_text="Optional human-facing name; if empty, renders as 'title - company'.",
+    start_date = models.DateField(
+        help_text="The date the role began.",
     )
+    end_date = models.DateField(
+        help_text="The date the role ended.",
+    )
+    
 
     class Meta:
         app_label = "resume"
 
     def __str__(self) -> str:
-        if self.display_name:
-            return self.display_name
         return f"{self.title} - {self.company}"
