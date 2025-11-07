@@ -9,8 +9,8 @@ class TemplatePath(models.TextChoices):
 
     Paths are relative to the template directory (not absolute file system paths).
     """
-    SOFTWARE_ENGINEER_I = "html/software_engineer_i.html", "Software Engineer I"
-    SOFTWARE_ENGINEER_II = "html/software_engineer_ii.html", "Software Engineer II"
+    ANALYST = "html/analyst.html", "Analyst"
+    ENGINEER = "html/engineer.html", "Engineer"
 
 
 class StylePath(models.TextChoices):
