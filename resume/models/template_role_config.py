@@ -24,6 +24,12 @@ class TemplateRoleConfig(models.Model):
         related_name="template_configs",
         help_text="The experience role to configure for this template.",
     )
+    title_override = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+        help_text="Experience roole title override (e.g., 'Software Engineer (Data Systems)').",
+    )
     order = models.PositiveIntegerField(
         help_text="Display order for this role within the template (lower values appear first).",
     )
@@ -41,4 +47,4 @@ class TemplateRoleConfig(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.template.target_role} ({self.template.target_level}) — {self.experience_role.key}"
+        return f"{self.template} ({self.experience_role}"
