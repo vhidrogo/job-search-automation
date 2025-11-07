@@ -8,6 +8,7 @@ from resume.models import (
     ResumeExperienceBullet,
     ResumeSkillBullet,
     ResumeTemplate,
+    TargetSpecialization,
 )
 from resume.schemas import RequirementSchema
 from resume.services import JDParser, ResumeWriter
@@ -114,25 +115,40 @@ class Orchestrator:
     def _get_template(self, job: Job) -> ResumeTemplate:
         """Fetch matching resume template for job.
         
+        Uses specialized template if job has a valid target specialization,
+        otherwise uses generic template for the role/level combination.
+        
         Args:
             job: Job instance to find template for.
-            
+        
         Returns:
             Matching ResumeTemplate instance.
-            
+        
         Raises:
-            ValueError: If no matching template exists.
+            ValueError: If no matching template exists for the job's requirements.
         """
-        try:
-            template = ResumeTemplate.objects.get(
-                target_role=job.role,
-                target_level=job.level,
-            )
-            return template
-        except ResumeTemplate.DoesNotExist:
-            raise ValueError(
-                f"No template found for role={job.role}, level={job.level}"
-            )
+        if job.specialization and job.specialization in TargetSpecialization.values:
+            try:
+                return ResumeTemplate.objects.get(
+                    target_role=job.role,
+                    target_level=job.level,
+                    target_specialization=job.specialization,
+                )
+            except ResumeTemplate.DoesNotExist:
+                raise ValueError(
+                    f"No template found for role={job.role}, level={job.level}, specialization={job.specialization}"
+                )
+        else:
+            try:
+                return ResumeTemplate.objects.get(
+                    target_role=job.role,
+                    target_level=job.level,
+                    target_specialization__isnull=True,
+                )
+            except ResumeTemplate.DoesNotExist:
+                raise ValueError(
+                    f"No template found for role={job.role}, level={job.level}"
+                )
     
     def _create_resume(self, job: Job, template: ResumeTemplate) -> Resume:
         """Create initial resume record.

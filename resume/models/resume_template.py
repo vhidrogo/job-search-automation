@@ -23,6 +23,11 @@ class StylePath(models.TextChoices):
     STANDARD = "css/resume_standard.css", "Standard"
 
 
+class TargetSpecialization(models.TextChoices):
+    BACKEND = "Backend"
+    PYTHON = "Python"
+
+
 class ResumeTemplate(models.Model):
     """
     Represents a resume template configuration for a specific target role and level.
@@ -44,6 +49,13 @@ class ResumeTemplate(models.Model):
         choices=JobLevel.choices,
         help_text="Target seniority level (e.g., 'II', 'Senior').",
     )
+    target_specialization = models.CharField(
+        max_length=16,
+        choices=TargetSpecialization.choices,
+        help_text="Optional specialization (e.g., 'Backend', 'Python').",
+        null=True,
+        blank=True,
+    )
     template_path = models.CharField(
         max_length=255,
         choices=TemplatePath.choices,
@@ -59,10 +71,18 @@ class ResumeTemplate(models.Model):
         app_label = "resume"
         constraints = [
             models.UniqueConstraint(
+                fields=["target_role", "target_level", "target_specialization"],
+                name="unique_role_level_specialization",
+            ),
+            models.UniqueConstraint(
                 fields=["target_role", "target_level"],
-                name="unique_role_level_template",
-            )
+                condition=models.Q(target_specialization__isnull=True),
+                name="unique_role_level_no_specialization",
+            ),
         ]
 
     def __str__(self) -> str:
-        return f"{self.target_role} ({self.target_level})"
+        result = f"{self.target_role} {self.target_level}"
+        if self.target_specialization:
+            result += f" ({self.target_specialization})"
+        return result

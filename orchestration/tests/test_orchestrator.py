@@ -9,6 +9,7 @@ from resume.models import (
     ResumeExperienceBullet,
     ResumeTemplate,
     ResumeSkillBullet,
+    TargetSpecialization,
     TemplateRoleConfig,
 )
 from resume.schemas import (
@@ -41,6 +42,7 @@ class TestOrchestrator(TestCase):
     SKILL_CATEGORY2 = "Frameworks"
     TARGET_LEVEL = JobLevel.II
     TARGET_ROLE = JobRole.SOFTWARE_ENGINEER
+    TARGET_SPECIALIZATION = TargetSpecialization.BACKEND
 
     @classmethod
     def setUpTestData(cls):
@@ -62,6 +64,19 @@ class TestOrchestrator(TestCase):
                 listing_job_title=cls.LISTING_JOB_TITLE,
                 role=cls.TARGET_ROLE,
                 level=cls.TARGET_LEVEL,
+                location="Seattle, WA",
+                work_setting=WorkSetting.HYBRID,
+            ),
+            requirements=cls.requirements,
+        )
+
+        cls.jd_model_with_specialization = JDModel(
+            metadata=Metadata(
+                company=cls.COMPANY,
+                listing_job_title=cls.LISTING_JOB_TITLE,
+                role=cls.TARGET_ROLE,
+                level=cls.TARGET_LEVEL,
+                specialization=cls.TARGET_SPECIALIZATION,
                 location="Seattle, WA",
                 work_setting=WorkSetting.HYBRID,
             ),
@@ -129,7 +144,7 @@ class TestOrchestrator(TestCase):
         self.assertEqual(resume.template, self.template)
         self.assertEqual(resume.job, job)
 
-    def test_run_raises_when_no_template(self):
+    def test_run_raises_when_no_template_without_specialization(self):
         with self.assertRaises(ValueError) as cm:
             self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
 
@@ -137,6 +152,54 @@ class TestOrchestrator(TestCase):
         self.assertIn("No template found", error_msg)
         self.assertIn(self.TARGET_ROLE, error_msg)
         self.assertIn(self.TARGET_LEVEL, error_msg)
+
+    def test_run_raises_when_no_template_with_specialization(self):
+        self._create_default_template()
+        self.mock_jd_parser.parse.return_value = self.jd_model_with_specialization
+        
+        with self.assertRaises(ValueError) as cm:
+            self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
+
+        error_msg = str(cm.exception)
+        self.assertIn("No template found", error_msg)
+        self.assertIn(self.TARGET_ROLE, error_msg)
+        self.assertIn(self.TARGET_LEVEL, error_msg)
+        self.assertIn(self.TARGET_SPECIALIZATION, error_msg)
+
+    def test_run_uses_template_for_target_specialization(self):
+        template = ResumeTemplate.objects.create(
+            target_role=self.TARGET_ROLE,
+            target_level=self.TARGET_LEVEL,
+            target_specialization=self.TARGET_SPECIALIZATION,
+            )
+        self.mock_jd_parser.parse.return_value = self.jd_model_with_specialization
+
+        self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
+
+        self.assertEqual(Resume.objects.count(), 1)
+        resume = Resume.objects.first()
+        self.assertEqual(resume.template, template)
+
+    def test_run_uses_role_and_level_template_for_non_target_specialization(self):
+        self._create_default_template()
+        self.mock_jd_parser.parse.return_value = JDModel(
+            metadata=Metadata(
+                company=self.COMPANY,
+                listing_job_title=self.LISTING_JOB_TITLE,
+                role=self.TARGET_ROLE,
+                level=self.TARGET_LEVEL,
+                specialization="NON-TARGET SPECIALIZATION",
+                location="Seattle, WA",
+                work_setting=WorkSetting.HYBRID,
+            ),
+            requirements=self.requirements,
+        )
+
+        self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
+
+        self.assertEqual(Resume.objects.count(), 1)
+        resume = Resume.objects.first()
+        self.assertEqual(resume.template, self.template)
 
     def test_run_generates_and_persists_resume_bullets_for_all_roles(self):
         self._create_default_template()
