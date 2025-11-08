@@ -9,9 +9,9 @@ class ExperienceRole(models.Model):
       - key: Stable identifier used by templates to reference this role.
       - company: Employer name.
       - title: Job title.
-      - display_name: Optional human-facing name; if null, renders as "title - company".
       - start_date: The date the role began.
       - end_date: The date the role ended.
+      - location: Location where the role was set in.
     """
 
     key = models.CharField(
@@ -32,6 +32,10 @@ class ExperienceRole(models.Model):
     )
     end_date = models.DateField(
         help_text="The date the role ended.",
+    )
+    location = models.CharField(
+        max_length=50,
+        help_text="Location where the role was set in. (e.g 'Seattle, WA', 'Remote')",
     )
     
 
