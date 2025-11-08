@@ -8,6 +8,7 @@ class TemplateRoleConfig(models.Model):
     Fields:
       - template: The resume template this configuration belongs to.
       - experience_role: The experience role to include in the template.
+      - title_override: Optional experience roole title override.
       - order: Display order for this role within the template (lower values appear first).
       - max_bullet_count: Maximum number of bullets to generate for this role.
     """
