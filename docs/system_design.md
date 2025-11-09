@@ -7,7 +7,7 @@ This design emphasizes modularity, configurability, and token-efficient LLM orch
 
 ---
 
-## High-Level Architecture
+## High-Level Directory Structure
 
 ```
 job_search_automation/ (Django Project)
@@ -86,7 +86,7 @@ Resume templates use **HTML + CSS + Jinja2**, rendered to PDF via **WeasyPrint**
 
 **Template Structure:**  
 - **Base template** (`base.html`): Contains static content (name, contact info, education) and defines Jinja2 blocks for dynamic sections (experience, skills).  
-- **Child templates** (e.g., `software_engineer_ii.html`): Extend base template and override blocks with role-specific content.  
+- **Child templates** (e.g., `engineer.html`): Extend base template and override blocks with role-specific content.  
 - **CSS stylesheet** (`resume.css`): Defines all visual styling (Calibri font, 20pt name, 14pt section headers, 12pt experience titles, 11pt bullets, spacing, margins).
 
 **Template Selection:**  
@@ -99,9 +99,9 @@ Resume templates use **HTML + CSS + Jinja2**, rendered to PDF via **WeasyPrint**
 2. `Job.generate_resume_pdf()` fetches associated `Resume` and delegates to `Resume.render_to_pdf()`.
 3. `Resume.render_to_pdf()` fetches `ResumeTemplate` and associated `TemplateRoleConfig` entries.
 4. Query `ResumeExperienceBullet` and `ResumeSkillBullet` objects (filtered by `exclude=False`), using `override_text` if present, otherwise `text`.
-5. Render HTML template with Jinja2, injecting bullets and skills.
+5. Render HTML template with Jinja2, injecting roles (using `title_override` if present), bullets and skills.
 6. Pass rendered HTML + CSS to WeasyPrint for PDF generation.
-7. Save output file with naming convention based on job details (e.g., `{company}_{listing_job_title}_{apply_date}.pdf`).
+7. Save output file with naming convention based on job details (e.g., `{company}_{listing_job_title}_{level}.pdf`).
 
 **Template Directory Structure:**  
 ```
@@ -109,10 +109,11 @@ resume/
   templates/
     html/
       base.html                      # Base template with static content
-      software_engineer_ii.html      # Child template for SWE II role
-      data_engineer_ii.html          # Child template for DE II role
+      analyst.html                   # Child template for analyst roles
+      engineer.html                  # Child template for engineer roles
     css/
-      resume.css                     # Shared stylesheet for all templates
+      compact.css                    # Stylesheet with compact properties
+      standard.css                   # Stylesheet with standard properties
 ```
 
 **Benefits:**  
@@ -314,7 +315,9 @@ flowchart TD
 | id | IntegerField | Primary key |
 | target_role | CharField | e.g., "Software Engineer" |
 | target_level | CharField | e.g., "II" |
-| template_path | CharField | Path to Markdown template |
+| target_specialization | CharField | Optional specialization (e.g., "Backend", "Python") |
+| template_path | CharField | Path to HTML template |
+| style_path | CharField | Path to CSS stylesheet |
 
 #### Resume
 | Field | Type | Description |
@@ -367,10 +370,11 @@ flowchart TD
 | Field | Type | Description |
 |--------|------|-------------|
 | id | IntegerField | Primary key |
-| template | FK(ResumeTemplate) | Which template |
-| experience_role | FK(ExperienceRole) | Which experience role |
-| order | IntegerField | Display order for this role within the template (lower values appear first) |
-| max_bullet_count | PositiveIntegerField | Max number of bullets to generate for this role |
+| template | FK(ResumeTemplate) | The resume template this configuration belongs to |
+| experience_role | FK(ExperienceRole) | The experience role to include in the template |
+| title_override | CharField | Optional experience role title override |
+| order | PositiveIntegerField | Display order for this role within the template (lower values appear first) |
+| max_bullet_count | PositiveIntegerField | Maximum number of bullets to generate for this role |
 
 #### Application
 | Field | Type | Description |
@@ -431,7 +435,7 @@ Incremental Build Plan
 | [x] Phase 4 | Skill-section generation | JSON output |
 | [x] Phase 5 | Template selection | Correct HTML template (TemplateRoleConfig-based) |
 | [x] Phase 6 | Resume rendering | `Job.generate_resume_pdf()` + `Resume.render_to_pdf()` |
-| [ ] Phase 7 | orchestration app End-to-end automation | Persisted resume + tracker models |
+| [x] Phase 7 | orchestration app End-to-end automation | Persisted resume + tracker models |
 | [ ] Phase 8 | Analytics | dashboards: compute feedback loops & high-ROI insights |
 
 ---
