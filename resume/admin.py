@@ -16,6 +16,7 @@ class ExperienceProjectInline(admin.TabularInline):
 class TemplateRoleConfigInline(admin.TabularInline):
     model = TemplateRoleConfig
     extra = 1
+    ordering = ['order']
 
 
 class ExperienceProjectAdmin(admin.ModelAdmin):
@@ -24,6 +25,8 @@ class ExperienceProjectAdmin(admin.ModelAdmin):
 
 
 class ExperienceRoleAdmin(admin.ModelAdmin):
+    list_display = ['company', 'title', 'start_date', 'end_date', 'location']
+    ordering = ['-start_date']
     inlines = [
         ExperienceProjectInline,
     ]
