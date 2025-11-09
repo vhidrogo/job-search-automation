@@ -153,12 +153,10 @@ class ResumeWriter:
         """
         data = [
             {
-                "short_name": p.short_name,
                 "problem_context": p.problem_context,
                 "actions": p.actions,
                 "tools": p.tools,
                 "outcomes": p.outcomes,
-                "impact_area": p.impact_area,
             }
             for p in projects
         ]
