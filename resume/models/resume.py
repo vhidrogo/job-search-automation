@@ -158,9 +158,9 @@ class Resume(models.Model):
         end_date = experience_role.end_date.strftime("%b %Y") if experience_role.end_date else "Present"
         
         return f"""<div class="experience-header">
-            <span class="experience-title">{title}</span>
-            <span class="experience-dates">{start_date} - {end_date}</span>
-        </div>"""
+        <span class="experience-title">{title}</span>
+        <span class="experience-dates">{start_date} - {end_date}</span>
+    </div>"""
 
     def _render_experience_subheader(self, experience_role: ExperienceRole) -> str:
         """
@@ -173,9 +173,9 @@ class Resume(models.Model):
             HTML string for the experience subheader.
         """
         return f"""<div class="experience-subheader">
-            <span class="experience-company">{escape(experience_role.company)}</span>
-            <span class="experience-location">{escape(experience_role.location)}</span>
-        </div>"""
+        <span class="experience-company">{escape(experience_role.company)}</span>
+        <span class="experience-location">{escape(experience_role.location)}</span>
+    </div>"""
 
     def _render_role_bullets(self, experience_role: ExperienceRole) -> str:
         """
