@@ -364,7 +364,6 @@ flowchart TD
 | actions | CharField | CSV string of action items (e.g., "implemented X, rewrote Y") |
 | tools | CharField | CSV string of tools/technologies (e.g., "Django,Postgres") |
 | outcomes | CharField | CSV string of short outcomes (e.g., "reduced latency 80%") |
-| impact_area | CharField | e.g., "Performance Optimization", "User Engagement" |
 
 #### TemplateRoleConfig
 | Field | Type | Description |

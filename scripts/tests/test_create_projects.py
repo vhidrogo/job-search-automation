@@ -35,7 +35,6 @@ class TestCreateProjectsFromData(TestCase):
         	        "Sample outcome 1",
         	        "Sample outcome 2"
         	    ],
-        	    "impact_area": "Sample Area"
         	},
         	{
         	    "short_name": short_name2,
@@ -52,7 +51,6 @@ class TestCreateProjectsFromData(TestCase):
         	        "Sample outcome 1",
         	        "Sample outcome 2"
         	    ],
-        	    "impact_area": "Sample Area"
         	}
         ]
 

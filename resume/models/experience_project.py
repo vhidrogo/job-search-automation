@@ -12,7 +12,6 @@ class ExperienceProject(models.Model):
       - actions: List of action items ["implemented X", "rewrote Y"].
       - tools: Comma-separated list of tools/technologies used (e.g., "Django,Postgres").
       - outcomes: Comma-separated list of short outcomes (e.g., "reduced latency 80%").
-      - impact_area: Category describing the type of impact (e.g., "Performance Optimization").
     """
 
     experience_role = models.ForeignKey(
@@ -31,10 +30,6 @@ class ExperienceProject(models.Model):
     actions = models.JSONField(default=list)
     tools = models.JSONField(default=list)
     outcomes = models.JSONField(default=list)
-    impact_area = models.CharField(
-        max_length=255,
-        help_text="Category describing the type of impact (e.g., 'Performance Optimization', 'User Engagement').",
-    )
 
     class Meta:
         app_label = "resume"

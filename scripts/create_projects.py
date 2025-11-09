@@ -44,7 +44,7 @@ def create_projects_from_data(
             f"Please create it first or check the key."
         )
     
-    required_fields = ['short_name', 'problem_context', 'actions', 'tools', 'outcomes', 'impact_area']
+    required_fields = ['short_name', 'problem_context', 'actions', 'tools', 'outcomes']
     
     # Validate all projects first
     projects_to_create = []
@@ -66,7 +66,6 @@ def create_projects_from_data(
             actions=project_data['actions'],
             tools=project_data['tools'],
             outcomes=project_data['outcomes'],
-            impact_area=project_data['impact_area']
         )
         projects_to_create.append(project)
     
