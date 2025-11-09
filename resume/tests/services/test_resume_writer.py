@@ -169,11 +169,11 @@ class TestResumeWriter(TestCase):
         self.assertIn(f"maximum allowed is {max_bullet_count}", str(cm.exception))
 
     def test_generate_experience_bullets_builds_prompt_with_data(self):
-        short_name = "API Integration"
+        tools = "Python"
         actions = "Wrote API client"
         ExperienceProject.objects.create(
             experience_role=self.experience_role,
-            short_name=short_name,
+            tools=tools,
             actions=actions,
         )
         self.mock_client.generate.return_value = self.bullet_response
@@ -185,17 +185,11 @@ class TestResumeWriter(TestCase):
             max_bullet_count=2,
         )
 
-        self.mock_client.generate.assert_called_once()
-        prompt= self.mock_client.generate.call_args[0][0]
-
+        prompt = self._get_prompt_arg()
         self.assertIn(self.TARGET_ROLE, prompt)
-
-        # Verify requirement data included in prompt
         self.assertIn(self.requirement_text1, prompt)
         self.assertIn(self.requirement_text2, prompt)
-        
-        # Verify project data included in prompt
-        self.assertIn(short_name, prompt)
+        self.assertIn(tools, prompt)
         self.assertIn(actions, prompt)
 
     def _create_default_project_with_tools(self):
@@ -294,8 +288,7 @@ class TestResumeWriter(TestCase):
             requirements=self.requirements,
         )
         
-        self.mock_client.generate.assert_called_once()
-        prompt = self.mock_client.generate.call_args[0][0]
+        prompt = self._get_prompt_arg()
         self.assertTrue(
             all(keyword in prompt for keyword in self.requirement_keywords1),
             f"Prompt does not include all unique keywords from requirement: {self.requirement_text1}.",
@@ -332,8 +325,7 @@ class TestResumeWriter(TestCase):
             requirements=self.requirements,
         )
         
-        self.mock_client.generate.assert_called_once()
-        prompt = self.mock_client.generate.call_args[0][0]
+        prompt = self._get_prompt_arg()
         self.assertTrue(
             all(tool in prompt for tool in self.tools),
             f"Prompt does not include all unique tools from role: {self.experience_role}.",
@@ -364,6 +356,9 @@ class TestResumeWriter(TestCase):
             requirements=self.requirements,
         )
         
-        self.mock_client.generate.assert_called_once()
-        prompt = self.mock_client.generate.call_args[0][0]
+        prompt = self._get_prompt_arg()
         self.assertTrue(all(tool not in prompt for tool in role2_tools))
+
+    def _get_prompt_arg(self):
+        self.mock_client.generate.assert_called_once()
+        return self.mock_client.generate.call_args[0][0]
