@@ -16,6 +16,7 @@ class ExperienceProjectInline(admin.TabularInline):
 class TemplateRoleConfigInline(admin.TabularInline):
     model = TemplateRoleConfig
     extra = 1
+    ordering = ['order']
 
 
 class ExperienceProjectAdmin(admin.ModelAdmin):
