@@ -1,2 +1,1 @@
-from .experience_bullet_builder import build_experience_bullets_for_prompt
 from .requirement_json_builder import build_requirement_json

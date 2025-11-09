@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.utils import timezone
 
 from resume.models import ExperienceProject, ExperienceRole
 
@@ -22,6 +23,8 @@ class TestExperienceProjectModel(TestCase):
             key=self.ROLE_KEY,
             company=self.ROLE_COMPANY,
             title=self.ROLE_TITLE,
+            start_date=timezone.now(),
+            end_date=timezone.now(),
         )
 
     def test_create_experience_project(self) -> None:

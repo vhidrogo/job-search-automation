@@ -1,6 +1,8 @@
 import json
-from django.test import TestCase
 from unittest.mock import Mock
+
+from django.test import TestCase
+from django.utils import timezone
 
 from tracker.models import JobRole, JobLevel
 from resume.clients import ClaudeClient
@@ -30,6 +32,8 @@ class TestResumeWriter(TestCase):
             key="role1",
             title="Software Engineer",
             company="Nav.it",
+            start_date=timezone.now(),
+            end_date=timezone.now(),
         )
         cls.template = ResumeTemplate.objects.create(
             target_role=JobRole.SOFTWARE_ENGINEER,
@@ -307,6 +311,8 @@ class TestResumeWriter(TestCase):
             key="role2",
             title="Software Development Engineer",
             company="Amazon.com",
+            start_date=timezone.now(),
+            end_date=timezone.now(),
         )
         TemplateRoleConfig.objects.create(
             template=self.template,
@@ -343,6 +349,8 @@ class TestResumeWriter(TestCase):
             key="role2",
             title="Software Development Engineer",
             company="Amazon.com",
+            start_date=timezone.now(),
+            end_date=timezone.now(),
         )
         role2_tools = ["Java", "AWS"]
         ExperienceProject.objects.create(

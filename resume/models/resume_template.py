@@ -9,8 +9,8 @@ class TemplatePath(models.TextChoices):
 
     Paths are relative to the template directory (not absolute file system paths).
     """
-    SOFTWARE_ENGINEER_I = "html/software_engineer_i.html", "Software Engineer I"
-    SOFTWARE_ENGINEER_II = "html/software_engineer_ii.html", "Software Engineer II"
+    ANALYST = "html/analyst.html", "Analyst"
+    ENGINEER = "html/engineer.html", "Engineer"
 
 
 class StylePath(models.TextChoices):
@@ -30,11 +30,12 @@ class TargetSpecialization(models.TextChoices):
 
 class ResumeTemplate(models.Model):
     """
-    Represents a resume template configuration for a specific target role and level.
+    Represents a resume template configuration for a specific target role, level, and optional specialization.
 
     Fields:
       - target_role: The role this template targets (e.g., 'Software Engineer').
       - target_level: The seniority level this template targets (e.g., 'II', 'Senior').
+      - target_specialization: Optional specialization within the role (e.g., 'Backend', 'Python').
       - template_path: File path to the HTML template used for rendering.
       - style_path: File path to the CSS stylesheet used for styling.
     """

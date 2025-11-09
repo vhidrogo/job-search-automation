@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.utils import timezone
 
 from resume.models import ExperienceRole
 from scripts.create_projects import create_projects_from_data
@@ -9,7 +10,11 @@ class TestCreateProjectsFromData(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.role = ExperienceRole.objects.create(key=cls.VALID_KEY)
+        cls.role = ExperienceRole.objects.create(
+            key=cls.VALID_KEY,
+            start_date=timezone.now(),
+            end_date=timezone.now(),
+        )
 
     def test_create_projects_from_data_creates_objects(self):
         short_name1 = "Sample Integration Project"

@@ -1,4 +1,5 @@
 from pathlib import Path
+from html import escape
 from typing import Dict, Optional
 from weasyprint import CSS, HTML
 
@@ -8,6 +9,7 @@ from django.utils.safestring import mark_safe
 from django.template.loader import render_to_string
 
 from .experience_role import ExperienceRole
+from .template_role_config import TemplateRoleConfig
 
 
 class Resume(models.Model):
@@ -101,20 +103,79 @@ class Resume(models.Model):
         Build the context dictionary for template rendering.
         
         Returns:
-            Dictionary with role bullet placeholders (e.g., 'first_role_bullets')
-            and 'skills' HTML string.
+            Dictionary with 'experience' HTML string and 'skills' HTML string.
         """
         context = {}
         
         configs = self.template.role_configs.select_related("experience_role").order_by("order")
         
-        for i, config in enumerate(configs):
-            bullets_html = self._render_role_bullets(config.experience_role)
-            context[f"experience_bullets_{i + 1}"] = bullets_html
+        experience_entries = []
+        for config in configs:
+            entry_html = self._render_experience_entry(config.experience_role, config)
+            experience_entries.append(entry_html)
         
+        context["experience"] = mark_safe("\n\n".join(experience_entries))
         context["skills"] = self._render_skills()
         
         return context
+
+    def _render_experience_entry(self, experience_role: ExperienceRole, template_role_config: TemplateRoleConfig) -> str:
+        """
+        Render HTML for a complete experience entry.
+        
+        Args:
+            experience_role: The experience role to render.
+            template_role_config: The template configuration for this role.
+            
+        Returns:
+            HTML string for the complete experience entry.
+        """
+        header_html = self._render_experience_header(experience_role, template_role_config)
+        subheader_html = self._render_experience_subheader(experience_role)
+        bullets_html = self._render_role_bullets(experience_role)
+        
+        return f"""<div class="experience-entry">
+    {header_html}
+    {subheader_html}
+    <ul class="experience-bullets">
+        {bullets_html}
+    </ul>
+</div>"""
+
+    def _render_experience_header(self, experience_role: ExperienceRole, template_role_config: TemplateRoleConfig) -> str:
+        """
+        Render HTML for the experience header (title and dates).
+        
+        Args:
+            experience_role: The experience role to render.
+            template_role_config: The template configuration for this role.
+            
+        Returns:
+            HTML string for the experience header with dates formatted like "May 2023".
+        """
+        title = escape(template_role_config.title_override if template_role_config.title_override else experience_role.title)
+        start_date = experience_role.start_date.strftime("%b %Y")
+        end_date = experience_role.end_date.strftime("%b %Y") if experience_role.end_date else "Present"
+        
+        return f"""<div class="experience-header">
+        <span class="experience-title">{title}</span>
+        <span class="experience-dates">{start_date} - {end_date}</span>
+    </div>"""
+
+    def _render_experience_subheader(self, experience_role: ExperienceRole) -> str:
+        """
+        Render HTML for the experience subheader (company and location).
+        
+        Args:
+            experience_role: The experience role to render.
+            
+        Returns:
+            HTML string for the experience subheader.
+        """
+        return f"""<div class="experience-subheader">
+        <span class="experience-company">{escape(experience_role.company)}</span>
+        <span class="experience-location">{escape(experience_role.location)}</span>
+    </div>"""
 
     def _render_role_bullets(self, experience_role: ExperienceRole) -> str:
         """
@@ -134,8 +195,8 @@ class Resume(models.Model):
         if not bullets.exists():
             return ""
 
-        html = "\n ".join(f"<li>{x.display_text()}</li>" for x in bullets)
-
+        html = "\n        ".join(f"<li>{escape(x.display_text())}</li>" for x in bullets)
+        
         return mark_safe(html)
 
     def _render_skills(self) -> str:

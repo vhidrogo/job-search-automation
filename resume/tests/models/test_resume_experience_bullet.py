@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.utils import timezone
 
 from resume.models import (
     ExperienceRole,
@@ -51,6 +52,8 @@ class TestResumeExperienceBulletModel(TestCase):
             key=self.EXPERIENCE_KEY,
             company=self.EXPERIENCE_COMPANY,
             title=self.EXPERIENCE_TITLE,
+            start_date=timezone.now(),
+            end_date=timezone.now(),
         )
 
     def test_create_experience_bullet(self) -> None:
@@ -306,7 +309,8 @@ class TestResumeExperienceBulletModel(TestCase):
         other_role = ExperienceRole.objects.create(
             key="amazon_sde",
             company="Amazon",
-            title="Software Development Engineer",
+            start_date=timezone.now(),
+            end_date=timezone.now(),
         )
 
         bullet1 = ResumeExperienceBullet.objects.create(

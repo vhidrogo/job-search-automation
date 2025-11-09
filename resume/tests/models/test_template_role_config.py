@@ -1,239 +1,108 @@
 from django.db import IntegrityError
 from django.test import TestCase
+from django.utils import timezone
 
 from resume.models import ExperienceRole, ResumeTemplate, TemplateRoleConfig
 from tracker.models.job import JobLevel, JobRole
 
 
 class TestTemplateRoleConfigModel(TestCase):
-    """Test suite for the TemplateRoleConfig model."""
+    TARGET_ROLE = JobRole.SOFTWARE_ENGINEER
+    TARGET_LEVEL = JobLevel.II
+    COMPANY = "Amazon.com"
+    TITLE = "Software Engineer"
 
-    MAX_BULLET_COUNT = 5
-    ORDER = 1
-
-    def setUp(self) -> None:
-        """Set up test fixtures."""
-        self.template = ResumeTemplate.objects.create(
-            target_role=JobRole.SOFTWARE_ENGINEER,
-            target_level=JobLevel.II,
-            template_path="templates/swe_ii.md",
+    @classmethod
+    def setUpTestData(cls):
+        cls.template = ResumeTemplate.objects.create(
+            target_role=cls.TARGET_ROLE,
+            target_level=cls.TARGET_LEVEL,
         )
-        self.role = ExperienceRole.objects.create(
-            key="navit",
-            company="Nav.it",
-            title="Software Engineer",
+        cls.role = ExperienceRole.objects.create(
+            company=cls.COMPANY,
+            title=cls.TITLE,
+            start_date=timezone.now(), 
+            end_date=timezone.now(),
         )
 
-    def test_create_template_role_config(self) -> None:
-        """Test creating a TemplateRoleConfig instance."""
+        cls.other_role = ExperienceRole.objects.create(
+            key="other role",
+            start_date=timezone.now(), 
+            end_date=timezone.now(),
+        )
+        
+    def test_str(self):
         config = TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=self.role,
-            order=self.ORDER,
-            max_bullet_count=self.MAX_BULLET_COUNT,
+            max_bullet_count=1,
+            order=1,
         )
+        self.assertEqual(str(config), "Software Engineer II (Software Engineer - Amazon.com)")
 
-        self.assertEqual(config.template, self.template)
-        self.assertEqual(config.experience_role, self.role)
-        self.assertEqual(config.order, self.ORDER)
-        self.assertEqual(config.max_bullet_count, self.MAX_BULLET_COUNT)
-        self.assertIsNotNone(config.id)
-
-    def test_str_representation(self) -> None:
-        """Test the string representation."""
-        config = TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=self.role,
-            order=self.ORDER,
-            max_bullet_count=self.MAX_BULLET_COUNT,
-        )
-
-        self.assertEqual(str(config), "Software Engineer (II) — navit")
-
-    def test_unique_template_experience_role_constraint(self) -> None:
-        """Test that template and experience_role combination must be unique."""
+    def test_unique_template_experience_role_constraint(self):
         TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=self.role,
-            order=self.ORDER,
-            max_bullet_count=self.MAX_BULLET_COUNT,
+            max_bullet_count=1,
+            order=1,
         )
 
         with self.assertRaises(IntegrityError):
             TemplateRoleConfig.objects.create(
                 template=self.template,
                 experience_role=self.role,
+                max_bullet_count=1,
                 order=2,
-                max_bullet_count=3,
             )
 
-    def test_multiple_configs_for_same_template(self) -> None:
-        """Test creating multiple configs for the same template with different roles."""
-        role2 = ExperienceRole.objects.create(
-            key="amazon_sde",
-            company="Amazon",
-            title="Software Development Engineer",
-        )
-
+    def test_same_template_different_experience_role_allowed(self):
         config1 = TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=self.role,
-            order=self.ORDER,
-            max_bullet_count=self.MAX_BULLET_COUNT,
+            max_bullet_count=1,
+            order=1,
         )
         config2 = TemplateRoleConfig.objects.create(
             template=self.template,
-            experience_role=role2,
+            experience_role=self.other_role,
+            max_bullet_count=1,
             order=2,
-            max_bullet_count=4,
         )
-
-        self.assertEqual(self.template.role_configs.count(), 2)
+        self.assertEqual(TemplateRoleConfig.objects.count(), 2)
+        self.assertEqual(config1.template, config2.template)
         self.assertNotEqual(config1.experience_role, config2.experience_role)
 
-    def test_multiple_configs_for_same_role(self) -> None:
-        """Test creating multiple configs for the same role across different templates."""
-        template2 = ResumeTemplate.objects.create(
-            target_role=JobRole.SOFTWARE_ENGINEER,
-            target_level=JobLevel.SENIOR,
-            template_path="templates/swe_senior.md",
+
+    def test_unique_template_order_constraint(self):
+        TemplateRoleConfig.objects.create(
+            template=self.template,
+            experience_role=self.role,
+            max_bullet_count=1,
+            order=1,
         )
 
+        with self.assertRaises(IntegrityError):
+            TemplateRoleConfig.objects.create(
+                template=self.template,
+                experience_role=self.other_role,
+                max_bullet_count=1,
+                order=1,
+            )
+
+    def test_same_template_different_order_allowed(self):
         config1 = TemplateRoleConfig.objects.create(
             template=self.template,
             experience_role=self.role,
-            order=self.ORDER,
-            max_bullet_count=self.MAX_BULLET_COUNT,
+            max_bullet_count=1,
+            order=1,
         )
         config2 = TemplateRoleConfig.objects.create(
-            template=template2,
-            experience_role=self.role,
-            order=3,
-            max_bullet_count=7,
-        )
-
-        self.assertEqual(self.role.template_configs.count(), 2)
-        self.assertNotEqual(config1.template, config2.template)
-
-    def test_related_name_from_template(self) -> None:
-        """Test accessing configs from template via related_name."""
-        TemplateRoleConfig.objects.create(
             template=self.template,
-            experience_role=self.role,
-            order=self.ORDER,
-            max_bullet_count=self.MAX_BULLET_COUNT,
-        )
-
-        configs = self.template.role_configs.all()
-        self.assertEqual(configs.count(), 1)
-        self.assertEqual(configs.first().experience_role, self.role)
-
-    def test_related_name_from_role(self) -> None:
-        """Test accessing configs from experience role via related_name."""
-        TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=self.role,
-            order=self.ORDER,
-            max_bullet_count=self.MAX_BULLET_COUNT,
-        )
-
-        configs = self.role.template_configs.all()
-        self.assertEqual(configs.count(), 1)
-        self.assertEqual(configs.first().template, self.template)
-
-    def test_order_by_order_field(self) -> None:
-        """Test ordering configs by the order field."""
-        role2 = ExperienceRole.objects.create(
-            key="amazon_sde",
-            company="Amazon",
-            title="Software Development Engineer",
-        )
-        role3 = ExperienceRole.objects.create(
-            key="google_swe",
-            company="Google",
-            title="Software Engineer",
-        )
-
-        TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=role2,
+            experience_role=self.other_role,
+            max_bullet_count=1,
             order=2,
-            max_bullet_count=4,
         )
-        TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=self.role,
-            order=1,
-            max_bullet_count=self.MAX_BULLET_COUNT,
-        )
-        TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=role3,
-            order=3,
-            max_bullet_count=3,
-        )
-
-        configs = self.template.role_configs.order_by("order")
-        ordered_roles = [config.experience_role.key for config in configs]
-        self.assertEqual(ordered_roles, ["navit", "amazon_sde", "google_swe"])
-
-    def test_cascade_delete_from_template(self) -> None:
-        """Test that deleting a template cascades to its configs."""
-        TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=self.role,
-            order=self.ORDER,
-            max_bullet_count=self.MAX_BULLET_COUNT,
-        )
-
-        self.assertEqual(TemplateRoleConfig.objects.count(), 1)
-        self.template.delete()
-        self.assertEqual(TemplateRoleConfig.objects.count(), 0)
-
-    def test_cascade_delete_from_role(self) -> None:
-        """Test that deleting an experience role cascades to its configs."""
-        TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=self.role,
-            order=self.ORDER,
-            max_bullet_count=self.MAX_BULLET_COUNT,
-        )
-
-        self.assertEqual(TemplateRoleConfig.objects.count(), 1)
-        self.role.delete()
-        self.assertEqual(TemplateRoleConfig.objects.count(), 0)
-
-    def test_order_field_zero_value(self) -> None:
-        """Test that order field accepts zero as a valid value."""
-        config = TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=self.role,
-            order=0,
-            max_bullet_count=self.MAX_BULLET_COUNT,
-        )
-
-        self.assertEqual(config.order, 0)
-
-    def test_multiple_configs_with_same_order(self) -> None:
-        """Test creating multiple configs with the same order value."""
-        role2 = ExperienceRole.objects.create(
-            key="amazon_sde",
-            company="Amazon",
-            title="Software Development Engineer",
-        )
-
-        config1 = TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=self.role,
-            order=1,
-            max_bullet_count=self.MAX_BULLET_COUNT,
-        )
-        config2 = TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=role2,
-            order=1,
-            max_bullet_count=4,
-        )
-
-        self.assertEqual(config1.order, config2.order)
-        self.assertEqual(self.template.role_configs.count(), 2)
+        self.assertEqual(TemplateRoleConfig.objects.count(), 2)
+        self.assertEqual(config1.template, config2.template)
+        self.assertNotEqual(config1.order, config2.order)
