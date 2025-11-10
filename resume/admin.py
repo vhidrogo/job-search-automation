@@ -1,11 +1,11 @@
 from django.contrib import admin
 from django.db import models
-# from django.forms import Textarea
 from django_json_widget.widgets import JSONEditorWidget
 
 from .models import (
     ExperienceProject,
     ExperienceRole,
+    Resume,
     ResumeTemplate,
     TemplateRoleConfig,
 )
@@ -47,5 +47,6 @@ class ResumeTemplateAdmin(admin.ModelAdmin):
 
 admin.site.register(ExperienceProject, ExperienceProjectAdmin)
 admin.site.register(ExperienceRole, ExperienceRoleAdmin)
+admin.site.register(Resume)
 admin.site.register(ResumeTemplate, ResumeTemplateAdmin)
 admin.site.register(TemplateRoleConfig)
