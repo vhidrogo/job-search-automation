@@ -1,4 +1,5 @@
 import json
+from json_repair import repair_json
 from typing import Any, Dict
 
 
@@ -18,18 +19,21 @@ def parse_llm_json(text: str) -> Dict[str, Any]:
 
     Raises:
         ValueError: If the response appears truncated (missing closing brace/bracket).
-        ValueError: If the JSON cannot be parsed after normalization.
+        ValueError: If the JSON cannot be parsed even after repair.
     """
     cleaned = text.replace("```json", "").replace("```", "").strip()
     
     if not (cleaned.endswith("}") or cleaned.endswith("]")):
-        raise ValueError(
-            "LLM output truncated = increase max_tokens or retry."
-        )
-    
+        raise ValueError("LLM output truncated = increase max_tokens or retry.")
+
     try:
         return json.loads(cleaned)
-    except json.JSONDecodeError as e:
-        raise ValueError(
-            f"Failed to parse LLM JSON output: {e}\n\n{cleaned}"
-        ) from e
+    except json.JSONDecodeError:
+        try:
+            repaired = repair_json(cleaned)
+            
+            return json.loads(repaired)
+        except Exception as e:
+            raise ValueError(
+                f"Failed to parse or repair LLM JSON output: {e}\n\n{cleaned}"
+            ) from e
