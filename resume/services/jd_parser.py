@@ -1,9 +1,11 @@
 from pathlib import Path
-from resume.schemas.jd_schema import JDModel
+
 from resume.clients import ClaudeClient
+from resume.schemas import JDModel
 from resume.utils.prompt import fill_placeholders, load_prompt
 from resume.utils.validation import parse_llm_json
 from resume.utils.validation import validate_with_schema
+from tracker.models import LlmRequestLog
 
 
 class JDParser:
@@ -37,6 +39,7 @@ class JDParser:
         jd_source: str = None,
         jd_text: str = None,
         model: str = None,
+        max_tokens: int = 3000,
     ) -> JDModel:
         """Parse a job description into structured requirements and metadata.
         
@@ -61,7 +64,12 @@ class JDParser:
         prompt_template = load_prompt(self.prompt_path)
         prompt = fill_placeholders(prompt_template, {self.placeholder: jd_content})
         
-        response_text = self.client.generate(prompt, model=model, max_tokens=4000)
+        response_text = self.client.generate(
+            prompt,
+            call_type=LlmRequestLog.CallType.PARSE_JD,
+            model=model,
+            max_tokens=max_tokens,
+        )
         parsed_data = parse_llm_json(response_text)
         validated_data = validate_with_schema(parsed_data, JDModel)
         

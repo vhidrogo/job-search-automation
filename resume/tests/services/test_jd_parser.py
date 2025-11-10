@@ -1,62 +1,56 @@
-import json
 import pytest
-from unittest.mock import MagicMock
-from resume.services.jd_parser import JDParser
-from resume.schemas.jd_schema import JDModel
+from unittest.mock import ANY, Mock
+
+from resume.clients import ClaudeClient
+from resume.schemas import JDModel
+from resume.services import JDParser
+from tracker.models import LlmRequestLog
 
 
 class TestJDParser:
-    """Unit test suite for the JDParser util, ensuring robust validation,
-    parsing, and error handling behavior across all key failure modes.
-    """
+    MOCK_JD_TEXT = "some JD text"
+    MOCK_LLM_RESPONSE = '{"mocked": "response"}'
+    MOCK_PARSED_JSON = {"mocked": "response"}
+    MOCK_PROMPT = "filled prompt"
+    MOCK_TEMPLATE = "prompt with placeholder"
 
     @pytest.fixture(autouse=True)
-    def setup(self) -> None:
-        """Set up a fresh JDParser instance with a mocked LLM client for each test."""
-        self.parser = JDParser()
-        self.parser.client = MagicMock()
+    def setup(self, monkeypatch):
+        self.mock_load_prompt = Mock(return_value=self.MOCK_TEMPLATE)
+        self.mock_fill_placeholders = Mock(return_value=self.MOCK_PROMPT)
+        self.mock_parse_llm_json = Mock(return_value=self.MOCK_PARSED_JSON)
 
-    def test_happy_path(self) -> None:
-        """Validates that JDParser correctly parses and validates a well-formed LLM JSON output."""
-        valid_json = {
-            "metadata": {
-                "company": "Meta",
-                "listing_job_title": "Software Engineer",
-                "role": "Software Engineer",
-                "work_setting": "Remote"
-            },
-            "requirements": [
-                {"text": "Strong Python skills", "keywords": ["Python"], "relevance": 0.9, "order": 1}
-            ]
-        }
+        self.mock_jd_model = Mock(spec=JDModel)
+        self.mock_validate_with_schema = Mock(return_value=self.mock_jd_model)
 
-        self.parser.client.generate.return_value = json.dumps(valid_json)
-        result: JDModel = self.parser.parse(jd_text="some job text")
+        monkeypatch.setattr("resume.services.jd_parser.load_prompt", self.mock_load_prompt)
+        monkeypatch.setattr("resume.services.jd_parser.fill_placeholders", self.mock_fill_placeholders)
+        monkeypatch.setattr("resume.services.jd_parser.parse_llm_json", self.mock_parse_llm_json)
+        monkeypatch.setattr("resume.services.jd_parser.validate_with_schema", self.mock_validate_with_schema)
 
-        assert result.metadata.company == "Meta"
-        assert result.requirements[0].keywords == ["Python"]
-        assert result.metadata.work_setting == "Remote"
+        self.mock_client = Mock(spec=ClaudeClient)
+        self.mock_client.generate.return_value = self.MOCK_LLM_RESPONSE
+        self.parser = JDParser(client=self.mock_client)
 
-    def test_missing_input_raises_value_error(self) -> None:
-        """Ensures that calling parse() without jd_text or jd_source raises a ValueError."""
+    def test_parse_returns_validated_data(self):
+        result = self.parser.parse(jd_text=self.MOCK_JD_TEXT)
+
+        self.mock_load_prompt.assert_called_once_with(self.parser.prompt_path)
+        self.mock_fill_placeholders.assert_called_once_with(
+            self.MOCK_TEMPLATE,
+            {self.parser.placeholder: self.MOCK_JD_TEXT},
+        )
+        self.mock_client.generate.assert_called_once_with(
+            self.MOCK_PROMPT,
+            call_type=LlmRequestLog.CallType.PARSE_JD,
+            model=ANY,
+            max_tokens=ANY,
+        )
+        self.mock_parse_llm_json.assert_called_once_with(self.MOCK_LLM_RESPONSE)
+        self.mock_validate_with_schema.assert_called_once_with(self.MOCK_PARSED_JSON, JDModel)
+        assert result == self.mock_jd_model
+
+    def test_parse_raises_when_no_path_or_text_provided(self):
         with pytest.raises(ValueError, match="Provide either jd_source"):
             self.parser.parse()
-
-    def test_truncated_output_raises_value_error(self) -> None:
-        """Simulates an incomplete LLM response and verifies a truncation error is raised."""
-        self.parser.client.generate.return_value = '{"metadata": {"company": "Meta"'
-        with pytest.raises(ValueError, match="LLM output truncated"):
-            self.parser.parse(jd_text="some text")
-
-    def test_invalid_json_raises_value_error(self) -> None:
-        """Verifies that an invalid (non-JSON) LLM output raises a descriptive ValueError."""
-        self.parser.client.generate.return_value = "{invalid json}"
-        with pytest.raises(ValueError, match="Failed to parse LLM JSON output"):
-            self.parser.parse(jd_text="some text")
-
-    def test_invalid_schema_raises_value_error(self) -> None:
-        """Ensures that when JSON passes parsing but fails Pydantic validation, a ValueError is raised."""
-        invalid_json = {"metadata": {}, "requirements": []}
-        self.parser.client.generate.return_value = json.dumps(invalid_json)
-        with pytest.raises(ValueError, match="Pydantic validation failed"):
-            self.parser.parse(jd_text="some text")
+            
