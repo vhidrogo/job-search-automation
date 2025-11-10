@@ -39,6 +39,21 @@ class ExperienceRoleAdmin(admin.ModelAdmin):
     ]
 
 
+class ResumeAdmin(admin.ModelAdmin):
+    actions = ['render_resume_to_pdf']
+    
+    @admin.action(description='Render resume to PDF')
+    def render_resume_to_pdf(self, request, queryset):
+        for resume in queryset:
+            resume.render_to_pdf()
+        
+        count = queryset.count()
+        self.message_user(
+            request,
+            f'Successfully rendered {count} resume(s) to PDF.'
+        )
+
+
 class ResumeTemplateAdmin(admin.ModelAdmin):
     inlines = [
         TemplateRoleConfigInline,
@@ -47,6 +62,6 @@ class ResumeTemplateAdmin(admin.ModelAdmin):
 
 admin.site.register(ExperienceProject, ExperienceProjectAdmin)
 admin.site.register(ExperienceRole, ExperienceRoleAdmin)
-admin.site.register(Resume)
+admin.site.register(Resume, ResumeAdmin)
 admin.site.register(ResumeTemplate, ResumeTemplateAdmin)
 admin.site.register(TemplateRoleConfig)
