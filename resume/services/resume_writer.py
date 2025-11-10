@@ -7,6 +7,7 @@ from resume.schemas import BulletListModel, RequirementSchema, SkillBulletListMo
 from resume.utils.prompt import fill_placeholders, load_prompt
 from resume.utils.prompt_content_builders import build_requirement_json
 from resume.utils.validation import parse_llm_json, validate_with_schema
+from tracker.models import LlmRequestLog
 
 
 class ResumeWriter:
@@ -42,6 +43,7 @@ class ResumeWriter:
         target_role: str,
         max_bullet_count: int,
         model: str = None,
+        max_tokens: int = 4000,
     ) -> BulletListModel:
         """Generate experience bullets for a specific role tailored to job requirements.
         
@@ -83,7 +85,12 @@ class ResumeWriter:
             }
         )
         
-        response_text = self.client.generate(prompt, model=model, max_tokens=4000)
+        response_text = self.client.generate(
+            prompt,
+            call_type=LlmRequestLog.CallType.RESUME_BULLETS,
+            model=model,
+            max_tokens=max_tokens,
+        )
         parsed_data = parse_llm_json(response_text)
         validated_bullets = validate_with_schema(parsed_data, BulletListModel)
         validated_bullets.validate_max_count(max_bullet_count)
@@ -96,6 +103,7 @@ class ResumeWriter:
         requirements: List[RequirementSchema],
         max_category_count: int = 4,
         model: str = None,
+        max_tokens: int = 2000,
     ) -> SkillBulletListModel:
         """Generate skill category bullets for a resume based on requirements and included experience roles.
         
@@ -129,7 +137,12 @@ class ResumeWriter:
             }
         )
         
-        response_text = self.client.generate(prompt, model=model, max_tokens=2000)
+        response_text = self.client.generate(
+            prompt,
+            call_type=LlmRequestLog.CallType.RESUME_SKILLS,
+            model=model,
+            max_tokens=max_tokens,
+        )
         parsed_data = parse_llm_json(response_text)
         
         if isinstance(parsed_data, list):

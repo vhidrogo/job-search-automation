@@ -1,10 +1,10 @@
 import json
-from unittest.mock import Mock
+from unittest.mock import ANY, Mock
 
 from django.test import TestCase
 from django.utils import timezone
 
-from tracker.models import JobRole, JobLevel
+from tracker.models import JobRole, JobLevel, LlmRequestLog
 from resume.clients import ClaudeClient
 from resume.models import (
     ExperienceProject,
@@ -113,7 +113,12 @@ class TestResumeWriter(TestCase):
             max_bullet_count=self.MAX_BULLET_COUNT,
         )
         
-        self.mock_client.generate.assert_called_once()
+        self.mock_client.generate.assert_called_once_with(
+            ANY,
+            call_type=LlmRequestLog.CallType.RESUME_BULLETS,
+            model=ANY,
+            max_tokens=ANY,
+        )
         expected = BulletListModel(
             bullets=[
                 ExperienceBullet(
@@ -207,7 +212,12 @@ class TestResumeWriter(TestCase):
             requirements=self.requirements,
         )
 
-        self.mock_client.generate.assert_called_once()
+        self.mock_client.generate.assert_called_once_with(
+            ANY,
+            call_type=LlmRequestLog.CallType.RESUME_SKILLS,
+            model=ANY,
+            max_tokens=ANY,
+        )
         expected = SkillBulletListModel(
             skill_categories=[
                 SkillCategorySchema(
