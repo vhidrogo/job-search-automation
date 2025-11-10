@@ -34,6 +34,8 @@ class Resume(models.Model):
         help_text="Job listing this resume targets.",
     )
 
+    modified_at = models.DateTimeField(auto_now=True)
+
     class Meta:
         app_label = "resume"
         indexes = [
