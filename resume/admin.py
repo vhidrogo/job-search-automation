@@ -7,6 +7,7 @@ from .models import (
     ExperienceRole,
     Resume,
     ResumeExperienceBullet,
+    ResumeSkillBullet,
     ResumeTemplate,
     TemplateRoleConfig,
 )
@@ -22,6 +23,11 @@ class ResumeExperienceBulletInline(admin.TabularInline):
     model = ResumeExperienceBullet
     extra = 0
     ordering = ['role_order', 'role_bullet_order']
+
+
+class ResumeSkillBulletInline(admin.TabularInline):
+    model = ResumeSkillBullet
+    extra = 0
 
     
 class TemplateRoleConfigInline(admin.TabularInline):
@@ -50,6 +56,7 @@ class ResumeAdmin(admin.ModelAdmin):
     actions = ['render_resume_to_pdf']
     inlines = [
         ResumeExperienceBulletInline,
+        ResumeSkillBulletInline,
     ]
     
     @admin.action(description='Render resume to PDF')
