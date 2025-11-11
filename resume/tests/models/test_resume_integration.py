@@ -111,7 +111,7 @@ class TestResumeModelIntegration(TestCase):
             template_path=TemplatePath.ENGINEER,
             style_path=StylePath.STANDARD,
         )
-        job = self._create_job(target_role, target_level)
+        job = self._create_job("Engineer Standard", target_role, target_level)
         resume = self._create_resume(template, job)
         self._create_config(template, self.navit_role, order=1)
         self._create_config(template, self.amazon_sde_role, order=2)
@@ -131,13 +131,37 @@ class TestResumeModelIntegration(TestCase):
             template_path=TemplatePath.ENGINEER,
             style_path=StylePath.COMPACT,
         )
-        job = self._create_job(target_role, target_level)
+        job = self._create_job("Engineer Compact", target_role, target_level)
         resume = self._create_resume(template, job)
         self._create_config(template, self.navit_role, order=1)
         self._create_config(template, self.amazon_sde_role, order=2)
         self._create_config(template, self.avenu_role, order=3, title_override="Software Developer")
         self._create_experience_bullets(resume, self.navit_role, self.NAVIT_KEY)
         self._create_experience_bullets(resume, self.amazon_sde_role, self.AMAZON_SDE_KEY)
+        self._create_experience_bullets(resume, self.avenu_role, self.AVENU_KEY)
+        self._create_skills(resume)
+
+        pdf_path = resume.render_to_pdf(self.OUTPUT_DIR)
+        
+        self.assertTrue(Path(pdf_path).exists())
+
+    def test_render_to_pdf_with_engineer_template_and_dense_style(self):
+        target_role, target_level = JobRole.SOFTWARE_ENGINEER, JobLevel.II
+        template = ResumeTemplate.objects.create(
+            target_role=target_level,
+            target_level=target_role,
+            template_path=TemplatePath.ENGINEER,
+            style_path=StylePath.DENSE,
+        )
+        job = self._create_job("Engineer Dense", target_role, target_level)
+        resume = self._create_resume(template, job)
+        self._create_config(template, self.navit_role, order=1)
+        self._create_config(template, self.amazon_sde_role, order=2)
+        self._create_config(template, self.amazon_bie_role, order=3)
+        self._create_config(template, self.avenu_role, order=4)
+        self._create_experience_bullets(resume, self.navit_role, self.NAVIT_KEY)
+        self._create_experience_bullets(resume, self.amazon_sde_role, self.AMAZON_SDE_KEY)
+        self._create_experience_bullets(resume, self.amazon_bie_role, self.AMAZON_BIE_KEY)
         self._create_experience_bullets(resume, self.avenu_role, self.AVENU_KEY)
         self._create_skills(resume)
 
@@ -153,7 +177,7 @@ class TestResumeModelIntegration(TestCase):
             template_path=TemplatePath.ANALYST,
             style_path=StylePath.STANDARD,
         )
-        job = self._create_job(target_role, target_level)
+        job = self._create_job("Analyst Standard", target_role, target_level)
         resume = self._create_resume(template, job)
         self._create_config(template, self.navit_role, order=1)
         self._create_config(template, self.amazon_sde_role, order=2)
@@ -173,7 +197,29 @@ class TestResumeModelIntegration(TestCase):
             template_path=TemplatePath.ANALYST,
             style_path=StylePath.COMPACT,
         )
-        job = self._create_job(target_role, target_level)
+        job = self._create_job("Analyst Compact", target_role, target_level)
+        resume = self._create_resume(template, job)
+        self._create_config(template, self.navit_role, order=1)
+        self._create_config(template, self.amazon_sde_role, order=2)
+        self._create_config(template, self.amazon_bie_role, order=3)
+        self._create_experience_bullets(resume, self.navit_role, self.NAVIT_KEY)
+        self._create_experience_bullets(resume, self.amazon_sde_role, self.AMAZON_SDE_KEY)
+        self._create_experience_bullets(resume, self.amazon_bie_role, self.AMAZON_BIE_KEY)
+        self._create_skills(resume)
+
+        pdf_path = resume.render_to_pdf(self.OUTPUT_DIR)
+        
+        self.assertTrue(Path(pdf_path).exists())
+
+    def test_render_to_pdf_with_analyst_template_and_dense_style(self):
+        target_role, target_level = JobRole.DATA_ANALYST, JobLevel.SENIOR
+        template = ResumeTemplate.objects.create(
+            target_role=target_level,
+            target_level=target_role,
+            template_path=TemplatePath.ANALYST,
+            style_path=StylePath.DENSE,
+        )
+        job = self._create_job("Analyst Dense", target_role, target_level)
         resume = self._create_resume(template, job)
         self._create_config(template, self.navit_role, order=1)
         self._create_config(template, self.amazon_sde_role, order=2)
@@ -189,9 +235,9 @@ class TestResumeModelIntegration(TestCase):
         
         self.assertTrue(Path(pdf_path).exists())
 
-    def _create_job(self, target_role, target_level):
+    def _create_job(self, company, target_role, target_level):
         job = Job.objects.create(
-            company="Meta",
+            company=company,
             listing_job_title=target_role,
             role=target_role,
             level=target_level,
