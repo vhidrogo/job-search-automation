@@ -209,7 +209,7 @@ class Resume(models.Model):
         Returns:
             HTML string of skill category entries.
         """
-        skill_bullets = self.skill_bullets.all()
+        skill_bullets = self.skill_bullets.filter(exclude=False)
         
         if not skill_bullets.exists():
             return ""
