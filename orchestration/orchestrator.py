@@ -12,7 +12,7 @@ from resume.models import (
 )
 from resume.schemas import RequirementSchema
 from resume.services import JDParser, ResumeWriter
-from tracker.models import Job, Requirement
+from tracker.models import Application, Job, Requirement
 
 
 class Orchestrator:
@@ -80,7 +80,10 @@ class Orchestrator:
         print(f"\n{'='*60}")
         print(f"Resume generated successfully!")
         print(f"PDF Location: {pdf_path}")
+
+        Application.objects.create(job=job)
         print(f"\n{'='*60}")
+        print(f"Created Application")
         
         if auto_open_pdf:
             self._open_pdf(pdf_path)
