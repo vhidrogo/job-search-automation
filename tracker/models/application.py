@@ -8,10 +8,6 @@ class Application(models.Model):
         on_delete=models.CASCADE,
         related_name="application",
     )
-    resume = models.OneToOneField(
-        "resume.Resume",
-        on_delete=models.CASCADE,
-    )
     applied_date = models.DateTimeField(default=timezone.now)
 
     class Meta:
