@@ -8,7 +8,8 @@ class ResumeExperienceBullet(models.Model):
     Fields:
       - resume: The resume this bullet belongs to.
       - experience_role: The experience role this bullet was generated for.
-      - order: Display order within the resume.
+      - role_order: Role display order within the resume.
+      - role_bullet_order: Bullet display order within the role.
       - text: The generated bullet content.
       - exclude: Whether to exclude this bullet from the rendered resume.
       - override_text: Optional manually edited version that takes priority over text.
@@ -26,8 +27,11 @@ class ResumeExperienceBullet(models.Model):
         related_name="resume_bullets",
         help_text="Experience role this bullet was generated for.",
     )
-    order = models.PositiveIntegerField(
-        help_text="Display order within the resume.",
+    role_order = models.PositiveIntegerField(
+        help_text="Role order within the resume.",
+    )
+    role_bullet_order = models.PositiveIntegerField(
+        help_text="Bullet display order within the role.",
     )
     text = models.TextField(
         help_text="Generated bullet content.",
@@ -43,17 +47,21 @@ class ResumeExperienceBullet(models.Model):
     )
 
     class Meta:
-        app_label = "resume"
-        ordering = ["order"]
+        ordering = ["role_order", "role_bullet_order"]
         indexes = [
-            models.Index(fields=["resume", "order"]),
-            models.Index(fields=["experience_role"]),
+            models.Index(fields=["resume", "role_order", "role_bullet_order"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["resume", "role_order", "role_bullet_order"],
+                name="unique_resume_role_order_role_bullet_order",
+            )
         ]
 
     def __str__(self) -> str:
         bullet_preview = self.display_text()[:50]
         excluded_marker = " [EXCLUDED]" if self.exclude else ""
-        return f"Bullet {self.order} for {self.resume.job.company}{excluded_marker}: {bullet_preview}..."
+        return f"Bullet {self.role_order}.{self.role_bullet_order} for {self.resume.job.company}{excluded_marker}: {bullet_preview}..."
 
     def display_text(self) -> str:
         """
