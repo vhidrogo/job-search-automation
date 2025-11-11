@@ -34,6 +34,8 @@ class Resume(models.Model):
         help_text="Job listing this resume targets.",
     )
 
+    modified_at = models.DateTimeField(auto_now=True)
+
     class Meta:
         app_label = "resume"
         indexes = [
@@ -88,13 +90,14 @@ class Resume(models.Model):
     def _generate_pdf_filename(self) -> str:
         company = self._sanitize_filename(self.job.company)
         title = self._sanitize_filename(self.job.listing_job_title)
-        
-        return f"{company}_{title}_{self.job.level}.pdf"
+        date = self.modified_at.strftime("%Y%m%d")
+
+        return f"{date}_{company}_{title}.pdf"
 
 
     def _sanitize_filename(self, text: str) -> str:
         sanitized = text.replace(" ", "_")
-        sanitized = "".join(c for c in sanitized if c.isalnum() or c in ("_", "-"))
+        sanitized = "".join(c for c in sanitized if c.isalnum() or c in ("_", "-", '&'))
 
         return sanitized
 

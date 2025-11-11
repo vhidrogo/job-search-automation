@@ -20,6 +20,7 @@ class StylePath(models.TextChoices):
     Paths are relative to the static directory (not absolute file system paths).
     """
     COMPACT = "css/resume_compact.css", "Compact"
+    DENSE = "css/resume_dense.css", "Dense"
     STANDARD = "css/resume_standard.css", "Standard"
 
 

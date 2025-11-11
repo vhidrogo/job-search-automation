@@ -1,4 +1,5 @@
 from pathlib import Path
+from freezegun import freeze_time
 from unittest.mock import ANY, patch
 from weasyprint import HTML
 
@@ -37,10 +38,11 @@ class TestResumeModel(TestCase):
             listing_job_title="Software Engineer",
             level=JobLevel.II,
         )
-        self.resume = Resume.objects.create(
-            job=job,
-            template=self.template,
-        )
+        with freeze_time("2024-05-11"):
+            self.resume = Resume.objects.create(
+                job=job,
+                template=self.template,
+            )
         self.role1 = ExperienceRole.objects.create(
             key="role1",
             company=self.ROLE1_COMPANY,
@@ -80,7 +82,7 @@ class TestResumeModel(TestCase):
         
         render_patcher = patch("resume.models.resume.render_to_string")
         self.mock_render = render_patcher.start()
-        self.addCleanup(self.mock_render.stop)
+        self.addCleanup(render_patcher.stop)
         self.mock_render.return_value = "<html><body>Resume Content</body></html>"
 
         write_patcher = patch.object(HTML, "write_pdf")
@@ -98,7 +100,7 @@ class TestResumeModel(TestCase):
         self.mock_render.assert_called_once_with(self.TEMPLATE_PATH, ANY)
         self.mock_write.assert_called_once()
         self.mock_css.assert_called_once()
-        self.assertEqual(result, f"output/resumes/Meta_Software_Engineer_II.pdf")
+        self.assertEqual(result, f"output/resumes/20240511_Meta_Software_Engineer.pdf")
 
     def test_render_to_pdf_renders_one_experience_entry_per_config_role_in_order(self):
         self._create_default_config(self.role1, order=1)
