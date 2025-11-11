@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    Application,
     Job,
     LlmRequestLog,
     Requirement,
@@ -26,6 +27,7 @@ class LlmRequestLogAdmin(admin.ModelAdmin):
     ordering = ['-timestamp']
 
 
+admin.site.register(Application)
 admin.site.register(Job, JobAdmin)
 admin.site.register(LlmRequestLog, LlmRequestLogAdmin)
 admin.site.register(Requirement)
