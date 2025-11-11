@@ -24,6 +24,10 @@ class ResumeSkillBullet(models.Model):
     skills_text = models.TextField(
         help_text="CSV string of related skills (e.g., 'Python, Java').",
     )
+    exclude = models.BooleanField(
+        default=False,
+        help_text="Whether to exclude this skills category from the rendered resume.",
+    )
 
     class Meta:
         app_label = "resume"
