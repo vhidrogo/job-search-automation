@@ -324,7 +324,7 @@ flowchart TD
 |--------|------|-------------|
 | id | IntegerField | Primary key |
 | template_id | FK(ResumeTemplate) | Which template was used |
-| job_id | FK(Job) | Job description source |
+| job_id | OneToOne(Job) | Job description source |
 
 #### ResumeExperienceBullet
 | Field | Type | Description |
@@ -380,16 +380,14 @@ flowchart TD
 |--------|------|-------------|
 | id | IntegerField | Primary key |
 | applied_date | DateField | When application was submitted |
-| resume_id | FK(Resume) | Resume used |
-| job_id | FK(Job) | Job applied to |
-| status | FK(ApplicationStatus) | Latest known status |
+| job_id | OneToOne(Job) | Job applied to |
 
 #### ApplicationStatus
 | Field | Type | Description |
 |--------|------|-------------|
 | id | IntegerField | Primary key |
 | state | CharField | Application state (e.g., rejected, callback, closed, etc.) |
-| application_id | FK(Application) | Associated application |
+| application_id | OneToOne(Application) | Associated application |
 | status_date | DateField | When the event occurred or was recorded |
 
 ---
