@@ -6,6 +6,7 @@ from .models import (
     ExperienceProject,
     ExperienceRole,
     Resume,
+    ResumeExperienceBullet,
     ResumeTemplate,
     TemplateRoleConfig,
 )
@@ -17,6 +18,12 @@ class ExperienceProjectInline(admin.TabularInline):
     extra = 0
 
 
+class ResumeExperienceBulletInline(admin.TabularInline):
+    model = ResumeExperienceBullet
+    extra = 0
+    ordering = ['role_order', 'role_bullet_order']
+
+    
 class TemplateRoleConfigInline(admin.TabularInline):
     model = TemplateRoleConfig
     extra = 1
@@ -41,6 +48,9 @@ class ExperienceRoleAdmin(admin.ModelAdmin):
 
 class ResumeAdmin(admin.ModelAdmin):
     actions = ['render_resume_to_pdf']
+    inlines = [
+        ResumeExperienceBulletInline,
+    ]
     
     @admin.action(description='Render resume to PDF')
     def render_resume_to_pdf(self, request, queryset):
