@@ -7,10 +7,9 @@ from .models import (
     ExperienceProject,
     ExperienceRole,
     Resume,
-    ResumeExperienceBullet,
     ResumeExperienceRole,
     ResumeExperienceRoleBullet,
-    ResumeSkillBullet,
+    ResumeSkillsCategory,
     ResumeTemplate,
     TemplateRoleConfig,
 )
@@ -48,10 +47,11 @@ class ResumeExperienceRoleBulletInline(admin.TabularInline):
     fields = ['text', 'exclude', 'override_text']
 
 
-class ResumeSkillBulletInline(admin.TabularInline):
-    model = ResumeSkillBullet
+class ResumeSkillsCategoryInline(admin.TabularInline):
+    model = ResumeSkillsCategory
     extra = 0
     readonly_fields = ['category', 'skills_text']
+    fields = ['category', 'skills_text', 'exclude']
 
     
 class TemplateRoleConfigInline(admin.TabularInline):
@@ -80,7 +80,7 @@ class ResumeAdmin(admin.ModelAdmin):
     actions = ['render_resume_to_pdf']
     inlines = [
         ResumeExperienceRoleInline,
-        ResumeSkillBulletInline,
+        ResumeSkillsCategoryInline,
     ]
     
     @admin.action(description='Render resume to PDF')
