@@ -45,14 +45,6 @@ class Resume(models.Model):
     def __str__(self) -> str:
         return f"Resume for {self.job.company} - {self.job.listing_job_title}"
 
-    def unmet_list(self) -> Optional[list[str]]:
-        """
-        Returns unmet requirements as a list of strings, or None if empty.
-        """
-        if not self.unmet_requirements.strip():
-            return None
-        return [req.strip() for req in self.unmet_requirements.split(",") if req.strip()]
-
     def render_to_pdf(self, output_dir: str = "output/resumes") -> str:
         """
         Render this resume to a PDF file.
