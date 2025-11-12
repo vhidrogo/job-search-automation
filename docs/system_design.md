@@ -350,6 +350,7 @@ flowchart TD
 |--------|------|-------------|
 | id | IntegerField | Primary key |
 | resume | FK(Resume) | Associated resume |
+| order | IntegerField | Display order within the resume |
 | category | CharField | Category label such as "Programming Languages" or "Data & Visualization" |
 | skills_text | TextField | CSV string of related skills (e.g., "Python, Java") |
 | exclude | BooleanField | Whether to exclude from rendering |
