@@ -9,6 +9,7 @@ from .models import (
     Resume,
     ResumeExperienceBullet,
     ResumeExperienceRole,
+    ResumeExperienceRoleBullet,
     ResumeSkillBullet,
     ResumeTemplate,
     TemplateRoleConfig,
@@ -19,6 +20,15 @@ class ResumeExperienceBulletInlineForm(forms.ModelForm):
     class Meta:
         model = ResumeExperienceBullet
         fields = ['experience_role', 'text', 'override_text', 'exclude']
+        widgets = {
+            'override_text': forms.Textarea(attrs={'rows': 2, 'cols': 50}),
+        }
+
+
+class ResumeExperienceRoleBulletInlineForm(forms.ModelForm):
+    class Meta:
+        model = ResumeExperienceRoleBullet
+        fields = ['text', 'override_text', 'exclude']
         widgets = {
             'override_text': forms.Textarea(attrs={'rows': 2, 'cols': 50}),
         }
@@ -37,6 +47,15 @@ class ResumeExperienceBulletInline(admin.TabularInline):
     ordering = ['role_order', 'role_bullet_order']
     readonly_fields = ['experience_role', 'text']
     fields = ['experience_role', 'text', 'exclude', 'override_text']
+
+
+class ResumeExperienceRoleBulletInline(admin.TabularInline):
+    model = ResumeExperienceRoleBullet
+    form = ResumeExperienceRoleBulletInlineForm
+    extra = 0
+    ordering = ['order']
+    readonly_fields = ['text']
+    fields = ['text', 'exclude', 'override_text']
 
 
 class ResumeSkillBulletInline(admin.TabularInline):
@@ -87,7 +106,11 @@ class ResumeAdmin(admin.ModelAdmin):
 
 
 class ResumeExperienceRoleAdmin(admin.ModelAdmin):
+    list_display = ['resume', 'experience_role']
     ordering = ['-resume__modified_at', 'order']
+    inlines = [
+        ResumeExperienceRoleBulletInline,
+    ]
 
 
 class ResumeTemplateAdmin(admin.ModelAdmin):
