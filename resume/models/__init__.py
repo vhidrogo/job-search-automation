@@ -1,6 +1,7 @@
 from .experience_project import ExperienceProject
 from .experience_role import ExperienceRole
 from .resume import Resume
+from .resume_experience_role import ResumeExperienceRole
 from .resume_experience_bullet import ResumeExperienceBullet
 from .resume_skill_bullet import ResumeSkillBullet
 from .resume_template import ResumeTemplate, StylePath, TargetSpecialization, TemplatePath
