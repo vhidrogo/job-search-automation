@@ -361,7 +361,9 @@ flowchart TD
 | key | CharField | Stable identifier used by templates (e.g., "navit_swe", "amazon_sde") |
 | company | CharField | Employer name (e.g., "Nav.it") |
 | title | CharField | Job title (e.g., "Software Engineer") |
-| display_name | CharField | Optional human-facing name; if null, render as `title – company` |
+| start_date | DateField | The date the role began |
+| end_date | DateField | The date the role ended |
+| location | CharField | Location where the role was set in. (e.g "Seattle, WA", "Remote") |
 
 #### ExperienceProject
 | Field | Type | Description |
