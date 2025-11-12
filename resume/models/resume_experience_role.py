@@ -42,4 +42,4 @@ class ResumeExperienceRole(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.resume} ({self.experience_role})"
+        return f"Role {self.order}"
