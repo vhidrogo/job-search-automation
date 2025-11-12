@@ -7,8 +7,8 @@ class ResumeExperienceRole(models.Model):
 
     Fields:
       - resume: Associated resume.
-      - experience_role: Original experience role used as the source.
-      - title: Frozen title used in this resume (copied from override_title or experience_role.title).
+      - source_role: Original experience role used as the source.
+      - title: Frozen title used in this resume (copied from override_title or source_role.title).
       - order: Display order of this role within the resume.
     """
 
@@ -17,14 +17,14 @@ class ResumeExperienceRole(models.Model):
         on_delete=models.CASCADE,
         related_name="experience_roles",
     )
-    experience_role = models.ForeignKey(
+    source_role = models.ForeignKey(
         "ExperienceRole",
         on_delete=models.PROTECT,
         help_text="Original experience role used as the source.",
     )
     title = models.CharField(
         max_length=255,
-        help_text="Frozen title used in this resume (copied from override_title or experience_role.title).",
+        help_text="Frozen title used in this resume (copied from override_title or source_role.title).",
     )
     order = models.PositiveIntegerField(
         help_text="Display order of this role within the resume.",
@@ -36,8 +36,8 @@ class ResumeExperienceRole(models.Model):
         ordering = ["order"]
         constraints = [
             models.UniqueConstraint(
-                fields=["resume", "experience_role"],
-                name="unique_resume_experience_role",
+                fields=["resume", "source_role"],
+                name="unique_resume_source_role",
             ),
         ]
 

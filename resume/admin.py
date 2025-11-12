@@ -34,8 +34,8 @@ class ResumeExperienceRoleInline(admin.TabularInline):
     model = ResumeExperienceRole
     extra = 0
     ordering = ['order']
-    readonly_fields = ['experience_role', 'title']
-    fields = ['experience_role', 'title']
+    readonly_fields = ['source_role', 'title']
+    fields = ['source_role', 'title']
 
 
 class ResumeExperienceRoleBulletInline(admin.TabularInline):
@@ -96,7 +96,7 @@ class ResumeAdmin(admin.ModelAdmin):
 
 
 class ResumeExperienceRoleAdmin(admin.ModelAdmin):
-    list_display = ['resume', 'experience_role']
+    list_display = ['resume', 'source_role']
     ordering = ['-resume__modified_at', 'order']
     inlines = [
         ResumeExperienceRoleBulletInline,
