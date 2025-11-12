@@ -4,6 +4,7 @@ from .resume import Resume
 from .resume_experience_role import ResumeExperienceRole
 from .resume_experience_role_bullet import ResumeExperienceRoleBullet
 from .resume_experience_bullet import ResumeExperienceBullet
+from .resume_skills_category import ResumeSkillsCategory
 from .resume_skill_bullet import ResumeSkillBullet
 from .resume_template import ResumeTemplate, StylePath, TargetSpecialization, TemplatePath
 from .template_role_config import TemplateRoleConfig
