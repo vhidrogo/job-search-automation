@@ -44,3 +44,6 @@ class ResumeExperienceRoleBullet(models.Model):
                 name="unique_resume_experience_role_order",
             ),
         ]
+
+    def __str__(self):
+        return f"Bullet {self.order}"
