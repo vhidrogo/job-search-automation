@@ -326,24 +326,33 @@ flowchart TD
 | template_id | FK(ResumeTemplate) | Which template was used |
 | job_id | OneToOne(Job) | Job description source |
 
-#### ResumeExperienceBullet
+#### ResumeExperienceRole
 | Field | Type | Description |
 |--------|------|-------------|
 | id | IntegerField | Primary key |
 | resume | FK(Resume) | Associated resume |
-| experience_role | FK(ExperienceRole) | Experience role this bullet was generated for |
-| order | IntegerField | Display order |
-| text | TextField | Bullet content |
-| exclude | BooleanField | Whether to exclude this bullet from the generated resume |
-| override_text | TextField | Optional manually edited version of the bullet that takes priority over `text` |
+| experience_role | OneToOne(ExperienceRole) | Original experience role used as source |
+| title | CharField | Frozen title used in this resume (copied from override_title or experience_role.title) |
+| order | IntegerField | Display order of this role within the resume |
 
-#### ResumeSkillBullet
+#### ResumeExperienceRoleBullet
+| Field | Type | Description |
+|--------|------|-------------|
+| id | IntegerField | Primary key |
+| resume_experience_role | FK(ResumeExperienceRole) | Parent role context |
+| order | IntegerField | Display order within the role |
+| text | TextField | Generated bullet text |
+| override_text | TextField | Optional manual edit overriding `text` |
+| exclude | BooleanField | Whether to exclude from rendering |
+
+#### ResumeSkillsCategory
 | Field | Type | Description |
 |--------|------|-------------|
 | id | IntegerField | Primary key |
 | resume | FK(Resume) | Associated resume |
 | category | CharField | Category label such as "Programming Languages" or "Data & Visualization" |
 | skills_text | TextField | CSV string of related skills (e.g., "Python, Java") |
+| exclude | BooleanField | Whether to exclude from rendering |
 
 #### ExperienceRole
 | Field | Type | Description |
