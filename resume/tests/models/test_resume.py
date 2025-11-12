@@ -9,8 +9,9 @@ from django.utils import timezone
 from resume.models import (
     ExperienceRole,
     Resume,
-    ResumeExperienceBullet,
-    ResumeSkillBullet,
+    ResumeExperienceRole,
+    ResumeExperienceRoleBullet,
+    ResumeSkillsCategory,
     ResumeTemplate,
     TemplateRoleConfig,
 )
@@ -19,10 +20,8 @@ from tracker.models import Job, JobRole, JobLevel
 
 class TestResumeModel(TestCase):
     ROLE1_COMPANY = "Nav.it"
-    ROLE1_TITLE = "Software Engineer"
     ROLE1_LOCATION = "Remote"
     ROLE2_COMPANY = "Amazon.com"
-    ROLE2_TITLE = "Software Development Engineer"
     ROLE2_LOCATION = "Seattle, WA"
     TEMPLATE_PATH = "template/path"
 
@@ -46,7 +45,6 @@ class TestResumeModel(TestCase):
         self.role1 = ExperienceRole.objects.create(
             key="role1",
             company=self.ROLE1_COMPANY,
-            title=self.ROLE1_TITLE,
             start_date=timezone.datetime(2023, 5, 15),
             end_date=timezone.datetime(2024, 5, 31),
             location=self.ROLE1_LOCATION,
@@ -54,12 +52,11 @@ class TestResumeModel(TestCase):
         self.role2 = ExperienceRole.objects.create(
             key="role2",
             company=self.ROLE2_COMPANY,
-            title=self.ROLE2_TITLE,
             start_date=timezone.datetime(2022, 1, 31),
             end_date=timezone.datetime(2023, 3, 31),
             location=self.ROLE2_LOCATION,
         )
-
+    # TODO: delete?
     def _create_default_config(self, role, order):
         TemplateRoleConfig.objects.create(
             template=self.template,
@@ -102,12 +99,25 @@ class TestResumeModel(TestCase):
         self.mock_css.assert_called_once()
         self.assertEqual(result, f"output/resumes/20240511_Meta_Software_Engineer.pdf")
 
-    def test_render_to_pdf_renders_one_experience_entry_per_config_role_in_order(self):
-        self._create_default_config(self.role1, order=1)
-        self._create_default_config(self.role2, order=2)
+    def test_render_to_pdf_renders_one_experience_entry_per_role_in_order(self):
+        # Create the second role first to verify correct order
+        title2 = "Software Development Engineer"
+        ResumeExperienceRole.objects.create(
+            resume=self.resume,
+            source_role=self.role2,
+            title=title2,
+            order=2,
+        )
+        title1 = "Software Engineer"
+        ResumeExperienceRole.objects.create(
+            resume=self.resume,
+            source_role=self.role1,
+            title=title1,
+            order=1,
+        )
 
         self.resume.render_to_pdf()
-
+        
         experience_html = self._get_context("experience")
         expected_role_count = 2
         self.assertEqual(experience_html.count('class="experience-entry"'), expected_role_count)
@@ -121,9 +131,9 @@ class TestResumeModel(TestCase):
         self.assertIn(self.ROLE1_COMPANY, experience_html)
         self.assertIn(self.ROLE2_COMPANY, experience_html)
         self.assertLess(experience_html.index(self.ROLE1_COMPANY), experience_html.index(self.ROLE2_COMPANY))
-        self.assertIn(self.ROLE1_TITLE, experience_html)
-        self.assertIn(self.ROLE2_TITLE, experience_html)
-        self.assertLess(experience_html.index(self.ROLE1_TITLE), experience_html.index(self.ROLE2_TITLE))
+        self.assertIn(title1, experience_html)
+        self.assertIn(title2, experience_html)
+        self.assertLess(experience_html.index(title1), experience_html.index(title2))
         self.assertIn(self.ROLE1_LOCATION, experience_html)
         self.assertIn(self.ROLE2_LOCATION, experience_html)
         self.assertLess(experience_html.index(self.ROLE1_LOCATION), experience_html.index(self.ROLE2_LOCATION))
@@ -132,36 +142,20 @@ class TestResumeModel(TestCase):
         self.assertIn(expected_role2_dates, experience_html)
         self.assertLess(experience_html.index(expected_role1_dates), experience_html.index(expected_role2_dates))
 
-    def test_render_to_pdf_use_title_override_when_present(self):
-        title_override = "Software Engineer (Backend)"
-        TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=self.role1,
-            title_override=title_override,
-            order=1,
-            max_bullet_count=1,
-        )
-
-        self.resume.render_to_pdf()
-
-        experience_html = self._get_context("experience")
-        self.assertIn(title_override, experience_html)
-
     def test_render_to_pdf_per_renders_bullets_in_order(self):
-        self._create_default_config(self.role1, order=1)
-        bullet1_text = "Built REST API endpoints for goal tracking with Django REST Framework"
-        ResumeExperienceBullet.objects.create(
-            resume=self.resume,
-            experience_role=self.role1,
-            order=1,
-            text=bullet1_text,
-        )
+        role = ResumeExperienceRole.objects.create(resume=self.resume, source_role=self.role1, order=1)
+        # Create second bullet first to verify order
         bullet2_text = "Developed API clients for Smartlook and Intercom integrations"
-        ResumeExperienceBullet.objects.create(
-            resume=self.resume,
-            experience_role=self.role1,
+        ResumeExperienceRoleBullet.objects.create(
+            resume_experience_role=role,
             order=2,
             text=bullet2_text,
+        )
+        bullet1_text = "Built REST API endpoints for goal tracking with Django REST Framework"
+        ResumeExperienceRoleBullet.objects.create(
+            resume_experience_role=role,
+            order=1,
+            text=bullet1_text,
         )
 
         self.resume.render_to_pdf()
@@ -174,12 +168,11 @@ class TestResumeModel(TestCase):
         self.assertIn('<li>', experience_html)
 
     def test_render_to_pdf_uses_bullet_override_text_when_present(self):
-        self._create_default_config(self.role1, order=1)
+        role = ResumeExperienceRole.objects.create(resume=self.resume, source_role=self.role1, order=1)
         text = "Built REST API endpoints for goal tracking with Django REST Framework"
         override_text = "Developed API clients for Smartlook and Intercom integrations"
-        ResumeExperienceBullet.objects.create(
-            resume=self.resume,
-            experience_role=self.role1,
+        ResumeExperienceRoleBullet.objects.create(
+            resume_experience_role=role,
             order=1,
             text=text,
             override_text=override_text,
@@ -192,11 +185,10 @@ class TestResumeModel(TestCase):
         self.assertNotIn(text, experience_html)
 
     def test_render_to_pdf_does_not_render_excluded_bullets(self):
-        self._create_default_config(self.role1, order=1)
+        role = ResumeExperienceRole.objects.create(resume=self.resume, source_role=self.role1, order=1)
         text = "Built REST API endpoints for goal tracking with Django REST Framework"
-        ResumeExperienceBullet.objects.create(
-            resume=self.resume,
-            experience_role=self.role1,
+        ResumeExperienceRoleBullet.objects.create(
+            resume_experience_role=role,
             order=1,
             text=text,
             exclude=True,
@@ -207,18 +199,21 @@ class TestResumeModel(TestCase):
         experience_html = self._get_context("experience")
         self.assertNotIn(text, experience_html)
 
-    def test_render_to_pdf_renders_skills(self):
-        category1, skills1 = "Programming Languages", "Python, Java"
-        ResumeSkillBullet.objects.create(
-            resume=self.resume,
-            category=category1,
-            skills_text=skills1,
-        )
+    def test_render_to_pdf_renders_skills_in_order(self):
+        # Create second one first to verify order
         category2, skills2 = "Frameworks", "Django, React"
-        ResumeSkillBullet.objects.create(
+        ResumeSkillsCategory.objects.create(
             resume=self.resume,
+            order=2,
             category=category2,
             skills_text=skills2,
+        )
+        category1, skills1 = "Programming Languages", "Python, Java"
+        ResumeSkillsCategory.objects.create(
+            resume=self.resume,
+            order=1,
+            category=category1,
+            skills_text=skills1,
         )
 
         self.resume.render_to_pdf()
@@ -228,8 +223,23 @@ class TestResumeModel(TestCase):
         self.assertIn(skills1, skills_html)
         self.assertIn(category2, skills_html)
         self.assertIn(skills2, skills_html)
+        self.assertLess(skills_html.index(category1), skills_html.index(category2))
         self.assertIn('class="skill-category"', skills_html)
         self.assertIn('<strong>', skills_html)
+
+    def test_render_to_pdf_does_not_render_excluded_skills(self):
+        category = "Programming Languages"
+        ResumeSkillsCategory.objects.create(
+            resume=self.resume,
+            order=1,
+            category=category,
+            exclude=True,
+        )
+
+        self.resume.render_to_pdf()
+        
+        skills_html = self._get_context("skills")
+        self.assertNotIn(category, skills_html)
 
     def test_str(self):
         self.assertEqual(str(self.resume), "Resume for Meta - Software Engineer")
