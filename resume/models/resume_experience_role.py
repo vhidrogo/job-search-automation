@@ -17,7 +17,7 @@ class ResumeExperienceRole(models.Model):
         on_delete=models.CASCADE,
         related_name="experience_roles",
     )
-    experience_role = models.OneToOneField(
+    experience_role = models.ForeignKey(
         "ExperienceRole",
         on_delete=models.PROTECT,
         help_text="Original experience role used as the source.",

@@ -331,7 +331,7 @@ flowchart TD
 |--------|------|-------------|
 | id | IntegerField | Primary key |
 | resume | FK(Resume) | Associated resume |
-| experience_role | OneToOne(ExperienceRole) | Original experience role used as source |
+| experience_role | FK(ExperienceRole) | Original experience role used as source |
 | title | CharField | Frozen title used in this resume (copied from override_title or experience_role.title) |
 | order | IntegerField | Display order of this role within the resume |
 
