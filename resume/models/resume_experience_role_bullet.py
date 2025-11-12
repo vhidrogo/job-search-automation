@@ -23,7 +23,7 @@ class ResumeExperienceRoleBullet(models.Model):
     )
     override_text = models.TextField(
         null=True,
-        blank=True,
+        default="",
         help_text="Optional edited version of the bullet that overrides `text`.",
     )
     order = models.PositiveIntegerField(
@@ -47,3 +47,11 @@ class ResumeExperienceRoleBullet(models.Model):
 
     def __str__(self):
         return f"Bullet {self.order}"
+
+    def display_text(self) -> str:
+        """
+        Returns the text to display, prioritizing override_text if set.
+        """
+        if self.override_text.strip():
+            return self.override_text.strip()
+        return self.text.strip()
