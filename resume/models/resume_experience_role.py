@@ -40,3 +40,6 @@ class ResumeExperienceRole(models.Model):
                 name="unique_resume_experience_role",
             ),
         ]
+
+    def __str__(self):
+        return f"{self.resume} ({self.experience_role})"
