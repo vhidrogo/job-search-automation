@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin
 from django.db import models
 from django_json_widget.widgets import JSONEditorWidget
@@ -13,6 +14,15 @@ from .models import (
 )
 
 
+class ResumeExperienceBulletInlineForm(forms.ModelForm):
+    class Meta:
+        model = ResumeExperienceBullet
+        fields = ['experience_role', 'text', 'override_text', 'exclude']
+        widgets = {
+            'override_text': forms.Textarea(attrs={'rows': 2, 'cols': 50}),
+        }
+
+
 class ExperienceProjectInline(admin.TabularInline):
     model = ExperienceProject
     fields = ['short_name']
@@ -21,13 +31,17 @@ class ExperienceProjectInline(admin.TabularInline):
 
 class ResumeExperienceBulletInline(admin.TabularInline):
     model = ResumeExperienceBullet
+    form = ResumeExperienceBulletInlineForm
     extra = 0
     ordering = ['role_order', 'role_bullet_order']
+    readonly_fields = ['experience_role', 'text']
+    fields = ['experience_role', 'text', 'exclude', 'override_text']
 
 
 class ResumeSkillBulletInline(admin.TabularInline):
     model = ResumeSkillBullet
     extra = 0
+    readonly_fields = ['category', 'skills_text']
 
     
 class TemplateRoleConfigInline(admin.TabularInline):
