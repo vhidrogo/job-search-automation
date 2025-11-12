@@ -8,6 +8,7 @@ from .models import (
     ExperienceRole,
     Resume,
     ResumeExperienceBullet,
+    ResumeExperienceRole,
     ResumeSkillBullet,
     ResumeTemplate,
     TemplateRoleConfig,
@@ -85,6 +86,10 @@ class ResumeAdmin(admin.ModelAdmin):
         )
 
 
+class ResumeExperienceRoleAdmin(admin.ModelAdmin):
+    ordering = ['-resume__modified_at', 'order']
+
+
 class ResumeTemplateAdmin(admin.ModelAdmin):
     inlines = [
         TemplateRoleConfigInline,
@@ -94,5 +99,6 @@ class ResumeTemplateAdmin(admin.ModelAdmin):
 admin.site.register(ExperienceProject, ExperienceProjectAdmin)
 admin.site.register(ExperienceRole, ExperienceRoleAdmin)
 admin.site.register(Resume, ResumeAdmin)
+admin.site.register(ResumeExperienceRole, ResumeExperienceRoleAdmin)
 admin.site.register(ResumeTemplate, ResumeTemplateAdmin)
 admin.site.register(TemplateRoleConfig)
