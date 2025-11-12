@@ -16,15 +16,6 @@ from .models import (
 )
 
 
-class ResumeExperienceBulletInlineForm(forms.ModelForm):
-    class Meta:
-        model = ResumeExperienceBullet
-        fields = ['experience_role', 'text', 'override_text', 'exclude']
-        widgets = {
-            'override_text': forms.Textarea(attrs={'rows': 2, 'cols': 50}),
-        }
-
-
 class ResumeExperienceRoleBulletInlineForm(forms.ModelForm):
     class Meta:
         model = ResumeExperienceRoleBullet
@@ -40,13 +31,12 @@ class ExperienceProjectInline(admin.TabularInline):
     extra = 0
 
 
-class ResumeExperienceBulletInline(admin.TabularInline):
-    model = ResumeExperienceBullet
-    form = ResumeExperienceBulletInlineForm
+class ResumeExperienceRoleInline(admin.TabularInline):
+    model = ResumeExperienceRole
     extra = 0
-    ordering = ['role_order', 'role_bullet_order']
-    readonly_fields = ['experience_role', 'text']
-    fields = ['experience_role', 'text', 'exclude', 'override_text']
+    ordering = ['order']
+    readonly_fields = ['experience_role', 'title']
+    fields = ['experience_role', 'title']
 
 
 class ResumeExperienceRoleBulletInline(admin.TabularInline):
@@ -89,7 +79,7 @@ class ExperienceRoleAdmin(admin.ModelAdmin):
 class ResumeAdmin(admin.ModelAdmin):
     actions = ['render_resume_to_pdf']
     inlines = [
-        ResumeExperienceBulletInline,
+        ResumeExperienceRoleInline,
         ResumeSkillBulletInline,
     ]
     
