@@ -67,15 +67,20 @@ class Orchestrator:
 
         parsed_jd = self.jd_parser.parse(jd_path)
 
-        print(f"Succesfully parsed for {parsed_jd.metadata.company} - {parsed_jd.metadata.listing_job_title}")
+        company = parsed_jd.metadata.company
+        title = parsed_jd.metadata.listing_job_title
+        specialization = f" ({parsed_jd.metadata.specialization})" if parsed_jd.metadata.specialization else ""
+        print(f"Succesfully parsed for {company} - {title}{specialization}")
 
         job = self._persist_job_and_requirements(parsed_jd)
-        template = self._get_template(job)
-        resume = self._create_resume(job, template)
-
         print(f"\n{'='*60}")
+        print("Persisted Job")
+
+        template = self._get_template(job)
         print(f"Fetched template: {template}")
-        print("Persisted Job and Resume")
+
+        resume = self._create_resume(job, template)
+        print("Persisted Resume")
 
         print(f"\n{'='*60}")
         print("Generating resume bullets...")
@@ -150,7 +155,8 @@ class Orchestrator:
         Raises:
             ValueError: If no matching template exists for the job's requirements.
         """
-        if job.specialization and job.specialization in TargetSpecialization.values:
+        specialization = self._normalize_specialization(job.specialization)
+        if specialization in TargetSpecialization.labels:
             try:
                 return ResumeTemplate.objects.get(
                     target_role=job.role,
@@ -172,6 +178,12 @@ class Orchestrator:
                 raise ValueError(
                     f"No template found for role={job.role}, level={job.level}"
                 )
+            
+    def _normalize_specialization(self, specialization: str) -> str:
+        if not specialization:
+            return ""
+        
+        return "".join(c for c in specialization if c.isalpha()).lower()
     
     def _create_resume(self, job: Job, template: ResumeTemplate) -> Resume:
         """Create initial resume record.
