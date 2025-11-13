@@ -11,6 +11,10 @@ class Application(models.Model):
     applied_date = models.DateTimeField(default=timezone.now)
 
     class Meta:
+        ordering = ["-applied_date"]
         indexes = [
             models.Index(fields=["job"])
         ]
+
+    def __str__(self):
+        return f"{self.applied_date.date()} {self.job.company} - {self.job.listing_job_title}"
