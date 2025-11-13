@@ -26,6 +26,7 @@ class StylePath(models.TextChoices):
 
 class TargetSpecialization(models.TextChoices):
     BACKEND = "Backend"
+    FULL_STACK = "Full-Stack"
     PYTHON = "Python"
 
 
