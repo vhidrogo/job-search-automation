@@ -13,7 +13,6 @@ from resume.models import (
     ResumeExperienceRoleBullet,
     ResumeSkillsCategory,
     ResumeTemplate,
-    TemplateRoleConfig,
 )
 from tracker.models import Job, JobRole, JobLevel
 
@@ -55,14 +54,6 @@ class TestResumeModel(TestCase):
             start_date=timezone.datetime(2022, 1, 31),
             end_date=timezone.datetime(2023, 3, 31),
             location=self.ROLE2_LOCATION,
-        )
-    # TODO: delete?
-    def _create_default_config(self, role, order):
-        TemplateRoleConfig.objects.create(
-            template=self.template,
-            experience_role=role,
-            order=order,
-            max_bullet_count=1,
         )
 
     def _get_context(self, context_var):
