@@ -199,12 +199,13 @@ class Orchestrator:
                 max_bullet_count=config.max_bullet_count,
             )
             title = config.title_override if config.title_override else config.experience_role.title
-            role = ResumeRole.objects.create(
+            role = ResumeRole(
                 resume=resume,
                 source_role=config.experience_role,
                 title=title,
                 order=config.order,
             )
+            roles_to_create.append(role)
             
             for bullet in bullet_list.bullets:
                 bullets_to_create.append(
