@@ -22,7 +22,7 @@ class ResumeRoleBullet(models.Model):
         help_text="Original bullet content.",
     )
     override_text = models.TextField(
-        null=True,
+        blank=True,
         default="",
         help_text="Optional edited version of the bullet that overrides `text`.",
     )
