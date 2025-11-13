@@ -3,7 +3,7 @@ from typing import List
 
 from resume.clients import ClaudeClient
 from resume.models import ExperienceProject, ExperienceRole, ResumeTemplate
-from resume.schemas import BulletListModel, RequirementSchema, SkillBulletListModel
+from resume.schemas import BulletListModel, RequirementSchema, SkillsListModel
 from resume.utils.prompt import fill_placeholders, load_prompt
 from resume.utils.prompt_content_builders import build_requirement_json
 from resume.utils.validation import parse_llm_json, validate_with_schema
@@ -13,7 +13,7 @@ from tracker.models import LlmRequestLog
 class ResumeWriter:
     """Generates tailored resume content using LLM-based bullet and skill generation.
     
-    This service coordinates LLM calls to produce experience bullets and skill bullets
+    This service coordinates LLM calls to produce experience bullets and skills categories
     for resumes. It uses role-specific experience projects and job requirements to
     generate contextually relevant, high-quality resume content that aligns with
     target job descriptions.
@@ -30,7 +30,7 @@ class ResumeWriter:
         Args:
             client: LLM client for API calls. Defaults to ClaudeClient if not provided.
             experience_prompt_path: Path to the experience bullet generation prompt template.
-            skill_prompt_path: Path to the skill bullet generation prompt template.
+            skill_prompt_path: Path to the skills category generation prompt template.
         """
         self.client = client or ClaudeClient()
         self.experience_prompt_path = experience_prompt_path
@@ -97,24 +97,24 @@ class ResumeWriter:
         
         return validated_bullets
     
-    def generate_skill_bullets(
+    def generate_skills(
         self,
         template: ResumeTemplate,
         requirements: List[RequirementSchema],
         max_category_count: int = 4,
         model: str = None,
         max_tokens: int = 2000,
-    ) -> SkillBulletListModel:
-        """Generate skill category bullets for a resume based on requirements and included experience roles.
+    ) -> SkillsListModel:
+        """Generate skills categories for a resume based on requirements and included experience roles.
         
         Args:
             experience_role: The ExperienceRole instance to generate skills for.
             requirements: List of RequirementSchema objects sorted by relevance.
-            max_category_count: Maximum number of skill categories to generate.
+            max_category_count: Maximum number of skills categories to generate.
             model: Optional LLM model identifier to use for generation.
             
         Returns:
-            Validated SkillBulletListModel instance containing generated skill categories.
+            Validated SkillsListModel instance containing generated skills categories.
             
         Raises:
             ValueError: If no tools can be extracted from template's configured roles.
@@ -145,10 +145,7 @@ class ResumeWriter:
         )
         parsed_data = parse_llm_json(response_text)
         
-        if isinstance(parsed_data, list):
-            parsed_data = {"skill_categories": parsed_data}
-        
-        validated_skills = validate_with_schema(parsed_data, SkillBulletListModel)
+        validated_skills = validate_with_schema(parsed_data, SkillsListModel)
         validated_skills.validate_max_count(max_category_count)
         
         return validated_skills

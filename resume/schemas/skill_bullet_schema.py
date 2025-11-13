@@ -2,11 +2,11 @@ from typing import Annotated, List
 from pydantic import BaseModel, Field, field_validator
 
 
-class SkillCategorySchema(BaseModel):
-    """Represents a single skill category with associated skills.
+class SkillsCategorySchema(BaseModel):
+    """Represents a single skills category with associated skills.
     
-    This schema validates individual skill categories returned by the LLM,
-    ensuring they contain meaningful category names and valid skill lists.
+    This schema validates individual skills categories returned by the LLM,
+    ensuring they contain meaningful category names and valid skills lists.
     """
     
     order: Annotated[int, Field(ge=1, description="Relevance ranking, starting from 1")]
@@ -15,7 +15,7 @@ class SkillCategorySchema(BaseModel):
         Field(
             min_length=3,
             max_length=100,
-            description="The skill category name (e.g., 'Programming Languages')"
+            description="The skills category name (e.g., 'Programming Languages')"
         )
     ]
     skills: Annotated[
@@ -66,46 +66,46 @@ class SkillCategorySchema(BaseModel):
         return stripped
 
 
-class SkillBulletListModel(BaseModel):
-    """Represents the complete response from the LLM containing multiple skill categories.
+class SkillsListModel(BaseModel):
+    """Represents the complete response from the LLM containing multiple skills categories.
     
-    This schema validates that the LLM returns a properly structured list of skill
+    This schema validates that the LLM returns a properly structured list of skills
     categories and enforces constraints on the total number of categories generated.
     """
     
-    skill_categories: List[SkillCategorySchema] = Field(
-        description="List of generated skill categories"
+    skills_categories: List[SkillsCategorySchema] = Field(
+        description="List of generated skills categories"
     )
     
-    @field_validator('skill_categories')
+    @field_validator('skills_categories')
     @classmethod
-    def validate_category_count(cls, v: List[SkillCategorySchema]) -> List[SkillCategorySchema]:
-        """Ensure at least one skill category is returned.
+    def validate_category_count(cls, v: List[SkillsCategorySchema]) -> List[SkillsCategorySchema]:
+        """Ensure at least one skills category is returned.
         
         Args:
-            v: The list of skill categories to validate.
+            v: The list of skills categories to validate.
             
         Returns:
-            The validated list of skill categories.
+            The validated list of skills categories.
             
         Raises:
             ValueError: If the list is empty.
         """
         if not v:
-            raise ValueError("Response must contain at least one skill category")
+            raise ValueError("Response must contain at least one skills category")
         return v
     
     def validate_max_count(self, max_category_count: int) -> None:
         """Validate that the number of categories does not exceed the configured maximum.
         
         Args:
-            max_category_count: The maximum allowed number of skill categories.
+            max_category_count: The maximum allowed number of skills categories.
             
         Raises:
             ValueError: If the category count exceeds the maximum.
         """
-        if len(self.skill_categories) > max_category_count:
+        if len(self.skills_categories) > max_category_count:
             raise ValueError(
-                f"Response contains {len(self.skill_categories)} skill categories, "
+                f"Response contains {len(self.skills_categories)} skills categories, "
                 f"but maximum allowed is {max_category_count}"
             )

@@ -5,7 +5,7 @@ Return a JSON array matching exactly this structure:
 
 ```json
 {
-  "skill_categories": [
+  "skills_categories": [
     {
       "order": 1,
       "category": "<category name>",
