@@ -12,3 +12,6 @@ class ApplicationStatus(models.Model):
     )
     state = models.CharField(max_length=16, choices=ApplicationState.choices)
     status_date = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        verbose_name_plural = "Application Statuses"
