@@ -62,30 +62,48 @@ class Orchestrator:
             ValueError: If neither jd_source nor jd_text is provided.
             ValueError: If no matching template exists for the job role and level.
         """
-        parsed_jd = self.jd_parser.parse(jd_path)
         print(f"\n{'='*60}")
-        print(f"Parsed job description for {parsed_jd.metadata.company} - {parsed_jd.metadata.listing_job_title}")
+        print("Parsing job description...")
+
+        parsed_jd = self.jd_parser.parse(jd_path)
+
+        print(f"Succesfully parsed for {parsed_jd.metadata.company} - {parsed_jd.metadata.listing_job_title}")
 
         job = self._persist_job_and_requirements(parsed_jd)
         template = self._get_template(job)
         resume = self._create_resume(job, template)
+
+        print(f"\n{'='*60}")
+        print(f"Fetched template: {template}")
         print("Persisted Job and Resume")
+
+        print(f"\n{'='*60}")
+        print("Generating resume bullets...")
         
         created_counts = self._generate_and_persist_experience_bullets(resume, template, parsed_jd.requirements)
+
+        print(f"Created {created_counts['roles_created']} roles and {created_counts['bullets_created']} bullets")
+
         print(f"\n{'='*60}")
-        print(f"Created {created_counts['roles_created']} resume roles and {created_counts['bullets_created']} bullets")
+        print("Generating resume skills...")
 
         skills = self._generate_and_persist_skills(resume, template, parsed_jd.requirements)
-        print(f"Created {len(skills)} resume skills")
+
+        print(f"Created {len(skills)} skills")
+
+        print(f"\n{'='*60}")
+        print("Rendering PDF...")
         
         pdf_path = resume.render_to_pdf(output_dir=output_dir)
-        print(f"\n{'='*60}")
+        
         print(f"Resume generated successfully!")
         print(f"PDF Location: {pdf_path}")
 
         Application.objects.create(job=job)
+
         print(f"\n{'='*60}")
         print(f"Created Application")
+        print(f"\n{'='*60}")
         
         if auto_open_pdf:
             self._open_pdf(pdf_path)
