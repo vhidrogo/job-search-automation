@@ -9,7 +9,7 @@ from django.utils.safestring import mark_safe
 from django.template.loader import render_to_string
 
 from .experience_role import ExperienceRole
-from .resume_experience_role import ResumeExperienceRole
+from .resume_role import ResumeRole
 
 
 class Resume(models.Model):
@@ -112,19 +112,19 @@ class Resume(models.Model):
         
         return context
 
-    def _render_experience_entry(self, resume_experience_role: ResumeExperienceRole) -> str:
+    def _render_experience_entry(self, resume_role: ResumeRole) -> str:
         """
         Render HTML for a complete experience entry.
         
         Args:
-            resume_experience_role: The resume experience role to render.
+            resume_role: The resume experience role to render.
             
         Returns:
             HTML string for the complete experience entry.
         """
-        header_html = self._render_experience_header(resume_experience_role)
-        subheader_html = self._render_experience_subheader(resume_experience_role.source_role)
-        bullets_html = self._render_bullets(resume_experience_role)
+        header_html = self._render_experience_header(resume_role)
+        subheader_html = self._render_experience_subheader(resume_role.source_role)
+        bullets_html = self._render_bullets(resume_role)
         
         return f"""<div class="experience-entry">
     {header_html}
@@ -134,22 +134,22 @@ class Resume(models.Model):
     </ul>
 </div>"""
 
-    def _render_experience_header(self, resume_experience_role: ResumeExperienceRole) -> str:
+    def _render_experience_header(self, resume_role: ResumeRole) -> str:
         """
         Render HTML for the experience header (title and dates).
         
         Args:
-            resume_experience_role: The resume experience role to render.
+            resume_role: The resume experience role to render.
             
         Returns:
             HTML string for the experience header with dates formatted like "May 2023".
         """
-        source_role = resume_experience_role.source_role
+        source_role = resume_role.source_role
         start_date = source_role.start_date.strftime("%b %Y")
         end_date = source_role.end_date.strftime("%b %Y") if source_role.end_date else "Present"
         
         return f"""<div class="experience-header">
-        <span class="experience-title">{resume_experience_role.title}</span>
+        <span class="experience-title">{resume_role.title}</span>
         <span class="experience-dates">{start_date} - {end_date}</span>
     </div>"""
 
@@ -168,17 +168,17 @@ class Resume(models.Model):
         <span class="experience-location">{escape(source_role.location)}</span>
     </div>"""
 
-    def _render_bullets(self, resume_experience_role: ResumeExperienceRole) -> str:
+    def _render_bullets(self, resume_role: ResumeRole) -> str:
         """
         Render HTML for bullets for a specific role.
         
         Args:
-            resume_experience_role: The resume experience role to render bullets for.
+            resume_role: The resume experience role to render bullets for.
             
         Returns:
             HTML string of <li> tags.
         """
-        bullets = resume_experience_role.bullets.filter(exclude=False)
+        bullets = resume_role.bullets.filter(exclude=False)
         if not bullets.exists():
             return ""
 

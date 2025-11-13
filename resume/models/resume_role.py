@@ -1,7 +1,7 @@
 from django.db import models
 
 
-class ResumeExperienceRole(models.Model):
+class ResumeRole(models.Model):
     """
     Represents a frozen copy of an experience role within a generated resume.
 

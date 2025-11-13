@@ -9,8 +9,8 @@ from django.utils import timezone
 from resume.models import (
     ExperienceRole,
     Resume,
-    ResumeExperienceRole,
-    ResumeExperienceRoleBullet,
+    ResumeRole,
+    ResumeRoleBullet,
     ResumeSkillsCategory,
     ResumeTemplate,
 )
@@ -93,14 +93,14 @@ class TestResumeModel(TestCase):
     def test_render_to_pdf_renders_one_experience_entry_per_role_in_order(self):
         # Create the second role first to verify correct order
         title2 = "Software Development Engineer"
-        ResumeExperienceRole.objects.create(
+        ResumeRole.objects.create(
             resume=self.resume,
             source_role=self.role2,
             title=title2,
             order=2,
         )
         title1 = "Software Engineer"
-        ResumeExperienceRole.objects.create(
+        ResumeRole.objects.create(
             resume=self.resume,
             source_role=self.role1,
             title=title1,
@@ -134,17 +134,17 @@ class TestResumeModel(TestCase):
         self.assertLess(experience_html.index(expected_role1_dates), experience_html.index(expected_role2_dates))
 
     def test_render_to_pdf_per_renders_bullets_in_order(self):
-        role = ResumeExperienceRole.objects.create(resume=self.resume, source_role=self.role1, order=1)
+        role = ResumeRole.objects.create(resume=self.resume, source_role=self.role1, order=1)
         # Create second bullet first to verify order
         bullet2_text = "Developed API clients for Smartlook and Intercom integrations"
-        ResumeExperienceRoleBullet.objects.create(
-            resume_experience_role=role,
+        ResumeRoleBullet.objects.create(
+            resume_role=role,
             order=2,
             text=bullet2_text,
         )
         bullet1_text = "Built REST API endpoints for goal tracking with Django REST Framework"
-        ResumeExperienceRoleBullet.objects.create(
-            resume_experience_role=role,
+        ResumeRoleBullet.objects.create(
+            resume_role=role,
             order=1,
             text=bullet1_text,
         )
@@ -159,11 +159,11 @@ class TestResumeModel(TestCase):
         self.assertIn('<li>', experience_html)
 
     def test_render_to_pdf_uses_bullet_override_text_when_present(self):
-        role = ResumeExperienceRole.objects.create(resume=self.resume, source_role=self.role1, order=1)
+        role = ResumeRole.objects.create(resume=self.resume, source_role=self.role1, order=1)
         text = "Built REST API endpoints for goal tracking with Django REST Framework"
         override_text = "Developed API clients for Smartlook and Intercom integrations"
-        ResumeExperienceRoleBullet.objects.create(
-            resume_experience_role=role,
+        ResumeRoleBullet.objects.create(
+            resume_role=role,
             order=1,
             text=text,
             override_text=override_text,
@@ -176,10 +176,10 @@ class TestResumeModel(TestCase):
         self.assertNotIn(text, experience_html)
 
     def test_render_to_pdf_does_not_render_excluded_bullets(self):
-        role = ResumeExperienceRole.objects.create(resume=self.resume, source_role=self.role1, order=1)
+        role = ResumeRole.objects.create(resume=self.resume, source_role=self.role1, order=1)
         text = "Built REST API endpoints for goal tracking with Django REST Framework"
-        ResumeExperienceRoleBullet.objects.create(
-            resume_experience_role=role,
+        ResumeRoleBullet.objects.create(
+            resume_role=role,
             order=1,
             text=text,
             exclude=True,

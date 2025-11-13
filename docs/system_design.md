@@ -326,7 +326,7 @@ flowchart TD
 | template_id | FK(ResumeTemplate) | Which template was used |
 | job_id | OneToOne(Job) | Job description source |
 
-#### ResumeExperienceRole
+#### ResumeRole
 | Field | Type | Description |
 |--------|------|-------------|
 | id | IntegerField | Primary key |
@@ -335,11 +335,11 @@ flowchart TD
 | title | CharField | Frozen title used in this resume (copied from override_title or experience_role.title) |
 | order | IntegerField | Display order of this role within the resume |
 
-#### ResumeExperienceRoleBullet
+#### ResumeRoleBullet
 | Field | Type | Description |
 |--------|------|-------------|
 | id | IntegerField | Primary key |
-| resume_experience_role | FK(ResumeExperienceRole) | Parent role context |
+| resume_role | FK(ResumeRole) | Parent role context |
 | order | IntegerField | Display order within the role |
 | text | TextField | Generated bullet text |
 | override_text | TextField | Optional manual edit overriding `text` |

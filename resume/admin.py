@@ -7,17 +7,18 @@ from .models import (
     ExperienceProject,
     ExperienceRole,
     Resume,
-    ResumeExperienceRole,
-    ResumeExperienceRoleBullet,
+    ResumeRole,
+    ResumeRole,
+    ResumeRoleBullet,
     ResumeSkillsCategory,
     ResumeTemplate,
     TemplateRoleConfig,
 )
 
 
-class ResumeExperienceRoleBulletInlineForm(forms.ModelForm):
+class ResumeRoleBulletInlineForm(forms.ModelForm):
     class Meta:
-        model = ResumeExperienceRoleBullet
+        model = ResumeRoleBullet
         fields = ['text', 'override_text', 'exclude']
         widgets = {
             'override_text': forms.Textarea(attrs={'rows': 2, 'cols': 50}),
@@ -30,17 +31,17 @@ class ExperienceProjectInline(admin.TabularInline):
     extra = 0
 
 
-class ResumeExperienceRoleInline(admin.TabularInline):
-    model = ResumeExperienceRole
+class ResumeRoleInline(admin.TabularInline):
+    model = ResumeRole
     extra = 0
     ordering = ['order']
     readonly_fields = ['source_role', 'title']
     fields = ['source_role', 'title']
 
 
-class ResumeExperienceRoleBulletInline(admin.TabularInline):
-    model = ResumeExperienceRoleBullet
-    form = ResumeExperienceRoleBulletInlineForm
+class ResumeRoleBulletInline(admin.TabularInline):
+    model = ResumeRoleBullet
+    form = ResumeRoleBulletInlineForm
     extra = 0
     ordering = ['order']
     readonly_fields = ['text']
@@ -79,7 +80,7 @@ class ExperienceRoleAdmin(admin.ModelAdmin):
 class ResumeAdmin(admin.ModelAdmin):
     actions = ['render_resume_to_pdf']
     inlines = [
-        ResumeExperienceRoleInline,
+        ResumeRoleInline,
         ResumeSkillsCategoryInline,
     ]
     
@@ -95,11 +96,11 @@ class ResumeAdmin(admin.ModelAdmin):
         )
 
 
-class ResumeExperienceRoleAdmin(admin.ModelAdmin):
+class ResumeRoleAdmin(admin.ModelAdmin):
     list_display = ['resume', 'source_role']
     ordering = ['-resume__modified_at', 'order']
     inlines = [
-        ResumeExperienceRoleBulletInline,
+        ResumeRoleBulletInline,
     ]
 
 
@@ -112,6 +113,6 @@ class ResumeTemplateAdmin(admin.ModelAdmin):
 admin.site.register(ExperienceProject, ExperienceProjectAdmin)
 admin.site.register(ExperienceRole, ExperienceRoleAdmin)
 admin.site.register(Resume, ResumeAdmin)
-admin.site.register(ResumeExperienceRole, ResumeExperienceRoleAdmin)
+admin.site.register(ResumeRole, ResumeRoleAdmin)
 admin.site.register(ResumeTemplate, ResumeTemplateAdmin)
 admin.site.register(TemplateRoleConfig)
