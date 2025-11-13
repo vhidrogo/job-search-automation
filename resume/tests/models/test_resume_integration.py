@@ -7,6 +7,7 @@ To run them, temporarily comment out the @pytest.mark.skip decorator on the clas
 PDFs are saved to resume/tests/test_output/
 """
 import pytest
+from freezegun import freeze_time
 from pathlib import Path
 
 from django.test import TestCase
@@ -15,17 +16,18 @@ from django.utils import timezone
 from resume.models import (
     ExperienceRole,
     Resume,
-    ResumeExperienceBullet,
-    ResumeSkillBullet,
+    ResumeRole,
+    ResumeRoleBullet,
+    ResumeSkillsCategory,
     ResumeTemplate,
     StylePath,
     TemplatePath,
-    TemplateRoleConfig,
 )
 from tracker.models import Job, JobLevel, JobRole, WorkSetting
 
 
 @pytest.mark.skip(reason="Run manually when templates/styles change")
+@freeze_time("2024-05-11")
 class TestResumeModelIntegration(TestCase):
     
     OUTPUT_DIR = "resume/tests/test_output"
@@ -113,10 +115,8 @@ class TestResumeModelIntegration(TestCase):
         )
         job = self._create_job("Engineer Standard", target_role, target_level)
         resume = self._create_resume(template, job)
-        self._create_config(template, self.navit_role, order=1)
-        self._create_config(template, self.amazon_sde_role, order=2)
-        self._create_experience_bullets(resume, self.navit_role, self.NAVIT_KEY)
-        self._create_experience_bullets(resume, self.amazon_sde_role, self.AMAZON_SDE_KEY)
+        self._create_resume_role_and_bullets(resume, self.navit_role, order=1, bullets_key=self.NAVIT_KEY)
+        self._create_resume_role_and_bullets(resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY)
         self._create_skills(resume)
 
         pdf_path = resume.render_to_pdf(self.OUTPUT_DIR)
@@ -133,12 +133,11 @@ class TestResumeModelIntegration(TestCase):
         )
         job = self._create_job("Engineer Compact", target_role, target_level)
         resume = self._create_resume(template, job)
-        self._create_config(template, self.navit_role, order=1)
-        self._create_config(template, self.amazon_sde_role, order=2)
-        self._create_config(template, self.avenu_role, order=3, title_override="Software Developer")
-        self._create_experience_bullets(resume, self.navit_role, self.NAVIT_KEY)
-        self._create_experience_bullets(resume, self.amazon_sde_role, self.AMAZON_SDE_KEY)
-        self._create_experience_bullets(resume, self.avenu_role, self.AVENU_KEY)
+        self._create_resume_role_and_bullets(resume, self.navit_role, order=1, bullets_key=self.NAVIT_KEY)
+        self._create_resume_role_and_bullets(resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY)
+        self._create_resume_role_and_bullets(
+            resume, self.avenu_role, order=3, bullets_key=self.AVENU_KEY, title_override="Software Developer"
+        )
         self._create_skills(resume)
 
         pdf_path = resume.render_to_pdf(self.OUTPUT_DIR)
@@ -155,14 +154,10 @@ class TestResumeModelIntegration(TestCase):
         )
         job = self._create_job("Engineer Dense", target_role, target_level)
         resume = self._create_resume(template, job)
-        self._create_config(template, self.navit_role, order=1)
-        self._create_config(template, self.amazon_sde_role, order=2)
-        self._create_config(template, self.amazon_bie_role, order=3)
-        self._create_config(template, self.avenu_role, order=4)
-        self._create_experience_bullets(resume, self.navit_role, self.NAVIT_KEY)
-        self._create_experience_bullets(resume, self.amazon_sde_role, self.AMAZON_SDE_KEY)
-        self._create_experience_bullets(resume, self.amazon_bie_role, self.AMAZON_BIE_KEY)
-        self._create_experience_bullets(resume, self.avenu_role, self.AVENU_KEY)
+        self._create_resume_role_and_bullets(resume, self.navit_role, order=1, bullets_key=self.NAVIT_KEY)
+        self._create_resume_role_and_bullets(resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY)
+        self._create_resume_role_and_bullets(resume, self.amazon_bie_role, order=3, bullets_key=self.AMAZON_BIE_KEY)
+        self._create_resume_role_and_bullets(resume, self.avenu_role, order=4, bullets_key=self.AVENU_KEY)
         self._create_skills(resume)
 
         pdf_path = resume.render_to_pdf(self.OUTPUT_DIR)
@@ -179,10 +174,8 @@ class TestResumeModelIntegration(TestCase):
         )
         job = self._create_job("Analyst Standard", target_role, target_level)
         resume = self._create_resume(template, job)
-        self._create_config(template, self.navit_role, order=1)
-        self._create_config(template, self.amazon_sde_role, order=2)
-        self._create_experience_bullets(resume, self.navit_role, self.NAVIT_KEY)
-        self._create_experience_bullets(resume, self.amazon_sde_role, self.AMAZON_SDE_KEY)
+        self._create_resume_role_and_bullets(resume, self.navit_role, order=1, bullets_key=self.NAVIT_KEY)
+        self._create_resume_role_and_bullets(resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY)
         self._create_skills(resume)
 
         pdf_path = resume.render_to_pdf(self.OUTPUT_DIR)
@@ -199,12 +192,9 @@ class TestResumeModelIntegration(TestCase):
         )
         job = self._create_job("Analyst Compact", target_role, target_level)
         resume = self._create_resume(template, job)
-        self._create_config(template, self.navit_role, order=1)
-        self._create_config(template, self.amazon_sde_role, order=2)
-        self._create_config(template, self.amazon_bie_role, order=3)
-        self._create_experience_bullets(resume, self.navit_role, self.NAVIT_KEY)
-        self._create_experience_bullets(resume, self.amazon_sde_role, self.AMAZON_SDE_KEY)
-        self._create_experience_bullets(resume, self.amazon_bie_role, self.AMAZON_BIE_KEY)
+        self._create_resume_role_and_bullets(resume, self.navit_role, order=1, bullets_key=self.NAVIT_KEY)
+        self._create_resume_role_and_bullets(resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY)
+        self._create_resume_role_and_bullets(resume, self.amazon_bie_role, order=3, bullets_key=self.AMAZON_BIE_KEY)
         self._create_skills(resume)
 
         pdf_path = resume.render_to_pdf(self.OUTPUT_DIR)
@@ -221,14 +211,10 @@ class TestResumeModelIntegration(TestCase):
         )
         job = self._create_job("Analyst Dense", target_role, target_level)
         resume = self._create_resume(template, job)
-        self._create_config(template, self.navit_role, order=1)
-        self._create_config(template, self.amazon_sde_role, order=2)
-        self._create_config(template, self.amazon_bie_role, order=3)
-        self._create_config(template, self.avenu_role, order=4)
-        self._create_experience_bullets(resume, self.navit_role, self.NAVIT_KEY)
-        self._create_experience_bullets(resume, self.amazon_sde_role, self.AMAZON_SDE_KEY)
-        self._create_experience_bullets(resume, self.amazon_bie_role, self.AMAZON_BIE_KEY)
-        self._create_experience_bullets(resume, self.avenu_role, self.AVENU_KEY)
+        self._create_resume_role_and_bullets(resume, self.navit_role, order=1, bullets_key=self.NAVIT_KEY)
+        self._create_resume_role_and_bullets(resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY)
+        self._create_resume_role_and_bullets(resume, self.amazon_bie_role, order=3, bullets_key=self.AMAZON_BIE_KEY)
+        self._create_resume_role_and_bullets(resume, self.avenu_role, order=4, bullets_key=self.AVENU_KEY)
         self._create_skills(resume)
 
         pdf_path = resume.render_to_pdf(self.OUTPUT_DIR)
@@ -250,25 +236,22 @@ class TestResumeModelIntegration(TestCase):
     def _create_resume(self, template, job):
         resume = Resume.objects.create(template=template, job=job)
         return resume
-    
-    def _create_config(self, template, role, order, title_override = None):
-        TemplateRoleConfig.objects.create(
-            template=template,
-            experience_role=role,
-            title_override=title_override,
-            order=order,
-            max_bullet_count=1,
-        )
 
-    def _create_experience_bullets(self, resume, experience_role, bullets_key):
+    def _create_resume_role_and_bullets(self, resume, experience_role, order, bullets_key, title_override = None):
+        title = title_override if title_override else experience_role.title
+        role = ResumeRole.objects.create(
+            resume=resume,
+            source_role=experience_role,
+            title=title,
+            order=order,
+        )
         for i, bullet in enumerate(self.BULLETS[bullets_key], start=1):
-            ResumeExperienceBullet.objects.create(
-                resume=resume,
-                experience_role=experience_role,
+            ResumeRoleBullet.objects.create(
+                resume_role=role,
                 order=i,
                 text=bullet,
             )
 
     def _create_skills(self, resume):
-        for cat, text in self.SKILLS:
-            ResumeSkillBullet.objects.create(resume=resume, category=cat, skills_text=text)
+        for i, (cat, text) in enumerate(self.SKILLS, start=1):
+            ResumeSkillsCategory.objects.create(resume=resume, order=i, category=cat, skills_text=text)
