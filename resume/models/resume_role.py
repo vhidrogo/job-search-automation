@@ -39,6 +39,10 @@ class ResumeRole(models.Model):
                 fields=["resume", "source_role"],
                 name="unique_resume_source_role",
             ),
+            models.UniqueConstraint(
+                fields=["resume", "order"],
+                name="unique_resume_order",
+            ),
         ]
 
     def __str__(self):
