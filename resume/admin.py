@@ -7,17 +7,19 @@ from .models import (
     ExperienceProject,
     ExperienceRole,
     Resume,
-    ResumeExperienceBullet,
-    ResumeSkillBullet,
+    ResumeRole,
+    ResumeRole,
+    ResumeRoleBullet,
+    ResumeSkillsCategory,
     ResumeTemplate,
     TemplateRoleConfig,
 )
 
 
-class ResumeExperienceBulletInlineForm(forms.ModelForm):
+class ResumeRoleBulletInlineForm(forms.ModelForm):
     class Meta:
-        model = ResumeExperienceBullet
-        fields = ['experience_role', 'text', 'override_text', 'exclude']
+        model = ResumeRoleBullet
+        fields = ['text', 'override_text', 'exclude']
         widgets = {
             'override_text': forms.Textarea(attrs={'rows': 2, 'cols': 50}),
         }
@@ -29,19 +31,28 @@ class ExperienceProjectInline(admin.TabularInline):
     extra = 0
 
 
-class ResumeExperienceBulletInline(admin.TabularInline):
-    model = ResumeExperienceBullet
-    form = ResumeExperienceBulletInlineForm
+class ResumeRoleInline(admin.TabularInline):
+    model = ResumeRole
     extra = 0
-    ordering = ['role_order', 'role_bullet_order']
-    readonly_fields = ['experience_role', 'text']
-    fields = ['experience_role', 'text', 'exclude', 'override_text']
+    ordering = ['order']
+    readonly_fields = ['source_role', 'title']
+    fields = ['source_role', 'title']
 
 
-class ResumeSkillBulletInline(admin.TabularInline):
-    model = ResumeSkillBullet
+class ResumeRoleBulletInline(admin.TabularInline):
+    model = ResumeRoleBullet
+    form = ResumeRoleBulletInlineForm
+    extra = 0
+    ordering = ['order']
+    readonly_fields = ['text']
+    fields = ['text', 'exclude', 'override_text']
+
+
+class ResumeSkillsCategoryInline(admin.TabularInline):
+    model = ResumeSkillsCategory
     extra = 0
     readonly_fields = ['category', 'skills_text']
+    fields = ['category', 'skills_text', 'exclude']
 
     
 class TemplateRoleConfigInline(admin.TabularInline):
@@ -69,8 +80,8 @@ class ExperienceRoleAdmin(admin.ModelAdmin):
 class ResumeAdmin(admin.ModelAdmin):
     actions = ['render_resume_to_pdf']
     inlines = [
-        ResumeExperienceBulletInline,
-        ResumeSkillBulletInline,
+        ResumeRoleInline,
+        ResumeSkillsCategoryInline,
     ]
     
     @admin.action(description='Render resume to PDF')
@@ -85,6 +96,14 @@ class ResumeAdmin(admin.ModelAdmin):
         )
 
 
+class ResumeRoleAdmin(admin.ModelAdmin):
+    list_display = ['resume', 'source_role']
+    ordering = ['-resume__modified_at', 'order']
+    inlines = [
+        ResumeRoleBulletInline,
+    ]
+
+
 class ResumeTemplateAdmin(admin.ModelAdmin):
     inlines = [
         TemplateRoleConfigInline,
@@ -94,5 +113,6 @@ class ResumeTemplateAdmin(admin.ModelAdmin):
 admin.site.register(ExperienceProject, ExperienceProjectAdmin)
 admin.site.register(ExperienceRole, ExperienceRoleAdmin)
 admin.site.register(Resume, ResumeAdmin)
+admin.site.register(ResumeRole, ResumeRoleAdmin)
 admin.site.register(ResumeTemplate, ResumeTemplateAdmin)
 admin.site.register(TemplateRoleConfig)

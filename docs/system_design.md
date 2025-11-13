@@ -36,7 +36,7 @@ job_search_automation/ (Django Project)
 | Class | Responsibility |
 |-------|----------------|
 | **ClaudeClient** | Wraps LLM API calls (`generate()`, `count_tokens()`), handles configuration and model defaults. |
-| **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skill_bullets()` to produce both experience and skill-section entries used by `Resume` rendering. |
+| **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skills()` to produce both experience and skill-section entries used by `Resume` rendering. |
 | **JDParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
 | **Orchestrator** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative flows. |
 | **Job (model methods)** | `generate_resume_pdf()` — entry point for on-demand PDF generation via Django admin; delegates to `Resume.render_to_pdf()` for actual rendering. |
@@ -92,13 +92,13 @@ Resume templates use **HTML + CSS + Jinja2**, rendered to PDF via **WeasyPrint**
 **Template Selection:**  
 - Template selection is driven by `ResumeTemplate` + the `TemplateRoleConfig` rows.  
 - Use `template.role_configs.filter().order_by("order")` to determine which `ExperienceRole`s to include and the configured `max_bullet_count` per role.  
-- The orchestrator fetches the appropriate HTML template based on `Job.role` and `Job.level`, then renders it with Jinja2 using data from `Resume`, `ResumeExperienceBullet`, and `ResumeSkillBullet` models.
+- The orchestrator fetches the appropriate HTML template based on `Job.role` and `Job.level`, then renders it with Jinja2 using data from `Resume`, `ResumeSkillsCategory`, and `ResumeSkillsCategory` models.
 
 **Rendering Pipeline:**  
 1. User triggers PDF generation via Django admin action on a `Job` record.
 2. `Job.generate_resume_pdf()` fetches associated `Resume` and delegates to `Resume.render_to_pdf()`.
 3. `Resume.render_to_pdf()` fetches `ResumeTemplate` and associated `TemplateRoleConfig` entries.
-4. Query `ResumeExperienceBullet` and `ResumeSkillBullet` objects (filtered by `exclude=False`), using `override_text` if present, otherwise `text`.
+4. Query `ResumeSkillsCategory` and `ResumeSkillsCategory` objects (filtered by `exclude=False`), using `override_text` if present, otherwise `text`.
 5. Render HTML template with Jinja2, injecting roles (using `title_override` if present), bullets and skills.
 6. Pass rendered HTML + CSS to WeasyPrint for PDF generation.
 7. Save output file with naming convention based on job details (e.g., `{company}_{listing_job_title}_{level}.pdf`).
@@ -195,7 +195,7 @@ To maintain modularity between the resume-generation domain and the job-tracking
 
 | App | Domain | Core Models | Responsibility |
 |------|---------|--------------|----------------|
-| **resume** | Resume generation | `ResumeTemplate`, `TemplateRoleConfig`, `Resume`, `ResumeExperienceBullet`, `ResumeSkillBullet`, `ExperienceRole`, `ExperienceProject` | Manages templates, experience data, and generated resume artifacts. |
+| **resume** | Resume generation | `ResumeTemplate`, `TemplateRoleConfig`, `Resume`, `ResumeSkillsCategory`, `ResumeSkillsCategory`, `ExperienceRole`, `ExperienceProject` | Manages templates, experience data, and generated resume artifacts. |
 | **tracker** | Job and application tracking | `Job`, `Requirement`, `ContractJob`, `Application`, `ApplicationStatus` | Manages job postings, parsed requirements, applications, and status updates. |
 
 **Rationale:**
@@ -219,8 +219,8 @@ Each app uses a `models/` directory instead of a single `models.py` file, improv
 resume/
   models/
     resume.py
-    resume_experience_bullet.py
-    resume_skill_bullet.py
+    resume_role_bullet.py
+    resume_skills_category.py
     resume_template.py
     experience_role.py
     template_role_config.py
@@ -242,8 +242,8 @@ flowchart TD
         RT[ResumeTemplate]
         TRC[TemplateRoleConfig]
         R[Resume]
-        REB[ResumeExperienceBullet]
-        RSB[ResumeSkillBullet]
+        REB[ResumeSkillsCategory]
+        RSB[ResumeSkillsCategory]
         ER[ExperienceRole]
         EP[ExperienceProject]
 
@@ -326,24 +326,34 @@ flowchart TD
 | template_id | FK(ResumeTemplate) | Which template was used |
 | job_id | OneToOne(Job) | Job description source |
 
-#### ResumeExperienceBullet
+#### ResumeRole
 | Field | Type | Description |
 |--------|------|-------------|
 | id | IntegerField | Primary key |
 | resume | FK(Resume) | Associated resume |
-| experience_role | FK(ExperienceRole) | Experience role this bullet was generated for |
-| order | IntegerField | Display order |
-| text | TextField | Bullet content |
-| exclude | BooleanField | Whether to exclude this bullet from the generated resume |
-| override_text | TextField | Optional manually edited version of the bullet that takes priority over `text` |
+| experience_role | FK(ExperienceRole) | Original experience role used as source |
+| title | CharField | Frozen title used in this resume (copied from override_title or experience_role.title) |
+| order | IntegerField | Display order of this role within the resume |
 
-#### ResumeSkillBullet
+#### ResumeRoleBullet
+| Field | Type | Description |
+|--------|------|-------------|
+| id | IntegerField | Primary key |
+| resume_role | FK(ResumeRole) | Parent role context |
+| order | IntegerField | Display order within the role |
+| text | TextField | Generated bullet text |
+| override_text | TextField | Optional manual edit overriding `text` |
+| exclude | BooleanField | Whether to exclude from rendering |
+
+#### ResumeSkillsCategory
 | Field | Type | Description |
 |--------|------|-------------|
 | id | IntegerField | Primary key |
 | resume | FK(Resume) | Associated resume |
+| order | IntegerField | Display order within the resume |
 | category | CharField | Category label such as "Programming Languages" or "Data & Visualization" |
 | skills_text | TextField | CSV string of related skills (e.g., "Python, Java") |
+| exclude | BooleanField | Whether to exclude from rendering |
 
 #### ExperienceRole
 | Field | Type | Description |
@@ -352,7 +362,9 @@ flowchart TD
 | key | CharField | Stable identifier used by templates (e.g., "navit_swe", "amazon_sde") |
 | company | CharField | Employer name (e.g., "Nav.it") |
 | title | CharField | Job title (e.g., "Software Engineer") |
-| display_name | CharField | Optional human-facing name; if null, render as `title – company` |
+| start_date | DateField | The date the role began |
+| end_date | DateField | The date the role ended |
+| location | CharField | Location where the role was set in. (e.g "Seattle, WA", "Remote") |
 
 #### ExperienceProject
 | Field | Type | Description |
@@ -402,8 +414,8 @@ flowchart TD
     D --> E["Fetch ResumeTemplate (by Job.role + Job.level)"]
     E --> F["Fetch TemplateRoleConfig → ExperienceRoles"]
     F --> G["For each ExperienceRole: ResumeWriter.generate_experience_bullets()"]
-    G --> H["ResumeWriter.generate_skill_bullets()"]
-    H --> I["Persist Resume + ResumeExperienceBullet + ResumeSkillBullet objects"]
+    G --> H["ResumeWriter.generate_skills()"]
+    H --> I["Persist Resume + ResumeSkillsCategory + ResumeSkillsCategory objects"]
     I --> J["User reviews + edits bullets (override/exclude) via Django admin"]
     J --> K["User triggers Job.generate_resume_pdf() via Django admin action"]
     K --> L["Resume.render_to_pdf() → PDF saved to output directory"]
@@ -466,7 +478,7 @@ Incremental Build Plan
   - Introduce configurable model selection to allow using different LLM providers (e.g., Anthropic, OpenAI) and versions (e.g., `claude-sonnet-4-5`, `claude-haiku-4-5`, `gpt-4.1`, etc.).
   - Support per-utility model selection so that modules can use optimal models for their complexity:
     - Example: more context-heavy tasks (e.g., `generate_experience_bullets()`) may use higher-capacity models like `claude-sonnet-4-5`.
-    - Example: `generate_skill_bullets()` may use a faster, cheaper model like `claude-haiku-4-5`.
+    - Example: `generate_skills()` may use a faster, cheaper model like `claude-haiku-4-5`.
   - Implement a benchmarking and metrics layer to track model **cost**, **latency**, and **output quality** (e.g., validation success rate, token usage).
   - Aggregate and visualize results to guide model selection decisions and cost-performance optimization over time.
 

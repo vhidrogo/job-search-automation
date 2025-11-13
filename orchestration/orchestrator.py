@@ -5,8 +5,9 @@ from django.db import transaction
 
 from resume.models import (
     Resume,
-    ResumeExperienceBullet,
-    ResumeSkillBullet,
+    ResumeRole,
+    ResumeRoleBullet,
+    ResumeSkillsCategory,
     ResumeTemplate,
     TargetSpecialization,
 )
@@ -70,9 +71,10 @@ class Orchestrator:
         resume = self._create_resume(job, template)
         print("Persisted Job and Resume")
         
-        bullets = self._generate_and_persist_experience_bullets(resume, template, parsed_jd.requirements)
+        created_counts = self._generate_and_persist_experience_bullets(resume, template, parsed_jd.requirements)
         print(f"\n{'='*60}")
-        print(f"Created {len(bullets)} resume bullets")
+        print(f"Created {created_counts['roles_created']} resume roles and {created_counts['bullets_created']} bullets")
+
         skills = self._generate_and_persist_skills(resume, template, parsed_jd.requirements)
         print(f"Created {len(skills)} resume skills")
         
@@ -186,7 +188,9 @@ class Orchestrator:
             "experience_role"
         ).order_by("order")
         
+        roles_to_create = []
         bullets_to_create = []
+
         for config in role_configs:
             bullet_list = self.resume_writer.generate_experience_bullets(
                 experience_role=config.experience_role,
@@ -194,20 +198,28 @@ class Orchestrator:
                 target_role=template.target_role,
                 max_bullet_count=config.max_bullet_count,
             )
+            title = config.title_override if config.title_override else config.experience_role.title
+            role = ResumeRole.objects.create(
+                resume=resume,
+                source_role=config.experience_role,
+                title=title,
+                order=config.order,
+            )
             
             for bullet in bullet_list.bullets:
                 bullets_to_create.append(
-                    ResumeExperienceBullet(
-                        resume=resume,
-                        experience_role=config.experience_role,
+                    ResumeRoleBullet(
+                        resume_role=role,
                         order=bullet.order,
                         text=bullet.text,
                     )
                 )
         
-        created = ResumeExperienceBullet.objects.bulk_create(bullets_to_create)
+        created_roles = ResumeRole.objects.bulk_create(roles_to_create)
+        created_bullets = ResumeRoleBullet.objects.bulk_create(bullets_to_create)
+    
+        return {"roles_created": len(created_roles), "bullets_created": len(created_bullets)}
 
-        return created
     
     def _generate_and_persist_skills(
         self,
@@ -215,26 +227,27 @@ class Orchestrator:
         template: ResumeTemplate,
         requirements: List[RequirementSchema],
     ) -> None:
-        """Generate and persist skill bullets.
+        """Generate and persist skills categories.
         
         Args:
             resume: Resume instance to populate.
             requirements: List of RequirementSchema objects.
             template: Template with role configurations.
         """
-        skill_bullet_list = self.resume_writer.generate_skill_bullets(template, requirements)
+        skills_list = self.resume_writer.generate_skills(template, requirements)
         
         skills_to_create = []
-        for skill_category in skill_bullet_list.skill_categories:
+        for item in skills_list.skills_categories:
             skills_to_create.append(
-                ResumeSkillBullet(
+                ResumeSkillsCategory(
                     resume=resume,
-                    category=skill_category.category,
-                    skills_text=skill_category.skills,
+                    order=item.order,
+                    category=item.category,
+                    skills_text=item.skills,
                 )
             )
         
-        created = ResumeSkillBullet.objects.bulk_create(skills_to_create)
+        created = ResumeSkillsCategory.objects.bulk_create(skills_to_create)
 
         return created
     

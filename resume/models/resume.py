@@ -1,6 +1,6 @@
 from pathlib import Path
 from html import escape
-from typing import Dict, Optional
+from typing import Dict
 from weasyprint import CSS, HTML
 
 from django.conf import settings
@@ -9,7 +9,7 @@ from django.utils.safestring import mark_safe
 from django.template.loader import render_to_string
 
 from .experience_role import ExperienceRole
-from .template_role_config import TemplateRoleConfig
+from .resume_role import ResumeRole
 
 
 class Resume(models.Model):
@@ -44,14 +44,6 @@ class Resume(models.Model):
 
     def __str__(self) -> str:
         return f"Resume for {self.job.company} - {self.job.listing_job_title}"
-
-    def unmet_list(self) -> Optional[list[str]]:
-        """
-        Returns unmet requirements as a list of strings, or None if empty.
-        """
-        if not self.unmet_requirements.strip():
-            return None
-        return [req.strip() for req in self.unmet_requirements.split(",") if req.strip()]
 
     def render_to_pdf(self, output_dir: str = "output/resumes") -> str:
         """
@@ -109,12 +101,10 @@ class Resume(models.Model):
             Dictionary with 'experience' HTML string and 'skills' HTML string.
         """
         context = {}
-        
-        configs = self.template.role_configs.select_related("experience_role").order_by("order")
-        
+
         experience_entries = []
-        for config in configs:
-            entry_html = self._render_experience_entry(config.experience_role, config)
+        for role in self.roles.all():
+            entry_html = self._render_experience_entry(role)
             experience_entries.append(entry_html)
         
         context["experience"] = mark_safe("\n\n".join(experience_entries))
@@ -122,20 +112,19 @@ class Resume(models.Model):
         
         return context
 
-    def _render_experience_entry(self, experience_role: ExperienceRole, template_role_config: TemplateRoleConfig) -> str:
+    def _render_experience_entry(self, resume_role: ResumeRole) -> str:
         """
         Render HTML for a complete experience entry.
         
         Args:
-            experience_role: The experience role to render.
-            template_role_config: The template configuration for this role.
+            resume_role: The resume experience role to render.
             
         Returns:
             HTML string for the complete experience entry.
         """
-        header_html = self._render_experience_header(experience_role, template_role_config)
-        subheader_html = self._render_experience_subheader(experience_role)
-        bullets_html = self._render_role_bullets(experience_role)
+        header_html = self._render_experience_header(resume_role)
+        subheader_html = self._render_experience_subheader(resume_role.source_role)
+        bullets_html = self._render_bullets(resume_role)
         
         return f"""<div class="experience-entry">
     {header_html}
@@ -145,56 +134,51 @@ class Resume(models.Model):
     </ul>
 </div>"""
 
-    def _render_experience_header(self, experience_role: ExperienceRole, template_role_config: TemplateRoleConfig) -> str:
+    def _render_experience_header(self, resume_role: ResumeRole) -> str:
         """
         Render HTML for the experience header (title and dates).
         
         Args:
-            experience_role: The experience role to render.
-            template_role_config: The template configuration for this role.
+            resume_role: The resume experience role to render.
             
         Returns:
             HTML string for the experience header with dates formatted like "May 2023".
         """
-        title = escape(template_role_config.title_override if template_role_config.title_override else experience_role.title)
-        start_date = experience_role.start_date.strftime("%b %Y")
-        end_date = experience_role.end_date.strftime("%b %Y") if experience_role.end_date else "Present"
+        source_role = resume_role.source_role
+        start_date = source_role.start_date.strftime("%b %Y")
+        end_date = source_role.end_date.strftime("%b %Y") if source_role.end_date else "Present"
         
         return f"""<div class="experience-header">
-        <span class="experience-title">{title}</span>
+        <span class="experience-title">{resume_role.title}</span>
         <span class="experience-dates">{start_date} - {end_date}</span>
     </div>"""
 
-    def _render_experience_subheader(self, experience_role: ExperienceRole) -> str:
+    def _render_experience_subheader(self, source_role: ExperienceRole) -> str:
         """
         Render HTML for the experience subheader (company and location).
         
         Args:
-            experience_role: The experience role to render.
+            source_role: The experience role to render.
             
         Returns:
             HTML string for the experience subheader.
         """
         return f"""<div class="experience-subheader">
-        <span class="experience-company">{escape(experience_role.company)}</span>
-        <span class="experience-location">{escape(experience_role.location)}</span>
+        <span class="experience-company">{escape(source_role.company)}</span>
+        <span class="experience-location">{escape(source_role.location)}</span>
     </div>"""
 
-    def _render_role_bullets(self, experience_role: ExperienceRole) -> str:
+    def _render_bullets(self, resume_role: ResumeRole) -> str:
         """
-        Render HTML for experience bullets for a specific role.
+        Render HTML for bullets for a specific role.
         
         Args:
-            experience_role: The experience role to render bullets for.
+            resume_role: The resume experience role to render bullets for.
             
         Returns:
             HTML string of <li> tags.
         """
-        bullets = self.experience_bullets.filter(
-            experience_role=experience_role,
-            exclude=False
-        ).order_by("order")
-        
+        bullets = resume_role.bullets.filter(exclude=False)
         if not bullets.exists():
             return ""
 
@@ -207,9 +191,9 @@ class Resume(models.Model):
         Render HTML for skills section.
         
         Returns:
-            HTML string of skill category entries.
+            HTML string of skills category entries.
         """
-        skill_bullets = self.skill_bullets.filter(exclude=False)
+        skill_bullets = self.skills_categories.filter(exclude=False)
         
         if not skill_bullets.exists():
             return ""

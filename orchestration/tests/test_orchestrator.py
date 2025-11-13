@@ -7,9 +7,10 @@ from orchestration.orchestrator import Orchestrator
 from resume.models import (
     ExperienceRole,
     Resume,
-    ResumeExperienceBullet,
+    ResumeRole,
+    ResumeRoleBullet,
     ResumeTemplate,
-    ResumeSkillBullet,
+    ResumeSkillsCategory,
     TargetSpecialization,
     TemplateRoleConfig,
 )
@@ -19,8 +20,8 @@ from resume.schemas import (
     JDModel,
     Metadata,
     RequirementSchema,
-    SkillCategorySchema,
-    SkillBulletListModel,
+    SkillsCategorySchema,
+    SkillsListModel,
 )
 from resume.services import JDParser, ResumeWriter
 from tracker.models import (
@@ -39,8 +40,8 @@ class TestOrchestrator(TestCase):
     PDF_PATH = "test/pdf_path"
     REQUIREMENT_TEXT1 = "5+ years of Python experience"
     REQUIREMENT_TEXT2 = "Experience with Django web framework"
-    SKILL_CATEGORY1 = "Programming Languages"
-    SKILL_CATEGORY2 = "Frameworks"
+    SKILLS_CATEGORY1 = "Programming Languages"
+    SKILLS_CATEGORY2 = "Frameworks"
     TARGET_LEVEL = JobLevel.II
     TARGET_ROLE = JobRole.SOFTWARE_ENGINEER
     TARGET_SPECIALIZATION = TargetSpecialization.BACKEND
@@ -85,26 +86,30 @@ class TestOrchestrator(TestCase):
         )
         
         cls.skills = [
-            SkillCategorySchema(
-                category=cls.SKILL_CATEGORY1,
+            SkillsCategorySchema(
+                order=1,
+                category=cls.SKILLS_CATEGORY1,
                 skills="Python, Java",
             ),
-            SkillCategorySchema(
-                category=cls.SKILL_CATEGORY2,
+            SkillsCategorySchema(
+                order=2,
+                category=cls.SKILLS_CATEGORY2,
                 skills="Django, React",
             ),
         ]
-        cls.skill_model = SkillBulletListModel(skill_categories=cls.skills)
+        cls.skills_model = SkillsListModel(skills_categories=cls.skills)
 
-        cls.mock_skill_model = Mock()
-        cls.mock_skill_model.skill_categories = []
+        cls.mock_skills_model = Mock()
+        cls.mock_skills_model.skills_categories = []
+
+        cls.now = timezone.now()
 
     def setUp(self):
         self.mock_jd_parser = Mock(spec=JDParser)
         self.mock_resume_writer = Mock(spec=ResumeWriter)
 
         self.mock_jd_parser.parse.return_value = self.jd_model
-        self.mock_resume_writer.generate_skill_bullets.return_value = self.mock_skill_model
+        self.mock_resume_writer.generate_skills.return_value = self.mock_skills_model
 
         self.orchestrator = Orchestrator(
             jd_parser=self.mock_jd_parser,
@@ -202,21 +207,13 @@ class TestOrchestrator(TestCase):
         resume = Resume.objects.first()
         self.assertEqual(resume.template, self.template)
 
-    def test_run_generates_and_persists_resume_bullets_for_all_roles(self):
+    def test_run_generates_and_persists_all_resume_roles_and_bullets(self):
         self._create_default_template()
 
         # Create test roles and configs
         max_bullet_count = 2
-        role1 = ExperienceRole.objects.create(
-            key="role1",
-            start_date=timezone.now(),
-            end_date=timezone.now(),
-        )
-        role2 = ExperienceRole.objects.create(
-            key="role2",
-            start_date=timezone.now(),
-            end_date=timezone.now(),
-        )
+        role1 = ExperienceRole.objects.create(key="role1", start_date=self.now, end_date=self.now)
+        role2 = ExperienceRole.objects.create(key="role2", start_date=self.now, end_date=self.now)
         for i, role in enumerate([role1, role2], start=1):
             TemplateRoleConfig.objects.create(
                 template=self.template,
@@ -256,23 +253,44 @@ class TestOrchestrator(TestCase):
         ]
         self.mock_resume_writer.generate_experience_bullets.assert_has_calls(expected_calls)
 
-        # Verify ResumeExperienceBullets for first role were persisted
-        self.assertEqual(ResumeExperienceBullet.objects.filter(experience_role=role1).count(), len(bullet_list1))
-        self.assertTrue(ResumeExperienceBullet.objects.filter(experience_role=role1, text=role1_bullet1).exists())
-        self.assertTrue(ResumeExperienceBullet.objects.filter(experience_role=role1, text=role1_bullet2).exists())
+        self.assertEqual(ResumeRole.objects.count(), 2)
+        self.assertEqual(ResumeRoleBullet.objects.count(), 4)
+        resume_role1 = ResumeRole.objects.filter(source_role=role1).first()
+        self.assertIsNotNone(resume_role1)
+        resume_role2 = ResumeRole.objects.filter(source_role=role2).first()
+        self.assertIsNotNone(resume_role2)
+        self.assertTrue(ResumeRoleBullet.objects.filter(resume_role=resume_role1, text=role1_bullet1).exists())
+        self.assertTrue(ResumeRoleBullet.objects.filter(resume_role=resume_role1, text=role1_bullet2).exists())
+        self.assertTrue(ResumeRoleBullet.objects.filter(resume_role=resume_role2, text=role2_bullet1).exists())
+        self.assertTrue(ResumeRoleBullet.objects.filter(resume_role=resume_role2, text=role2_bullet2).exists())
 
-        # Verify ResumeExperienceBullets for second role were persisted
-        self.assertEqual(ResumeExperienceBullet.objects.filter(experience_role=role2).count(), len(bullet_list2))
-        self.assertTrue(ResumeExperienceBullet.objects.filter(experience_role=role2, text=role2_bullet1).exists())
-        self.assertTrue(ResumeExperienceBullet.objects.filter(experience_role=role2, text=role2_bullet2).exists())
-
-    def test_run_generates_and_persists_resume_skills(self):
+    def test_run_uses_config_title_override_when_present(self):
         self._create_default_template()
-        self.mock_resume_writer.generate_skill_bullets.return_value = self.skill_model
+        self.mock_resume_writer.generate_experience_bullets.return_value = Mock(bullets=[])
+        title_override = "Software Engineer (Backend)"
+        role = ExperienceRole.objects.create(start_date=self.now, end_date=self.now)
+        TemplateRoleConfig.objects.create(
+            title_override=title_override,
+            template=self.template,
+            experience_role=role,
+            order=1,
+            max_bullet_count=1,
+        )
 
         self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
 
-        self.mock_resume_writer.generate_skill_bullets.assert_called_once_with(self.template, self.requirements)
-        self.assertEqual(ResumeSkillBullet.objects.count(), len(self.skills))
-        self.assertTrue(ResumeSkillBullet.objects.filter(category=self.SKILL_CATEGORY1).exists())
-        self.assertTrue(ResumeSkillBullet.objects.filter(category=self.SKILL_CATEGORY2).exists())
+        resume_role = ResumeRole.objects.filter(source_role=role).first()
+        self.assertIsNotNone(resume_role)
+        self.assertEqual(resume_role.title, title_override)
+        
+        
+    def test_run_generates_and_persists_resume_skills(self):
+        self._create_default_template()
+        self.mock_resume_writer.generate_skills.return_value = self.skills_model
+
+        self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
+
+        self.mock_resume_writer.generate_skills.assert_called_once_with(self.template, self.requirements)
+        self.assertEqual(ResumeSkillsCategory.objects.count(), len(self.skills))
+        self.assertTrue(ResumeSkillsCategory.objects.filter(category=self.SKILLS_CATEGORY1).exists())
+        self.assertTrue(ResumeSkillsCategory.objects.filter(category=self.SKILLS_CATEGORY2).exists())

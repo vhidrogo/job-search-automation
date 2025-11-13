@@ -15,8 +15,8 @@ from resume.models import (
 from resume.schemas import (
     BulletListModel,
     ExperienceBullet,
-    SkillBulletListModel,
-    SkillCategorySchema,
+    SkillsListModel,
+    SkillsCategorySchema,
     RequirementSchema,
 )
 from resume.services import ResumeWriter
@@ -81,19 +81,21 @@ class TestResumeWriter(TestCase):
             ]
         })
 
-        cls.skill_category1, cls.skill_category2 = "Programming Languages", "Databases"
-        cls.skill_text1 = "Python, Java"
-        cls.skill_text2 = "PostgreSQL, DynamoDB"
+        cls.skills_category1, cls.skills_category2 = "Programming Languages", "Databases"
+        cls.skills_text1 = "Python, Java"
+        cls.skills_text2 = "PostgreSQL, DynamoDB"
 
-        cls.skill_response = json.dumps({
-            "skill_categories": [
+        cls.skills_response = json.dumps({
+            "skills_categories": [
                 {
-                    "category": cls.skill_category1,
-                    "skills": cls.skill_text1,
+                    "order": 1,
+                    "category": cls.skills_category1,
+                    "skills": cls.skills_text1,
                 },
                 {
-                    "category": cls.skill_category2,
-                    "skills": cls.skill_text2,
+                    "order": 2,
+                    "category": cls.skills_category2,
+                    "skills": cls.skills_text2,
                 },
             ]
         })
@@ -203,11 +205,11 @@ class TestResumeWriter(TestCase):
             tools=self.tools,
         )
 
-    def test_generate_skill_bullets_returns_validated_bullets(self):
+    def test_generate_skills_returns_validated_bullets(self):
         self._create_default_project_with_tools()
-        self.mock_client.generate.return_value = self.skill_response
+        self.mock_client.generate.return_value = self.skills_response
 
-        result = self.resume_writer.generate_skill_bullets(
+        result = self.resume_writer.generate_skills(
             template=self.template,
             requirements=self.requirements,
         )
@@ -218,25 +220,27 @@ class TestResumeWriter(TestCase):
             model=ANY,
             max_tokens=ANY,
         )
-        expected = SkillBulletListModel(
-            skill_categories=[
-                SkillCategorySchema(
-                    category=self.skill_category1,
-                    skills=self.skill_text1,
+        expected = SkillsListModel(
+            skills_categories=[
+                SkillsCategorySchema(
+                    order=1,
+                    category=self.skills_category1,
+                    skills=self.skills_text1,
                 ),
-                SkillCategorySchema(
-                    category=self.skill_category2,
-                    skills=self.skill_text2,
+                SkillsCategorySchema(
+                    order=2,
+                    category=self.skills_category2,
+                    skills=self.skills_text2,
                 ),
             ]
         )
         self.assertEqual(result, expected)
 
-    def test_generate_skill_bullets_raises_when_no_role_configs(self):
+    def test_generate_skills_raises_when_no_role_configs(self):
         self._create_default_project_with_tools()
         template = ResumeTemplate.objects.create()
         with self.assertRaises(ValueError) as cm:
-            self.resume_writer.generate_skill_bullets(
+            self.resume_writer.generate_skills(
                 template=template,
                 requirements=self.requirements,
             )
@@ -244,10 +248,10 @@ class TestResumeWriter(TestCase):
         error_msg = str(cm.exception)
         self.assertIn("No role configs found", error_msg)
 
-    def test_generate_skill_bullets_raises_when_no_tools(self):
+    def test_generate_skills_raises_when_no_tools(self):
         ExperienceProject.objects.create(experience_role=self.experience_role)
         with self.assertRaises(ValueError) as cm:
-            self.resume_writer.generate_skill_bullets(
+            self.resume_writer.generate_skills(
                 template=self.template,
                 requirements=self.requirements,
             )
@@ -255,9 +259,9 @@ class TestResumeWriter(TestCase):
         error_msg = str(cm.exception)
         self.assertIn("No tools found", error_msg)
     
-    def test_generate_skill_bullets_raises_when_no_projects(self):
+    def test_generate_skills_raises_when_no_projects(self):
         with self.assertRaises(ValueError) as cm:
-            self.resume_writer.generate_skill_bullets(
+            self.resume_writer.generate_skills(
                 template=self.template,
                 requirements=self.requirements,
             )
@@ -265,23 +269,23 @@ class TestResumeWriter(TestCase):
         error_msg = str(cm.exception)
         self.assertIn("No projects found", error_msg)
 
-    def test_generate_skill_bullets_raises_on_invalid_json(self):
+    def test_generate_skills_raises_on_invalid_json(self):
         self._create_default_project_with_tools()
         self.mock_client.generate.return_value = "invalid json"
 
         with self.assertRaises(ValueError):
-            self.resume_writer.generate_skill_bullets(
+            self.resume_writer.generate_skills(
                 template=self.template,
                 requirements=self.requirements,
             )
 
-    def test_generate_skill_bullets_raises_on_excess_categories(self):
+    def test_generate_skills_raises_on_excess_categories(self):
         self._create_default_project_with_tools()
-        self.mock_client.generate.return_value = self.skill_response
+        self.mock_client.generate.return_value = self.skills_response
         max_category_count = 1
 
         with self.assertRaises(ValueError) as cm:
-            self.resume_writer.generate_skill_bullets(
+            self.resume_writer.generate_skills(
                 template=self.template,
                 requirements=self.requirements,
                 max_category_count=max_category_count,
@@ -289,11 +293,11 @@ class TestResumeWriter(TestCase):
 
         self.assertIn(f"maximum allowed is {max_category_count}", str(cm.exception))
 
-    def test_generate_skill_bullets_builds_prompt_with_requirement_keywords(self):
+    def test_generate_skills_builds_prompt_with_requirement_keywords(self):
         self._create_default_project_with_tools()
-        self.mock_client.generate.return_value = self.skill_response
+        self.mock_client.generate.return_value = self.skills_response
         
-        self.resume_writer.generate_skill_bullets(
+        self.resume_writer.generate_skills(
             template=self.template,
             requirements=self.requirements,
         )
@@ -308,7 +312,7 @@ class TestResumeWriter(TestCase):
             f"Prompt does not include all unique keywords from requirement: {self.requirement_text2}.",
         )
 
-    def test_generate_skill_bullets_prompt_includes_all_tools_for_all_included_roles(self):
+    def test_generate_skills_prompt_includes_all_tools_for_all_included_roles(self):
         self._create_default_project_with_tools()
         role2 = ExperienceRole.objects.create(
             key="role2",
@@ -328,9 +332,9 @@ class TestResumeWriter(TestCase):
             experience_role=role2,
             tools=role2_tools,
         )
-        self.mock_client.generate.return_value = self.skill_response
+        self.mock_client.generate.return_value = self.skills_response
         
-        self.resume_writer.generate_skill_bullets(
+        self.resume_writer.generate_skills(
             template=self.template,
             requirements=self.requirements,
         )
@@ -345,7 +349,7 @@ class TestResumeWriter(TestCase):
             f"Prompt does not include all unique tools from role: {role2}.",
         )
 
-    def test_generate_skill_bullets_prompt_excludes_tools_for_excluded_roles(self):
+    def test_generate_skills_prompt_excludes_tools_for_excluded_roles(self):
         self._create_default_project_with_tools()
         role2 = ExperienceRole.objects.create(
             key="role2",
@@ -359,9 +363,9 @@ class TestResumeWriter(TestCase):
             experience_role=role2,
             tools=role2_tools,
         )
-        self.mock_client.generate.return_value = self.skill_response
+        self.mock_client.generate.return_value = self.skills_response
         
-        self.resume_writer.generate_skill_bullets(
+        self.resume_writer.generate_skills(
             template=self.template,
             requirements=self.requirements,
         )
