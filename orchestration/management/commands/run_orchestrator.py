@@ -1,3 +1,5 @@
+import time
+
 from django.core.management.base import BaseCommand, CommandError
 from orchestration.orchestrator import Orchestrator
 
@@ -32,6 +34,8 @@ class Command(BaseCommand):
         auto_open = options["auto_open_pdf"]
 
         orchestrator = Orchestrator()
+        start_time = time.time()
+
         try:
             resume = orchestrator.run(
                 jd_path=jd_path,
@@ -41,6 +45,8 @@ class Command(BaseCommand):
         except Exception as e:
             raise CommandError(f"Orchestration failed: {e}")
 
+        elapsed = time.time() - start_time
         self.stdout.write(self.style.SUCCESS(
-            f"Orchestration completed successfully for JD at {jd_path}"
+            f"Orchestration completed successfully for JD at {jd_path} "
+            f"in {elapsed:.2f} seconds"
         ))
