@@ -15,7 +15,7 @@ class ResumeRole(models.Model):
     resume = models.ForeignKey(
         "Resume",
         on_delete=models.CASCADE,
-        related_name="experience_roles",
+        related_name="roles",
     )
     source_role = models.ForeignKey(
         "ExperienceRole",

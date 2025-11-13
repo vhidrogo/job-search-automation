@@ -103,7 +103,7 @@ class Resume(models.Model):
         context = {}
 
         experience_entries = []
-        for role in self.experience_roles.all():
+        for role in self.roles.all():
             entry_html = self._render_experience_entry(role)
             experience_entries.append(entry_html)
         
