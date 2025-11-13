@@ -9,6 +9,7 @@ class SkillCategorySchema(BaseModel):
     ensuring they contain meaningful category names and valid skill lists.
     """
     
+    order: Annotated[int, Field(ge=1, description="Relevance ranking, starting from 1")]
     category: Annotated[
         str,
         Field(
