@@ -43,7 +43,7 @@ class Resume(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"Resume for {self.job.company} - {self.job.listing_job_title}"
+        return f"{self.job} - Resume"
 
     def render_to_pdf(self, output_dir: str = "output/resumes") -> str:
         """

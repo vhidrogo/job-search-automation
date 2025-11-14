@@ -60,7 +60,7 @@ class Job(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.company} — {self.listing_job_title} ({self.role})"
+        return f"{self.company} — {self.listing_job_title}"
 
     def salary_range(self) -> Optional[str]:
         """
