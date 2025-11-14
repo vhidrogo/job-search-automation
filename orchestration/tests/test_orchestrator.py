@@ -25,6 +25,7 @@ from resume.schemas import (
 )
 from resume.services import JDParser, ResumeWriter
 from tracker.models import (
+    Application,
     Job,
     JobLevel,
     JobRole,
@@ -149,6 +150,17 @@ class TestOrchestrator(TestCase):
         resume = Resume.objects.first()
         self.assertEqual(resume.template, self.template)
         self.assertEqual(resume.job, job)
+
+    def test_run_does_not_persist_when_no_template(self):
+        with self.assertRaises(ValueError) as cm:
+            self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
+
+        self.assertEqual(Job.objects.count(), 0)
+        self.assertEqual(Resume.objects.count(), 0)
+        self.assertEqual(ResumeRole.objects.count(), 0)
+        self.assertEqual(ResumeRoleBullet.objects.count(), 0)
+        self.assertEqual(ResumeSkillsCategory.objects.count(), 0)
+        self.assertEqual(Application.objects.count(), 0)
 
     def test_run_raises_when_no_template_without_specialization(self):
         with self.assertRaises(ValueError) as cm:
