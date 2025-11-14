@@ -1,5 +1,5 @@
 import subprocess
-from typing import List
+from typing import List, Optional
 
 from django.db import transaction
 
@@ -11,7 +11,7 @@ from resume.models import (
     ResumeTemplate,
     TargetSpecialization,
 )
-from resume.schemas import RequirementSchema
+from resume.schemas import Metadata, RequirementSchema
 from resume.services import JDParser, ResumeWriter
 from tracker.models import Application, Job, Requirement
 
@@ -72,12 +72,12 @@ class Orchestrator:
         specialization = f" ({parsed_jd.metadata.specialization})" if parsed_jd.metadata.specialization else ""
         print(f"Succesfully parsed for {company} - {title}{specialization}")
 
-        job = self._persist_job_and_requirements(parsed_jd)
+        template = self._get_template(parsed_jd.metadata)
         print(f"\n{'='*60}")
-        print("Persisted Job")
-
-        template = self._get_template(job)
         print(f"Fetched template: {template}")
+
+        job = self._persist_job_and_requirements(parsed_jd)
+        print("Persisted Job")
 
         resume = self._create_resume(job, template)
         print("Persisted Resume")
@@ -140,14 +140,14 @@ class Orchestrator:
         
         return job
     
-    def _get_template(self, job: Job) -> ResumeTemplate:
+    def _get_template(self, metadata: Metadata) -> ResumeTemplate:
         """Fetch matching resume template for job.
         
         Uses specialized template if job has a valid target specialization,
         otherwise uses generic template for the role/level combination.
         
         Args:
-            job: Job instance to find template for.
+            metadata: Metadata instance to find template for.
         
         Returns:
             Matching ResumeTemplate instance.
@@ -155,28 +155,28 @@ class Orchestrator:
         Raises:
             ValueError: If no matching template exists for the job's requirements.
         """
-        specialization = self._normalize_specialization(job.specialization)
-        if specialization in TargetSpecialization.labels:
+        specialization = self._normalize_specialization(metadata.specialization)
+        if specialization in TargetSpecialization.values:
             try:
                 return ResumeTemplate.objects.get(
-                    target_role=job.role,
-                    target_level=job.level,
-                    target_specialization=job.specialization,
+                    target_role=metadata.role,
+                    target_level=metadata.level,
+                    target_specialization=specialization,
                 )
             except ResumeTemplate.DoesNotExist:
                 raise ValueError(
-                    f"No template found for role={job.role}, level={job.level}, specialization={job.specialization}"
+                    f"No template found for role={metadata.role}, level={metadata.level}, specialization={metadata.specialization}"
                 )
         else:
             try:
                 return ResumeTemplate.objects.get(
-                    target_role=job.role,
-                    target_level=job.level,
+                    target_role=metadata.role,
+                    target_level=metadata.level,
                     target_specialization__isnull=True,
                 )
             except ResumeTemplate.DoesNotExist:
                 raise ValueError(
-                    f"No template found for role={job.role}, level={job.level}"
+                    f"No template found for role={metadata.role}, level={metadata.level}"
                 )
             
     def _normalize_specialization(self, specialization: str) -> str:

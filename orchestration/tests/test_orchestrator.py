@@ -25,6 +25,7 @@ from resume.schemas import (
 )
 from resume.services import JDParser, ResumeWriter
 from tracker.models import (
+    Application,
     Job,
     JobLevel,
     JobRole,
@@ -150,6 +151,17 @@ class TestOrchestrator(TestCase):
         self.assertEqual(resume.template, self.template)
         self.assertEqual(resume.job, job)
 
+    def test_run_does_not_persist_when_no_template(self):
+        with self.assertRaises(ValueError) as cm:
+            self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
+
+        self.assertEqual(Job.objects.count(), 0)
+        self.assertEqual(Resume.objects.count(), 0)
+        self.assertEqual(ResumeRole.objects.count(), 0)
+        self.assertEqual(ResumeRoleBullet.objects.count(), 0)
+        self.assertEqual(ResumeSkillsCategory.objects.count(), 0)
+        self.assertEqual(Application.objects.count(), 0)
+
     def test_run_raises_when_no_template_without_specialization(self):
         with self.assertRaises(ValueError) as cm:
             self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
@@ -179,6 +191,31 @@ class TestOrchestrator(TestCase):
             target_specialization=self.TARGET_SPECIALIZATION,
             )
         self.mock_jd_parser.parse.return_value = self.jd_model_with_specialization
+
+        self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
+
+        self.assertEqual(Resume.objects.count(), 1)
+        resume = Resume.objects.first()
+        self.assertEqual(resume.template, template)
+
+    def test_run_uses_template_for_normalized_target_specialization(self):
+        template = ResumeTemplate.objects.create(
+            target_role=self.TARGET_ROLE,
+            target_level=self.TARGET_LEVEL,
+            target_specialization=TargetSpecialization.FULL_STACK,
+            )
+        self.mock_jd_parser.parse.return_value = JDModel(
+            metadata=Metadata(
+                company=self.COMPANY,
+                listing_job_title=self.LISTING_JOB_TITLE,
+                role=self.TARGET_ROLE,
+                level=self.TARGET_LEVEL,
+                specialization="full -Stack",
+                location="Seattle, WA",
+                work_setting=WorkSetting.HYBRID,
+            ),
+            requirements=self.requirements,
+        )
 
         self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
 
