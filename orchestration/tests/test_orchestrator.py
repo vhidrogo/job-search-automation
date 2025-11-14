@@ -198,6 +198,31 @@ class TestOrchestrator(TestCase):
         resume = Resume.objects.first()
         self.assertEqual(resume.template, template)
 
+    def test_run_uses_template_for_normalized_target_specialization(self):
+        template = ResumeTemplate.objects.create(
+            target_role=self.TARGET_ROLE,
+            target_level=self.TARGET_LEVEL,
+            target_specialization=TargetSpecialization.FULL_STACK,
+            )
+        self.mock_jd_parser.parse.return_value = JDModel(
+            metadata=Metadata(
+                company=self.COMPANY,
+                listing_job_title=self.LISTING_JOB_TITLE,
+                role=self.TARGET_ROLE,
+                level=self.TARGET_LEVEL,
+                specialization="full -Stack",
+                location="Seattle, WA",
+                work_setting=WorkSetting.HYBRID,
+            ),
+            requirements=self.requirements,
+        )
+
+        self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
+
+        self.assertEqual(Resume.objects.count(), 1)
+        resume = Resume.objects.first()
+        self.assertEqual(resume.template, template)
+
     def test_run_uses_role_and_level_template_for_non_target_specialization(self):
         self._create_default_template()
         self.mock_jd_parser.parse.return_value = JDModel(
