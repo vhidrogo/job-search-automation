@@ -25,9 +25,9 @@ class StylePath(models.TextChoices):
 
 
 class TargetSpecialization(models.TextChoices):
-    BACKEND = "Backend", "backend", 
-    FULL_STACK = "Full-Stack", "fullstack", 
-    PYTHON = "Python", "python"
+    BACKEND = "backend", "Backend"
+    FULL_STACK = "fullstack", "Full-Stack"
+    PYTHON = "python", "Python"
 
 
 class ResumeTemplate(models.Model):
