@@ -233,5 +233,5 @@ class TestResumeModel(TestCase):
         self.assertNotIn(category, skills_html)
 
     def test_str(self):
-        self.assertEqual(str(self.resume), "Resume for Meta - Software Engineer")
+        self.assertEqual(str(self.resume), "Meta — Software Engineer - Resume")
   
