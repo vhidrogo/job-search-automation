@@ -78,7 +78,7 @@ class Resume(models.Model):
         context = self._build_template_context()
         html_string = render_to_string(self.template.template_path, context)
 
-        css_path = Path(settings.BASE_DIR).joinpath("resume", "templates", self.template.style_path)
+        css_path = Path(settings.BASE_DIR).joinpath("resume", "templates", self.style_path)
         
         HTML(string=html_string).write_pdf(
             str(pdf_path), 
