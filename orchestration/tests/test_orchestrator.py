@@ -43,6 +43,7 @@ class TestOrchestrator(TestCase):
     REQUIREMENT_TEXT2 = "Experience with Django web framework"
     SKILLS_CATEGORY1 = "Programming Languages"
     SKILLS_CATEGORY2 = "Frameworks"
+    STYLE_PATH = "test/style_path"
     TARGET_LEVEL = JobLevel.II
     TARGET_ROLE = JobRole.SOFTWARE_ENGINEER
     TARGET_SPECIALIZATION = TargetSpecialization.BACKEND
@@ -126,6 +127,7 @@ class TestOrchestrator(TestCase):
         self.template = ResumeTemplate.objects.create(
             target_role=self.TARGET_ROLE,
             target_level=self.TARGET_LEVEL,
+            style_path=self.STYLE_PATH,
         )
 
     def test_run_parses_jd_and_persists_job_requirements_and_resume(self):
@@ -150,6 +152,7 @@ class TestOrchestrator(TestCase):
         resume = Resume.objects.first()
         self.assertEqual(resume.template, self.template)
         self.assertEqual(resume.job, job)
+        self.assertEqual(resume.style_path, self.STYLE_PATH)
 
     def test_run_does_not_persist_when_no_template(self):
         with self.assertRaises(ValueError) as cm:
