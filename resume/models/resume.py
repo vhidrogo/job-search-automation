@@ -9,6 +9,7 @@ from django.utils.safestring import mark_safe
 from django.template.loader import render_to_string
 
 from .experience_role import ExperienceRole
+from .resume_template import StylePath
 from .resume_role import ResumeRole
 
 
@@ -19,6 +20,7 @@ class Resume(models.Model):
     Fields:
       - template: The ResumeTemplate used to render this resume.
       - job: The job listing this resume targets.
+      - style_path: File path to the CSS stylesheet used for styling.
     """
 
     template = models.ForeignKey(
@@ -32,6 +34,12 @@ class Resume(models.Model):
         on_delete=models.CASCADE,
         related_name="resume",
         help_text="Job listing this resume targets.",
+    )
+    style_path = models.CharField(
+        max_length=255,
+        choices=StylePath.choices,
+        default=StylePath.STANDARD,
+        help_text="Path to the CSS stylesheet file.",
     )
 
     modified_at = models.DateTimeField(auto_now=True)
