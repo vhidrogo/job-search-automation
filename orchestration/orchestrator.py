@@ -198,6 +198,7 @@ class Orchestrator:
         resume = Resume.objects.create(
             job=job,
             template=template,
+            style_path=template.style_path,
         )
         return resume
     
