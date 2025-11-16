@@ -10,8 +10,16 @@ from .models import (
 
 
 class ApplicationAdmin(admin.ModelAdmin):
-    list_display = ['applied_date_no_time', 'job__company', 'job__role', 'job__level', 'job__specialization', 'status__state']
-    list_filter = ['job__role', 'job__specialization']
+    list_display = [
+        'applied_date_no_time',
+        'job__company',
+        'job__listing_job_title',
+        'job__role',
+        'job__level',
+        'job__specialization',
+        'status__state',
+    ]
+    list_filter = ['job__role', 'job__specialization', 'status__state']
     search_fields = ['job__company']
 
 
