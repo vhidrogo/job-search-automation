@@ -9,6 +9,12 @@ class Application(models.Model):
         related_name="application",
     )
     applied_date = models.DateTimeField(default=timezone.now)
+    desired_salary_min = models.PositiveIntegerField(null=True, blank=True)
+
+    def clean(self):
+        super().clean()
+        if self.desired_salary_min and self.desired_salary_min < 1000:
+            self.desired_salary_min *= 1000
 
     class Meta:
         ordering = ["-applied_date"]
