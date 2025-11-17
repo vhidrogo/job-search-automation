@@ -3,6 +3,7 @@ from django.contrib import admin
 from .models import (
     Application,
     ApplicationStatus,
+    ContractJob,
     Job,
     LlmRequestLog,
     Requirement,
@@ -33,6 +34,10 @@ class ApplicationStatusAdmin(admin.ModelAdmin):
     list_display = ['application', 'state', 'status_date']
 
 
+class ContractJobAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['job']
+    list_display = ['job', 'consulting_company', 'contract_length_months']
+
 class RequirementInline(admin.TabularInline):
     model = Requirement
     fields = ['text', 'relevance']
@@ -55,6 +60,7 @@ class LlmRequestLogAdmin(admin.ModelAdmin):
 
 admin.site.register(Application, ApplicationAdmin)
 admin.site.register(ApplicationStatus, ApplicationStatusAdmin)
+admin.site.register(ContractJob, ContractJobAdmin)
 admin.site.register(Job, JobAdmin)
 admin.site.register(LlmRequestLog, LlmRequestLogAdmin)
 admin.site.register(Requirement)
