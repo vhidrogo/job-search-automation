@@ -70,7 +70,9 @@ class Orchestrator:
         company = parsed_jd.metadata.company
         title = parsed_jd.metadata.listing_job_title
         specialization = f" ({parsed_jd.metadata.specialization})" if parsed_jd.metadata.specialization else ""
-        print(f"Succesfully parsed for {company} - {title}{specialization}")
+        location = parsed_jd.metadata.location
+        work_setting = parsed_jd.metadata.work_setting
+        print(f"Succesfully parsed for {company} - {title}{specialization} ({location} - {work_setting})")
 
         template = self._get_template(parsed_jd.metadata)
         print(f"\n{'='*60}")
