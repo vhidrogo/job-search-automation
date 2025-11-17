@@ -294,7 +294,7 @@ flowchart TD
 | Field | Type | Description |
 |-------|------|-------------|
 | id | int | Primary key |
-| job_id | FK(Job) | Base job this contract role is associated with |
+| job_id | OneToOne(Job) | Base job this contract role is associated with |
 | consulting_company | CharField | Optional consulting company through which the contract is offered |
 | contract_length_months | PositiveIntegerField | Duration of the contract in months |
 | hourly_rate | FloatField | Hourly pay rate for the contract |
