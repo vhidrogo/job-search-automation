@@ -35,7 +35,7 @@ class ResumeRoleInline(admin.TabularInline):
     model = ResumeRole
     extra = 0
     ordering = ['order']
-    readonly_fields = ['source_role', 'title']
+    readonly_fields = ['source_role']
     fields = ['source_role', 'title']
 
 
