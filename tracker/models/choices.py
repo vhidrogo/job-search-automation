@@ -8,6 +8,7 @@ class JobRole(models.TextChoices):
     DATA_ANALYST = "Data Analyst"
     DATA_ENGINEER = "Data Engineer"
     SOFTWARE_ENGINEER = "Software Engineer"
+    SOLUTIONS_ENGINEER = "Solutions Engineer"
 
 
 class JobLevel(models.TextChoices):
