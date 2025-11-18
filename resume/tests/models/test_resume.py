@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 from freezegun import freeze_time
 from unittest.mock import ANY, patch
@@ -36,7 +37,7 @@ class TestResumeModel(TestCase):
             listing_job_title="Software Engineer",
             level=JobLevel.II,
         )
-        with freeze_time("2024-05-11"):
+        with freeze_time(timezone.make_aware(datetime(2024, 5, 11), timezone.get_current_timezone())):
             self.resume = Resume.objects.create(
                 job=job,
                 template=self.template,
