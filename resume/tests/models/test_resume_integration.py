@@ -7,6 +7,7 @@ To run them, temporarily comment out the @pytest.mark.skip decorator on the clas
 PDFs are saved to resume/tests/test_output/
 """
 import pytest
+from datetime import datetime
 from freezegun import freeze_time
 from pathlib import Path
 
@@ -23,11 +24,11 @@ from resume.models import (
     StylePath,
     TemplatePath,
 )
-from tracker.models import Job, JobLevel, JobRole, WorkSetting
+from tracker.models import Job
 
 
 @pytest.mark.skip(reason="Run manually when templates/styles change")
-@freeze_time("2024-05-11")
+@freeze_time(timezone.make_aware(datetime(2024, 5, 11), timezone.get_current_timezone()))
 class TestResumeModelIntegration(TestCase):
     
     OUTPUT_DIR = "resume/tests/test_output"
@@ -39,13 +40,13 @@ class TestResumeModelIntegration(TestCase):
 
     BULLETS = {
         NAVIT_KEY: [
-            "Built REST API endpoints with Django REST Framework for financial goal tracking, implementing filtering, date range queries, and serializers that calculate spending statistics across weekly and monthly periods",
+            "Built REST API endpoints with Django REST Framework for financial goal tracking, implementing filtering, date range queries, and serializers that calculate statistics across monthly periods",
             "Developed Python REST API clients with pagination and rate limit handling for Smartlook and Intercom platform integrations, implementing incremental sync logic and automated retry mechanisms",
             "Configured monitoring and notifications using Slack API integration for sync status reporting, deletion summaries, and error tracking across backend services",
             "Implemented CI/CD automation with Celery and django-celery-beat for scheduled tasks including weekly session syncs, user cleanup jobs, and automated notification delivery with Firebase Cloud Messaging",
         ],
         AMAZON_SDE_KEY: [
-            "Built RESTful APIs and microservices in Java on AWS to support global Prime Rewards promotion tracking, handling billions of requests with low latency across multiple regions",
+            "Built RESTful APIs using Java on AWS to support global Prime Rewards promotion tracking, handling billions of requests with low latency across multiple regions",
             "Developed event-driven serverless workflows using AWS Lambda and DynamoDB, implementing stateless token-based promotion flows with fault-tolerant reward delivery logic",
             "Created full-stack admin portal with Vue.js and Java backend, enabling non-technical stakeholders to manage promotions and configurations through CRUD operations on DynamoDB",
             "Collaborated with cross-functional teams using Git for version control, participated in code reviews and sprint planning to deliver scalable features on schedule",
@@ -106,17 +107,13 @@ class TestResumeModelIntegration(TestCase):
         )
 
     def test_render_to_pdf_with_engineer_template_and_standard_style(self):
-        target_role, target_level = JobRole.SOFTWARE_ENGINEER, JobLevel.I
-        template = ResumeTemplate.objects.create(
-            target_role=target_level,
-            target_level=target_role,
-            template_path=TemplatePath.ENGINEER,
-            style_path=StylePath.STANDARD,
-        )
-        job = self._create_job("Engineer Standard", target_role, target_level)
-        resume = self._create_resume(template, job)
+        template = ResumeTemplate.objects.create(template_path=TemplatePath.ENGINEER)
+        job = Job.objects.create(company="Engineer Standard")
+        resume = self._create_resume(template, job, StylePath.STANDARD)
         self._create_resume_role_and_bullets(resume, self.navit_role, order=1, bullets_key=self.NAVIT_KEY)
-        self._create_resume_role_and_bullets(resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY)
+        self._create_resume_role_and_bullets(
+            resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY, bullet_count_limit=3
+        )
         self._create_skills(resume)
 
         pdf_path = resume.render_to_pdf(self.OUTPUT_DIR)
@@ -124,17 +121,13 @@ class TestResumeModelIntegration(TestCase):
         self.assertTrue(Path(pdf_path).exists())
 
     def test_render_to_pdf_with_engineer_template_and_compact_style(self):
-        target_role, target_level = JobRole.SOFTWARE_ENGINEER, JobLevel.II
-        template = ResumeTemplate.objects.create(
-            target_role=target_level,
-            target_level=target_role,
-            template_path=TemplatePath.ENGINEER,
-            style_path=StylePath.COMPACT,
-        )
-        job = self._create_job("Engineer Compact", target_role, target_level)
-        resume = self._create_resume(template, job)
+        template = ResumeTemplate.objects.create(template_path=TemplatePath.ENGINEER)
+        job = Job.objects.create(company="Engineer Compact")
+        resume = self._create_resume(template, job, StylePath.COMPACT)
         self._create_resume_role_and_bullets(resume, self.navit_role, order=1, bullets_key=self.NAVIT_KEY)
-        self._create_resume_role_and_bullets(resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY)
+        self._create_resume_role_and_bullets(
+            resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY, bullet_count_limit=3
+        )
         self._create_resume_role_and_bullets(
             resume, self.avenu_role, order=3, bullets_key=self.AVENU_KEY, title_override="Software Developer"
         )
@@ -145,15 +138,9 @@ class TestResumeModelIntegration(TestCase):
         self.assertTrue(Path(pdf_path).exists())
 
     def test_render_to_pdf_with_engineer_template_and_dense_style(self):
-        target_role, target_level = JobRole.SOFTWARE_ENGINEER, JobLevel.II
-        template = ResumeTemplate.objects.create(
-            target_role=target_level,
-            target_level=target_role,
-            template_path=TemplatePath.ENGINEER,
-            style_path=StylePath.DENSE,
-        )
-        job = self._create_job("Engineer Dense", target_role, target_level)
-        resume = self._create_resume(template, job)
+        template = ResumeTemplate.objects.create(template_path=TemplatePath.ENGINEER)
+        job = Job.objects.create(company="Engineer Dense")
+        resume = self._create_resume(template, job, StylePath.DENSE)
         self._create_resume_role_and_bullets(resume, self.navit_role, order=1, bullets_key=self.NAVIT_KEY)
         self._create_resume_role_and_bullets(resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY)
         self._create_resume_role_and_bullets(resume, self.amazon_bie_role, order=3, bullets_key=self.AMAZON_BIE_KEY)
@@ -165,17 +152,13 @@ class TestResumeModelIntegration(TestCase):
         self.assertTrue(Path(pdf_path).exists())
 
     def test_render_to_pdf_with_analyst_template_and_standard_style(self):
-        target_role, target_level = JobRole.DATA_ANALYST, JobLevel.II
-        template = ResumeTemplate.objects.create(
-            target_role=target_level,
-            target_level=target_role,
-            template_path=TemplatePath.ANALYST,
-            style_path=StylePath.STANDARD,
-        )
-        job = self._create_job("Analyst Standard", target_role, target_level)
-        resume = self._create_resume(template, job)
+        template = ResumeTemplate.objects.create(template_path=TemplatePath.ANALYST)
+        job = Job.objects.create(company="Analyst Standard")
+        resume = self._create_resume(template, job, StylePath.STANDARD)
         self._create_resume_role_and_bullets(resume, self.navit_role, order=1, bullets_key=self.NAVIT_KEY)
-        self._create_resume_role_and_bullets(resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY)
+        self._create_resume_role_and_bullets(
+            resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY, bullet_count_limit=3
+        )
         self._create_skills(resume)
 
         pdf_path = resume.render_to_pdf(self.OUTPUT_DIR)
@@ -183,15 +166,9 @@ class TestResumeModelIntegration(TestCase):
         self.assertTrue(Path(pdf_path).exists())
 
     def test_render_to_pdf_with_analyst_template_and_compact_style(self):
-        target_role, target_level = JobRole.DATA_ANALYST, JobLevel.SENIOR
-        template = ResumeTemplate.objects.create(
-            target_role=target_level,
-            target_level=target_role,
-            template_path=TemplatePath.ANALYST,
-            style_path=StylePath.COMPACT,
-        )
-        job = self._create_job("Analyst Compact", target_role, target_level)
-        resume = self._create_resume(template, job)
+        template = ResumeTemplate.objects.create(template_path=TemplatePath.ANALYST)
+        job = Job.objects.create(company="Analyst Compact")
+        resume = self._create_resume(template, job, StylePath.COMPACT)
         self._create_resume_role_and_bullets(resume, self.navit_role, order=1, bullets_key=self.NAVIT_KEY)
         self._create_resume_role_and_bullets(resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY)
         self._create_resume_role_and_bullets(resume, self.amazon_bie_role, order=3, bullets_key=self.AMAZON_BIE_KEY)
@@ -202,15 +179,9 @@ class TestResumeModelIntegration(TestCase):
         self.assertTrue(Path(pdf_path).exists())
 
     def test_render_to_pdf_with_analyst_template_and_dense_style(self):
-        target_role, target_level = JobRole.DATA_ANALYST, JobLevel.SENIOR
-        template = ResumeTemplate.objects.create(
-            target_role=target_level,
-            target_level=target_role,
-            template_path=TemplatePath.ANALYST,
-            style_path=StylePath.DENSE,
-        )
-        job = self._create_job("Analyst Dense", target_role, target_level)
-        resume = self._create_resume(template, job)
+        template = ResumeTemplate.objects.create(template_path=TemplatePath.ANALYST)
+        job = Job.objects.create(company="Analyst Dense")
+        resume = self._create_resume(template, job, StylePath.DENSE)
         self._create_resume_role_and_bullets(resume, self.navit_role, order=1, bullets_key=self.NAVIT_KEY)
         self._create_resume_role_and_bullets(resume, self.amazon_sde_role, order=2, bullets_key=self.AMAZON_SDE_KEY)
         self._create_resume_role_and_bullets(resume, self.amazon_bie_role, order=3, bullets_key=self.AMAZON_BIE_KEY)
@@ -221,23 +192,13 @@ class TestResumeModelIntegration(TestCase):
         
         self.assertTrue(Path(pdf_path).exists())
 
-    def _create_job(self, company, target_role, target_level):
-        job = Job.objects.create(
-            company=company,
-            listing_job_title=target_role,
-            role=target_role,
-            level=target_level,
-            location="Seattle, WA",
-            work_setting=WorkSetting.HYBRID,
-        )
-
-        return job
-
-    def _create_resume(self, template, job):
-        resume = Resume.objects.create(template=template, job=job)
+    def _create_resume(self, template, job, style_path):
+        resume = Resume.objects.create(template=template, job=job, style_path=style_path)
         return resume
 
-    def _create_resume_role_and_bullets(self, resume, experience_role, order, bullets_key, title_override = None):
+    def _create_resume_role_and_bullets(
+            self, resume, experience_role, order, bullets_key, bullet_count_limit = None, title_override = None
+            ):
         title = title_override if title_override else experience_role.title
         role = ResumeRole.objects.create(
             resume=resume,
@@ -245,7 +206,8 @@ class TestResumeModelIntegration(TestCase):
             title=title,
             order=order,
         )
-        for i, bullet in enumerate(self.BULLETS[bullets_key], start=1):
+        bullets = self.BULLETS[bullets_key][:bullet_count_limit] if bullet_count_limit else self.BULLETS[bullets_key]
+        for i, bullet in enumerate(bullets, start=1):
             ResumeRoleBullet.objects.create(
                 resume_role=role,
                 order=i,

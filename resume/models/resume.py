@@ -5,8 +5,9 @@ from weasyprint import CSS, HTML
 
 from django.conf import settings
 from django.db import models
-from django.utils.safestring import mark_safe
 from django.template.loader import render_to_string
+from django.utils import timezone
+from django.utils.safestring import mark_safe
 
 from .experience_role import ExperienceRole
 from .resume_template import StylePath
@@ -90,7 +91,8 @@ class Resume(models.Model):
     def _generate_pdf_filename(self) -> str:
         company = self._sanitize_filename(self.job.company)
         title = self._sanitize_filename(self.job.listing_job_title)
-        date = self.modified_at.strftime("%Y%m%d")
+        local_modified = timezone.localtime(self.modified_at)
+        date = local_modified.strftime("%Y%m%d")
 
         return f"{date}_{company}_{title}.pdf"
 
