@@ -9,29 +9,36 @@ Return a JSON array matching exactly this structure:
     {
       "order": 1,
       "text": "<bullet text>"
-    },
-    {
-      "order": 2,
-      "text": "<bullet text>"
     }
   ]
 }
 ```
 
 **Rules:**
-- Prioritize satisfying job requirements with higher `relevance` and multiple requirements in the same bullet if possible.
-- Base bullets only on the experience projects context; omit or infer conservatively; do not invent domain knowledge, metrics.
+
+Content & Accuracy:
+- Base bullets only on the experience projects context; do not invent domain knowledge or metrics.
+- When choosing which aspects of experience projects to highlight, prioritize work that aligns with job requirements (especially those with higher `relevance` scores).
 - Frame bullets to emphasize aspects most relevant to the target role.
-- Insert keywords from the job requirements `keywords` naturally where relevant; do not force keywords in awkward ways.
-- Include metrics, numbers, percentages, wherever possible if mentioned in the experience projects; do not invent numbers.
+- Include metrics, numbers, or percentages wherever mentioned in the experience projects; do not fabricate numbers.
+
+Structure & Focus:
+- CRITICAL: Max number of words per bullet should not exceed 25.
+- Write one focused action or outcome per bullet; do not combine unrelated projects or actions.
+- Prioritize the single most impactful metric or outcome per bullet; omit secondary details.
+- Avoid listing multiple tools in one bullet or compound outcomes (e.g., "improving performance and reducing costs and enhancing UX").
+
+Style & Tone:
 - Write as an engineer or analyst would naturally describe their work.
-- Avoid AI tone, over-polished phrasing and overused buzzwords like "spearheaded", "championed", "engineered", "streamlined".
-- Avoid abstract impact phrases like "improving/enabling scalability/maintainability/efficiency".
+- Insert `keywords` from job requirements naturally; never force awkward phrasing.
 - Where relevant, naturally incorporate language that demonstrates collaboration, communication, or teamwork.
-- Bullets should be concise (roughly 15–25 words), yet impactful, and human-readable.
-- Order bullets by impact, starting at `1` for the highest priority/impact bullet.
+- Avoid AI tone, over-polished phrasing, and buzzwords like "spearheaded," "championed," "engineered," "streamlined."
+- Avoid abstract impact phrases like "improving/enabling scalability/maintainability/efficiency."
+
+Output Requirements:
+- Order bullets by impact (1 = highest).
 - Max number of bullets should not exceed {{MAX_BULLET_COUNT}}.
-- Use valid JSON and include no explanations or extra text.
+- Use valid JSON with no extra text.
 
 **Target Role:**
 {{TARGET_ROLE}}
