@@ -317,7 +317,7 @@ class Orchestrator:
             resume.style_path = new_style
             resume.save(update_fields=["style_path"])
             path = resume.render_to_pdf(output_dir=output_dir)
-            print(f"curr style: {curr_style}, new style: {new_style}")
+            
             print(
                 f"Resume did not fit in one page with style = {curr_style}, "
                 f"style updated to {new_style}"

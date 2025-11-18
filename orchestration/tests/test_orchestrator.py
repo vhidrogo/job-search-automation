@@ -11,6 +11,7 @@ from resume.models import (
     ResumeRoleBullet,
     ResumeTemplate,
     ResumeSkillsCategory,
+    StylePath,
     TargetSpecialization,
     TemplateRoleConfig,
 )
@@ -122,6 +123,12 @@ class TestOrchestrator(TestCase):
         self.mock_render_pdf = patcher.start()
         self.addCleanup(patcher.stop)
         self.mock_render_pdf.return_value = self.PDF_PATH
+
+        pdf_patcher = patch("orchestration.orchestrator.PdfReader")
+        self.mock_pdf_reader = pdf_patcher.start()
+        self.addCleanup(pdf_patcher.stop)
+
+        self.mock_pdf_reader.return_value.pages = [object()]
 
     def _create_default_template(self):
         self.template = ResumeTemplate.objects.create(
@@ -334,3 +341,38 @@ class TestOrchestrator(TestCase):
         self.assertEqual(ResumeSkillsCategory.objects.count(), len(self.skills))
         self.assertTrue(ResumeSkillsCategory.objects.filter(category=self.SKILLS_CATEGORY1).exists())
         self.assertTrue(ResumeSkillsCategory.objects.filter(category=self.SKILLS_CATEGORY2).exists())
+
+    def test_run_auto_adjusts_to_next_style_for_multi_page_pdf(self):
+        ResumeTemplate.objects.create(
+            target_role=self.TARGET_ROLE,
+            target_level=self.TARGET_LEVEL,
+            style_path=StylePath.STANDARD,
+        )
+        self.mock_pdf_reader.side_effect = [
+            Mock(pages=[1, 2]), # multi-page
+            Mock(pages=[object()]), # single-page
+        ]
+
+        self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
+        
+        self.assertEqual(self.mock_pdf_reader.call_count, 2)
+        resume = Resume.objects.first()
+        self.assertEqual(resume.style_path, StylePath.COMPACT)
+
+    def test_run_auto_adjusts_to_final_style_for_multi_page_pdf(self):
+        ResumeTemplate.objects.create(
+            target_role=self.TARGET_ROLE,
+            target_level=self.TARGET_LEVEL,
+            style_path=StylePath.STANDARD,
+        )
+        self.mock_pdf_reader.side_effect = [
+            Mock(pages=[1, 2]), # multi-page
+            Mock(pages=[1, 2]), # multi-page
+            Mock(pages=[object()]), # single-page
+        ]
+
+        self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
+        
+        self.assertEqual(self.mock_pdf_reader.call_count, 3)
+        resume = Resume.objects.first()
+        self.assertEqual(resume.style_path, StylePath.DENSE)
