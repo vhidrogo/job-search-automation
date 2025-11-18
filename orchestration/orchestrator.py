@@ -1,4 +1,5 @@
 import subprocess
+from pypdf import PdfReader
 from typing import List, Optional
 
 from django.db import transaction
@@ -10,6 +11,7 @@ from resume.models import (
     ResumeSkillsCategory,
     ResumeTemplate,
     TargetSpecialization,
+    StylePath,
 )
 from resume.schemas import Metadata, RequirementSchema
 from resume.services import JDParser, ResumeWriter
@@ -101,7 +103,7 @@ class Orchestrator:
         print(f"\n{'='*60}")
         print("Rendering PDF...")
         
-        pdf_path = resume.render_to_pdf(output_dir=output_dir)
+        pdf_path = self._render_pdf(resume, output_dir)
         
         print(f"Resume generated successfully!")
         print(f"PDF Location: {pdf_path}")
@@ -284,6 +286,46 @@ class Orchestrator:
         created = ResumeSkillsCategory.objects.bulk_create(skills_to_create)
 
         return created
+    
+    def _render_pdf(self, resume, output_dir) -> str:
+        """Render the resume to a PDF and enforce a single-page output when possible.
+
+        Behavior:
+        - Generates a PDF using the resume's current style.
+        - Counts the number of pages in the generated PDF.
+        - If the PDF exceeds one page and the style is not already the densest,
+          iteratively switches styles in the order: STANDARD → COMPACT → DENSE.
+        - Re-renders after each style change until the PDF fits on one page or the
+          densest style has been applied.
+        - Returns the filesystem path to the final rendered PDF.
+
+        Args:
+            resume: Resume instance supporting `style_path`, `save()`, and `render_to_pdf()`.
+            output_dir: Directory where the PDF should be written.
+
+        Returns:
+            str: Path to the final rendered PDF file.
+        """
+        path = resume.render_to_pdf(output_dir=output_dir)
+        reader = PdfReader(path)
+        page_count = len(reader.pages)
+
+        while page_count > 1 and resume.style_path != StylePath.DENSE:
+            curr_style = resume.style_path
+            new_style = StylePath.COMPACT if curr_style == StylePath.STANDARD else StylePath.DENSE
+            resume.style_path = new_style
+            resume.save(update_fields=["style_path"])
+            path = resume.render_to_pdf(output_dir=output_dir)
+
+            print(
+                f"Resume did not fit in one page with style = {curr_style.label}, "
+                f"style updated to {new_style.label}"
+            )
+
+            reader = PdfReader(path)
+            page_count = len(reader.pages)
+            
+        return path
     
     def _open_pdf(self, pdf_path: str) -> None:
         """Open generated PDF with system default viewer.
