@@ -101,17 +101,18 @@ class Orchestrator:
         print(f"Created {len(skills)} skills")
 
         print(f"\n{'='*60}")
+        
+        Application.objects.create(job=job)
+
+        print(f"Created Application")
+
+        print(f"\n{'='*60}")
         print("Rendering PDF...")
         
         pdf_path = self._render_pdf(resume, output_dir)
         
         print(f"Resume generated successfully!")
         print(f"PDF Location: {pdf_path}")
-
-        Application.objects.create(job=job)
-
-        print(f"\n{'='*60}")
-        print(f"Created Application")
         print(f"\n{'='*60}")
         
         if auto_open_pdf:
@@ -316,10 +317,10 @@ class Orchestrator:
             resume.style_path = new_style
             resume.save(update_fields=["style_path"])
             path = resume.render_to_pdf(output_dir=output_dir)
-
+            print(f"curr style: {curr_style}, new style: {new_style}")
             print(
-                f"Resume did not fit in one page with style = {curr_style.label}, "
-                f"style updated to {new_style.label}"
+                f"Resume did not fit in one page with style = {curr_style}, "
+                f"style updated to {new_style}"
             )
 
             reader = PdfReader(path)
