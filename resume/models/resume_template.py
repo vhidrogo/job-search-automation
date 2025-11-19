@@ -69,6 +69,15 @@ class ResumeTemplate(models.Model):
         choices=StylePath.choices,
         help_text="Path to the CSS stylesheet file.",
     )
+    is_custom = models.BooleanField(
+        default=False,
+        help_text="Whether this is a custom one-off template vs. a standard reusable template",
+    )
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Description for custom templates (e.g., 'SWE II with BI experience')",
+    )
 
     class Meta:
         app_label = "resume"
@@ -84,8 +93,8 @@ class ResumeTemplate(models.Model):
             ),
         ]
 
-    def __str__(self) -> str:
-        result = f"{self.target_role} {self.target_level}"
-        if self.target_specialization:
-            result += f" ({self.target_specialization})"
-        return result
+    def __str__(self):
+        if self.is_custom:
+            return f"Custom: {self.description}"
+        specialization = f" ({self.target_specialization})" if self.target_specialization else ""
+        return f"{self.target_role} {self.target_level}{specialization}"

@@ -34,15 +34,18 @@ class Orchestrator:
         self,
         jd_parser: JDParser = None,
         resume_writer: ResumeWriter = None,
+        custom_template_id: int = None,
     ):
         """Initialize orchestrator with service dependencies.
         
         Args:
             jd_parser: Service for parsing job descriptions. Defaults to JDParser().
             resume_writer: Service for generating resume content. Defaults to ResumeWriter().
+            custom_template_id: Optional ID of custom ResumeTemplate to use instead of auto-selecting.
         """
         self.jd_parser = jd_parser or JDParser()
         self.resume_writer = resume_writer or ResumeWriter()
+        self.custom_template_id = custom_template_id
     
     def run(
         self,
@@ -148,8 +151,9 @@ class Orchestrator:
     def _get_template(self, metadata: Metadata) -> ResumeTemplate:
         """Fetch matching resume template for job.
         
-        Uses specialized template if job has a valid target specialization,
-        otherwise uses generic template for the role/level combination.
+        If custom_template_id is set, uses that template directly.
+        Otherwise, uses specialized template if job has a valid target specialization,
+        or generic template for the role/level combination.
         
         Args:
             metadata: Metadata instance to find template for.
@@ -158,8 +162,16 @@ class Orchestrator:
             Matching ResumeTemplate instance.
         
         Raises:
-            ValueError: If no matching template exists for the job's requirements.
+            ValueError: If no matching template exists or custom template not found.
         """
+        if self.custom_template_id:
+            try:
+                return ResumeTemplate.objects.get(id=self.custom_template_id)
+            except ResumeTemplate.DoesNotExist:
+                raise ValueError(
+                    f"Custom template with ID {self.custom_template_id} not found"
+                )
+            
         specialization = self._normalize_specialization(metadata.specialization)
         if specialization in TargetSpecialization.values:
             try:
