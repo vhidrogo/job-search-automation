@@ -37,8 +37,11 @@ class Command(BaseCommand):
         jd_path = options["jd_path"]
         output_dir = options["output_dir"]
         auto_open = options["auto_open_pdf"]
+        custom_template_id = options["custom_template_id"]
 
-        orchestrator = Orchestrator()
+        orchestrator = Orchestrator(
+            custom_template_id=custom_template_id,
+        )
         start_time = time.time()
 
         try:
