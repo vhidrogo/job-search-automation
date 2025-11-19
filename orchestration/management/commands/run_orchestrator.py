@@ -27,6 +27,11 @@ class Command(BaseCommand):
             dest="auto_open_pdf",
             help="Do not auto-open the generated PDF after creation",
         )
+        parser.add_argument(
+            "--custom-template-id",
+            type=int,
+            help="ID of custom ResumeTemplate to use instead of auto-selecting based on job metadata",
+        )
 
     def handle(self, *args, **options):
         jd_path = options["jd_path"]
