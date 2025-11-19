@@ -69,6 +69,15 @@ class ResumeTemplate(models.Model):
         choices=StylePath.choices,
         help_text="Path to the CSS stylesheet file.",
     )
+    is_custom = models.BooleanField(
+        default=False,
+        help_text="Whether this is a custom one-off template vs. a standard reusable template",
+    )
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Description for custom templates (e.g., 'SWE II with BI experience')",
+    )
 
     class Meta:
         app_label = "resume"
