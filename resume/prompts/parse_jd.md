@@ -31,6 +31,7 @@ Return a single JSON object matching exactly this structure:
 
 **Rules:**
 - Extract values faithfully from the job description; infer conservatively for required values only.
+- Location: if the job description mentions multiple locations, choose the one in Seattle area.
 - Exclude education/degree requirements.
 - Use valid JSON and include no explanations or extra text.
 
