@@ -105,7 +105,8 @@ class ResumeRoleAdmin(admin.ModelAdmin):
 
 
 class ResumeTemplateAdmin(admin.ModelAdmin):
-    list_filter = ['target_role', 'target_level', 'target_specialization']
+    list_display = ['id', 'target_role', 'target_level', 'target_specialization', 'description']
+    list_filter = ['target_role', 'target_level', 'target_specialization', 'is_custom']
     inlines = [
         TemplateRoleConfigInline,
     ]
