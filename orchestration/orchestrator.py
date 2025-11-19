@@ -1,6 +1,6 @@
 import subprocess
 from pypdf import PdfReader
-from typing import List, Optional
+from typing import List
 
 from django.db import transaction
 
@@ -72,12 +72,8 @@ class Orchestrator:
 
         parsed_jd = self.jd_parser.parse(jd_path)
 
-        company = parsed_jd.metadata.company
-        title = parsed_jd.metadata.listing_job_title
-        specialization = f" ({parsed_jd.metadata.specialization})" if parsed_jd.metadata.specialization else ""
-        location = parsed_jd.metadata.location
-        work_setting = parsed_jd.metadata.work_setting
-        print(f"Succesfully parsed for {company} - {title}{specialization} ({location} - {work_setting})")
+        parsed_jd = self.jd_parser.parse(jd_path)
+        self._print_parsed_metadata(parsed_jd.metadata)
 
         template = self._get_template(parsed_jd.metadata)
         print(f"\n{'='*60}")
@@ -120,6 +116,33 @@ class Orchestrator:
         
         if auto_open_pdf:
             self._open_pdf(pdf_path)
+
+    def _print_parsed_metadata(self, metadata: Metadata) -> None:
+        """Print parsed job metadata in a formatted display.
+        
+        Args:
+            metadata: Metadata instance from parsed job description.
+        """
+        print(f"\n{'='*60}")
+        print("PARSED JOB METADATA")
+        print(f"{'='*60}")
+        print(f"Company:              {metadata.company}")
+        print(f"Title:                {metadata.listing_job_title}")
+        print(f"Role:                 {metadata.role}")
+        print(f"Level:                {metadata.level}")
+        print(f"Specialization:       {metadata.specialization or 'N/A'}")
+        print(f"Location:             {metadata.location}")
+        print(f"Work Setting:         {metadata.work_setting}")
+        print(f"Min Experience:       {f'{metadata.min_experience_years} years' if metadata.min_experience_years is not None else 'N/A'}")
+        
+        salary_parts = []
+        if metadata.min_salary is not None:
+            salary_parts.append(f"${metadata.min_salary:,}")
+        if metadata.max_salary is not None:
+            salary_parts.append(f"${metadata.max_salary:,}")
+        salary_range = " - ".join(salary_parts) if salary_parts else "N/A"
+        print(f"Salary Range:         {salary_range}")
+        print(f"{'='*60}")
     
     def _persist_job_and_requirements(self, parsed_jd) -> Job:
         """Persist job metadata and requirements to database.
