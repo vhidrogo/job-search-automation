@@ -32,6 +32,9 @@ class Requirement(models.Model):
             models.Index(fields=["job", "relevance"]),
         ]
 
+    def __str__(self):
+        return f"Relevance {int(self.relevance * 100)}%"
+
     @classmethod
     def bulk_create_from_parsed(cls, job: "Job", parsed_requirements: List[RequirementSchema], batch_size: int = 100) -> List["Requirement"]:
         """

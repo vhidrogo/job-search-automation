@@ -40,7 +40,8 @@ class ContractJobAdmin(admin.ModelAdmin):
 
 class RequirementInline(admin.TabularInline):
     model = Requirement
-    fields = ['text', 'relevance']
+    readonly_fields = ['text']
+    fields = ['text']
     extra = 0
     ordering = ['-relevance']
 
