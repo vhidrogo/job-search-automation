@@ -402,6 +402,18 @@ flowchart TD
 | application_id | OneToOne(Application) | Associated application |
 | status_date | DateField | When the event occurred or was recorded |
 
+#### Interview
+| Field | Type | Description |
+|--------|------|-------------|
+| id | IntegerField | Primary key |
+| application | FK(Application) | Associated application |
+| stage | CharField | Interview stage (recruiter_screen, technical_screen, final_loop) |
+| format | CharField | Interview format (phone_call, virtual_meeting) - optional |
+| focus | CharField | Interview focus area (coding, system_design, behavioral, hiring_manager) - optional |
+| interviewer_name | CharField | Name of the interviewer - optional |
+| interviewer_title | CharField | Title/role of the interviewer - optional |
+| scheduled_at | DateTimeField | When the interview is scheduled |
+
 ---
 
 ### End-to-End Flow Diagram
