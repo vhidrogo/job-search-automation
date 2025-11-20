@@ -62,7 +62,7 @@ class RequirementInline(admin.TabularInline):
 
 class JobAdmin(admin.ModelAdmin):
     search_fields = ['company']
-    list_display = ['company', 'role', 'level']
+    list_display = ['company', 'listing_job_title', 'role', 'level']
     list_filter = ['role']
     ordering = ['-created_at']
     inlines = [
