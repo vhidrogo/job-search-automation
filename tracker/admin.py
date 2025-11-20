@@ -4,6 +4,7 @@ from .models import (
     Application,
     ApplicationStatus,
     ContractJob,
+    Interview,
     Job,
     LlmRequestLog,
     Requirement,
@@ -36,6 +37,7 @@ class ApplicationAdmin(admin.ModelAdmin):
     ]
     list_filter = ['job__role', 'job__specialization', 'status__state']
     search_fields = ['job__company']
+    readonly_fields = ['job']
 
 
     def applied_date_no_time(self, obj):
@@ -51,6 +53,11 @@ class ApplicationStatusAdmin(admin.ModelAdmin):
 class ContractJobAdmin(admin.ModelAdmin):
     autocomplete_fields = ['job']
     list_display = ['job', 'consulting_company', 'contract_length_months']
+
+
+class InterviewAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['application']
+    list_display = ['application', 'stage', 'format', 'focus', 'scheduled_at']
 
 class RequirementInline(admin.TabularInline):
     model = Requirement
@@ -78,6 +85,7 @@ class LlmRequestLogAdmin(admin.ModelAdmin):
 admin.site.register(Application, ApplicationAdmin)
 admin.site.register(ApplicationStatus, ApplicationStatusAdmin)
 admin.site.register(ContractJob, ContractJobAdmin)
+admin.site.register(Interview, InterviewAdmin)
 admin.site.register(Job, JobAdmin)
 admin.site.register(LlmRequestLog, LlmRequestLogAdmin)
 admin.site.register(Requirement)
