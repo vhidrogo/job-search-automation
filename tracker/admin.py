@@ -36,6 +36,7 @@ class ApplicationAdmin(admin.ModelAdmin):
     ]
     list_filter = ['job__role', 'job__specialization', 'status__state']
     search_fields = ['job__company']
+    readonly_fields = ['job']
 
 
     def applied_date_no_time(self, obj):
