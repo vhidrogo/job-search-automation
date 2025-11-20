@@ -78,6 +78,7 @@ class ExperienceRoleAdmin(admin.ModelAdmin):
 
 
 class ResumeAdmin(admin.ModelAdmin):
+    search_fields = ['job__company']
     actions = ['render_resume_to_pdf']
     inlines = [
         ResumeRoleInline,
