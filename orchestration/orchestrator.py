@@ -71,8 +71,6 @@ class Orchestrator:
         print("Parsing job description...")
 
         parsed_jd = self.jd_parser.parse(jd_path)
-
-        parsed_jd = self.jd_parser.parse(jd_path)
         self._print_parsed_metadata(parsed_jd.metadata)
 
         template = self._get_template(parsed_jd.metadata)
