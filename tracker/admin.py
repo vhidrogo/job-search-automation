@@ -9,20 +9,6 @@ from .models import (
     LlmRequestLog,
     Requirement,
 )
-from resume.models import Resume
-
-
-class ApplicationInline(admin.TabularInline):
-    model = Application
-    readonly_fields = ["applied_date", "desired_salary_display"]
-    fields = ["applied_date", "desired_salary_display"]
-
-    def desired_salary_display(self, obj):
-        if obj.desired_salary_min is None:
-            return ""
-        return f"${obj.desired_salary_min:,.0f}"
-
-    desired_salary_display.short_description = "Desired Salary"
 
 
 class ApplicationAdmin(admin.ModelAdmin):
@@ -73,7 +59,6 @@ class JobAdmin(admin.ModelAdmin):
     list_filter = ['role']
     ordering = ['-created_at']
     inlines = [
-        ApplicationInline,
         RequirementInline,
     ]
 
