@@ -8,8 +8,8 @@ Return a single JSON object matching exactly this structure:
   "metadata": {
     "company": "<company name>",
     "listing_job_title": "<title from JD>",
-    "role": "<one of: Software Engineer, Data Engineer, Analytics Engineer, Business Analyst, Business Intelligence Engineer, Data Analyst, Solutions Engineer>",
-    "specialization": "<optional: extract if role is explicitly labeled with a specialization (e.g., Backend, Frontend, Full Stack, Python, Data) - omit if not stated>"
+    "role": "<one of: analytics_engineer, business_analyst, business_intelligence_engineer, data_analyst, data_engineer, software_engineer, solutions_engineer>",
+    "specialization": "<optional: extract if role is explicitly labeled with a specialization (e.g., Backend, Frontend, Full Stack, Python, Data) - omit if not stated>",
     "level": "<I, II, III, Senior>",
     "location": "<city/state/country if specified>",
     "work_setting": "<one of: On-site, Hybrid, Remote>",
@@ -30,8 +30,11 @@ Return a single JSON object matching exactly this structure:
 ```
 
 **Rules:**
-- Extract values faithfully from the job description; infer conservatively for required values only.
-- Location: if the job description mentions multiple locations, choose the one in Seattle area.
+- Metadata Fields 
+  - All Fields: extract values faithfully from the job description
+  - Required Fields Only: infer conservatively if not explicitly stated.
+  - Level: levels are relative to Amazon’s leveling structure; if the role’s level is unclear or ambiguous, determine the correct level by referencing that company’s closest Amazon-equivalent role.
+  - Location: if the job description mentions multiple locations, choose the one in Seattle area.
 - Exclude education/degree requirements.
 - Use valid JSON and include no explanations or extra text.
 
