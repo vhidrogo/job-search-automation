@@ -1,21 +1,20 @@
 from django.db import models
 
 
-class JobRole(models.TextChoices):
-    ANALYTICS_ENGINEER = "Analytics Engineer"
-    BUSINESS_ANALYST = "Business Analyst"
-    BUSINESS_INTELLIGENCE_ENGINEER = "Business Intelligence Engineer"
-    DATA_ANALYST = "Data Analyst"
-    DATA_ENGINEER = "Data Engineer"
-    SOFTWARE_ENGINEER = "Software Engineer"
-    SOLUTIONS_ENGINEER = "Solutions Engineer"
-
-
 class JobLevel(models.TextChoices):
-    I = "I"
-    II = "II"
-    III = "III"
-    SENIOR = "Senior"
+    I = "I", "I"
+    II = "II", "II"
+    III = "III", "III"
+    SENIOR = "Senior", "Senior"
+
+class JobRole(models.TextChoices):
+    ANALYTICS_ENGINEER = "analytics_engineer", "Analytics Engineer"
+    BUSINESS_ANALYST = "business_analyst", "Business Analyst"
+    BUSINESS_INTELLIGENCE_ENGINEER = "business_intelligence_engineer", "Business Intelligence Engineer"
+    DATA_ANALYST = "data_analyst", "Data Analyst"
+    DATA_ENGINEER = "data_engineer", "Data Engineer"
+    SOFTWARE_ENGINEER = "software_engineer", "Software Engineer"
+    SOLUTIONS_ENGINEER = "solutions_engineer", "Solutions Engineer"
 
 
 class WorkSetting(models.TextChoices):
