@@ -97,5 +97,5 @@ class ResumeTemplate(models.Model):
     def __str__(self):
         if self.is_custom:
             return f"Custom: {self.description}"
-        specialization = f" ({self.target_specialization})" if self.target_specialization else ""
+        specialization = f" ({self.get_target_specialization_display()})" if self.target_specialization else ""
         return f"{self.get_target_role_display()} {self.get_target_level_display()}{specialization}"

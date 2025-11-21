@@ -13,7 +13,7 @@ class TestResumeTemplateModel(TestCase):
             target_specialization=TargetSpecialization.BACKEND,
         )
         result = str(template)
-        self.assertEqual(result, "Software Engineer II (backend)")
+        self.assertEqual(result, "Software Engineer II (Backend)")
 
     def test_str_no_specialization(self):
         template = ResumeTemplate(target_role=JobRole.SOFTWARE_ENGINEER, target_level=JobLevel.II)
