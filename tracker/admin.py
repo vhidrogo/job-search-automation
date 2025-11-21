@@ -11,19 +11,33 @@ from .models import (
 )
 
 
+class InterviewInline(admin.TabularInline):
+    model = Interview
+    extra = 0
+
+
+class RequirementInline(admin.TabularInline):
+    model = Requirement
+    readonly_fields = ['text']
+    fields = ['text']
+    extra = 0
+    ordering = ['-relevance']
+
+
 class ApplicationAdmin(admin.ModelAdmin):
     list_display = [
         'applied_date_no_time',
         'job__company',
         'job__listing_job_title',
-        'job__role',
-        'job__level',
         'job__specialization',
         'status__state',
     ]
     list_filter = ['job__role', 'job__specialization', 'status__state']
     search_fields = ['job__company']
     readonly_fields = ['job']
+    inlines = [
+        InterviewInline,
+    ]
 
 
     def applied_date_no_time(self, obj):
@@ -44,13 +58,6 @@ class ContractJobAdmin(admin.ModelAdmin):
 class InterviewAdmin(admin.ModelAdmin):
     autocomplete_fields = ['application']
     list_display = ['application', 'stage', 'format', 'focus', 'scheduled_at']
-
-class RequirementInline(admin.TabularInline):
-    model = Requirement
-    readonly_fields = ['text']
-    fields = ['text']
-    extra = 0
-    ordering = ['-relevance']
 
 
 class JobAdmin(admin.ModelAdmin):
