@@ -84,11 +84,12 @@ class ResumeTemplate(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["target_role", "target_level", "target_specialization"],
+                condition=models.Q(is_custom=False),
                 name="unique_role_level_specialization",
             ),
             models.UniqueConstraint(
                 fields=["target_role", "target_level"],
-                condition=models.Q(target_specialization__isnull=True),
+                condition=models.Q(is_custom=False, target_specialization__isnull=True),
                 name="unique_role_level_no_specialization",
             ),
         ]
