@@ -9,20 +9,19 @@ from .models import (
     LlmRequestLog,
     Requirement,
 )
-from resume.models import Resume
 
 
-class ApplicationInline(admin.TabularInline):
-    model = Application
-    readonly_fields = ["applied_date", "desired_salary_display"]
-    fields = ["applied_date", "desired_salary_display"]
+class InterviewInline(admin.TabularInline):
+    model = Interview
+    extra = 0
 
-    def desired_salary_display(self, obj):
-        if obj.desired_salary_min is None:
-            return ""
-        return f"${obj.desired_salary_min:,.0f}"
 
-    desired_salary_display.short_description = "Desired Salary"
+class RequirementInline(admin.TabularInline):
+    model = Requirement
+    readonly_fields = ['text']
+    fields = ['text']
+    extra = 0
+    ordering = ['-relevance']
 
 
 class ApplicationAdmin(admin.ModelAdmin):
@@ -30,14 +29,15 @@ class ApplicationAdmin(admin.ModelAdmin):
         'applied_date_no_time',
         'job__company',
         'job__listing_job_title',
-        'job__role',
-        'job__level',
         'job__specialization',
         'status__state',
     ]
     list_filter = ['job__role', 'job__specialization', 'status__state']
     search_fields = ['job__company']
     readonly_fields = ['job']
+    inlines = [
+        InterviewInline,
+    ]
 
 
     def applied_date_no_time(self, obj):
@@ -59,13 +59,6 @@ class InterviewAdmin(admin.ModelAdmin):
     autocomplete_fields = ['application']
     list_display = ['application', 'stage', 'format', 'focus', 'scheduled_at']
 
-class RequirementInline(admin.TabularInline):
-    model = Requirement
-    readonly_fields = ['text']
-    fields = ['text']
-    extra = 0
-    ordering = ['-relevance']
-
 
 class JobAdmin(admin.ModelAdmin):
     search_fields = ['company']
@@ -73,7 +66,6 @@ class JobAdmin(admin.ModelAdmin):
     list_filter = ['role']
     ordering = ['-created_at']
     inlines = [
-        ApplicationInline,
         RequirementInline,
     ]
 
