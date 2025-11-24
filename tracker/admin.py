@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils import timezone
 
 from .models import (
     Application,
@@ -41,7 +42,7 @@ class ApplicationAdmin(admin.ModelAdmin):
 
 
     def applied_date_no_time(self, obj):
-        return obj.applied_date.date()
+        return timezone.localtime(obj.applied_date).date()
     applied_date_no_time.short_description = 'Applied Date'
 
 
