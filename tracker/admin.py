@@ -1,4 +1,6 @@
+from django import forms
 from django.contrib import admin
+from django.db import models
 from django.utils import timezone
 
 from .models import (
@@ -59,6 +61,9 @@ class ContractJobAdmin(admin.ModelAdmin):
 class InterviewAdmin(admin.ModelAdmin):
     autocomplete_fields = ['application']
     list_display = ['application', 'stage', 'format', 'focus', 'scheduled_at']
+    formfield_overrides = {
+        models.TextField: {'widget': forms.Textarea(attrs={'rows': 20, 'cols': 60})},
+    }
 
 
 class JobAdmin(admin.ModelAdmin):

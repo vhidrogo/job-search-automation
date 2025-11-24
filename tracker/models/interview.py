@@ -36,4 +36,5 @@ class Interview(models.Model):
     interviewer_name = models.CharField(max_length=200, blank=True)
     interviewer_title = models.CharField(max_length=200, blank=True)
     scheduled_at = models.DateTimeField()
+    notes = models.TextField(blank=True, help_text="Freeform interview notes")
     

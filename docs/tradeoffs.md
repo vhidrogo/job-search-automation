@@ -452,6 +452,49 @@ Adopted a separate **`ApplicationStatus` model** linked via a foreign key to `Ap
 **Reflection:**  
 This structure provides an elegant balance between normalization and practical usability. It keeps the system event-driven and analytics-ready without overcomplicating the schema or duplicating logic across models. As future events (like interviews or offers) are introduced, they can seamlessly integrate into this pattern or relate to `ApplicationStatus` entries. The design supports both current operational needs (tracking application outcomes) and future analytical capabilities (measuring time-to-callback, conversion rates, etc.).
 
+---
+
+#### Interview Notes Storage: External Documents vs Integrated System Field
+
+**Context:**  
+As interviews began occurring, a mechanism was needed to capture and reference freeform notes taken during calls (recruiter screens, technical interviews, etc.). The notes are typically brief, bullet-pointed observations rather than detailed narratives, and are contextually tied to specific interviews that already have associated metadata (company, job, application, stage, date).
+
+**Options Considered:**  
+1. **External document system (Google Docs):**  
+   - Store notes in separate Google Docs with manual naming/filing structure.
+2. **Integrated TextField in Interview model:**  
+   - Add a `notes` TextField to the existing `Interview` model for freeform text storage.
+3. **Structured fields per note category:**  
+   - Add separate fields like `next_steps`, `salary_discussion`, `overall_feel` to `Interview`.
+
+**Tradeoffs:**  
+- **External documents:**  
+  - ✅ Supports rich formatting (bold, italics, tables).  
+  - ❌ Requires redundant metadata specification (company, date, stage already in system).  
+  - ❌ Difficult to maintain consistent naming/filing structure.  
+  - ❌ High transfer friction—notes rarely migrated from scratch pads to docs.  
+  - ❌ Retrieval requires remembering document names or searching drive.  
+  - ❌ No integration with application tracking or future analytics.
+- **Integrated TextField:**  
+  - ✅ Zero redundant context—all metadata already linked via model relationships.  
+  - ✅ Low friction workflow—paste from scratch pad directly into admin textarea.  
+  - ✅ Self-documenting—navigate Application → Interviews to access notes.  
+  - ✅ Enables future analytics (e.g., correlate note patterns with outcomes).  
+  - ✅ Matches actual note-taking pattern (brief bullets, not formatted prose).  
+  - ❌ No rich text formatting (bold, colors, etc.).
+- **Structured fields:**  
+  - ✅ Schema-enforced note organization.  
+  - ❌ Rigid structure doesn't fit varying note types (recruiter vs technical interviews).  
+  - ❌ Over-engineered for simple, variable-length observations.
+
+**Decision:**  
+Add a **`notes` TextField** to the `Interview` model. Notes are stored as plain text with natural Markdown-lite conventions (newlines, indentation). The Django admin textarea provides sufficient usability for copy/paste workflows, and all interview context is already available via model relationships.
+
+**Reflection:**  
+This decision prioritizes workflow efficiency over formatting capabilities. The key insight is that the *actual* note-taking process uses plain text anyway (Sublime, paper), so rich formatting in the storage layer only adds friction without benefit. By integrating notes directly into the system of record, the solution eliminates naming overhead, reduces transfer friction, and positions interview notes as first-class data for future analytics—all while matching the user's natural workflow.
+
+---
+
 ### Analytics & Evaluation
 Decisions related to measuring resume quality and tracking application outcomes.
 
