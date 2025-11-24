@@ -65,6 +65,7 @@ class JobAdmin(admin.ModelAdmin):
     list_display = ['company', 'listing_job_title', 'role', 'level']
     list_filter = ['role']
     ordering = ['-created_at']
+    readonly_fields = ['resume']
     inlines = [
         RequirementInline,
     ]
