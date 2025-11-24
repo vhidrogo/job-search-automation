@@ -16,6 +16,15 @@ from .models import (
 
 class InterviewInline(admin.TabularInline):
     model = Interview
+    readonly_fields = [
+        'stage',
+        'format',
+        'focus',
+        'interviewer_name', 
+        'interviewer_title',
+        'scheduled_at',
+    ]
+    fields = readonly_fields + ['notes']
     extra = 0
 
 
