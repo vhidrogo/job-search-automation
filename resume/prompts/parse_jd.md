@@ -8,7 +8,7 @@ Return a single JSON object matching exactly this structure:
   "metadata": {
     "company": "<company name>",
     "listing_job_title": "<title from JD>",
-    "role": "<one of: analytics_engineer, business_analyst, business_intelligence_engineer, data_analyst, data_engineer, software_engineer, solutions_engineer>",
+    "role": "<one of: analytics_engineer, business_analyst, business_intelligence_engineer, data_analyst, data_engineer, data_scientist, software_engineer, solutions_engineer>",
     "specialization": "<optional: extract if role is explicitly labeled with a specialization (e.g., Backend, Frontend, Full Stack, Python, Data) - omit if not stated>",
     "level": "<I, II, III, Senior>",
     "location": "<city/state/country if specified>",
