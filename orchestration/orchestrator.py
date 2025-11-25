@@ -200,6 +200,7 @@ class Orchestrator:
                     target_role=metadata.role,
                     target_level=metadata.level,
                     target_specialization=specialization,
+                    is_custom=False,
                 )
             except ResumeTemplate.DoesNotExist:
                 raise ValueError(
@@ -211,6 +212,7 @@ class Orchestrator:
                     target_role=metadata.role,
                     target_level=metadata.level,
                     target_specialization__isnull=True,
+                    is_custom=False,
                 )
             except ResumeTemplate.DoesNotExist:
                 raise ValueError(
