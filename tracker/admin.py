@@ -44,7 +44,7 @@ class ApplicationAdmin(admin.ModelAdmin):
         'job__specialization',
         'status__state',
     ]
-    list_filter = ['job__role', 'job__specialization', 'status__state']
+    list_filter = ['applied_date', 'job__role', 'job__specialization', 'status__state']
     search_fields = ['job__company']
     readonly_fields = ['job']
     inlines = [
