@@ -1,0 +1,18 @@
+{% extends "admin/change_list.html" %}
+
+{% block content_title %}
+    <h1>{{ block.super }}</h1>
+    <div style="margin-bottom: 20px;">
+        <a href="{{ upcoming_interviews_url }}" 
+           style="display: inline-block;
+                  background-color: #417690; 
+                  color: white; 
+                  padding: 8px 16px; 
+                  text-decoration: none; 
+                  border-radius: 4px;
+                  font-size: 14px;
+                  margin-right: 10px;">
+            📅 View Upcoming Interviews
+        </a>
+    </div>
+{% endblock %}

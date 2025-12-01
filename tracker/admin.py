@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.db import models
+from django.urls import reverse
 from django.utils import timezone
 
 from .models import (
@@ -73,6 +74,11 @@ class InterviewAdmin(admin.ModelAdmin):
     formfield_overrides = {
         models.TextField: {'widget': forms.Textarea(attrs={'rows': 20, 'cols': 60})},
     }
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['upcoming_interviews_url'] = reverse('tracker:upcoming_interviews')
+        return super().changelist_view(request, extra_context)
 
 
 class JobAdmin(admin.ModelAdmin):
