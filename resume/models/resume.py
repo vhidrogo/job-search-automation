@@ -98,6 +98,17 @@ class Resume(models.Model):
         )
         
         return str(pdf_path)
+    
+    def get_css_content(self) -> str:
+        """
+        Read and return the CSS content for this resume's style.
+        
+        Returns:
+            CSS file content as a string.
+        """
+        css_path = Path(settings.BASE_DIR).joinpath("resume", "templates", self.style_path)
+        with open(css_path, 'r') as f:
+            return f.read()
 
     def _generate_pdf_filename(self) -> str:
         company = self._sanitize_filename(self.job.company)
