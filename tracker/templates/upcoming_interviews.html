@@ -185,6 +185,13 @@
                 📅 In {{ days_until }}
             </div>
             {% endwith %}
+
+            <div style="margin-top: 15px; text-align: right;">
+                <a href="{% url 'tracker:application_detail' interview.application.id %}" 
+                   style="color: #417690; text-decoration: none; font-size: 14px; font-weight: 500;">
+                    View Full Application Details →
+                </a>
+            </div>
         </div>
         {% endfor %}
         
