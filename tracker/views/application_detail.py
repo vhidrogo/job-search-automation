@@ -47,6 +47,11 @@ def application_detail(request, pk):
         'past_interviews': past_interviews,
         'upcoming_interviews': upcoming_interviews,
         'current_time': now,
+        'requirements': (
+            application.job.requirements.all() 
+            if hasattr(application, 'status') and application.status.state == 'rejected' else None
+        ),
     }
-    
+    print(application.status.state)
+    print(context['requirements'])
     return render(request, 'application_detail.html', context)

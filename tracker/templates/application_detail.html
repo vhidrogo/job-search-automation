@@ -79,18 +79,38 @@
             color: #333;
             font-weight: 500;
         }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 600;
+
+        .requirements-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
-        
-        .status-applied {
-            background-color: #e3f2fd;
-            color: #1976d2;
+
+        .requirement-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border-left: 3px solid #ff9800;
+        }
+
+        .relevance-score {
+            background-color: #ff9800;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 12px;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .requirement-text {
+            flex: 1;
+            font-size: 14px;
+            color: #333;
         }
         
         /* Interview card styles */
@@ -150,11 +170,6 @@
             margin: 20px auto;
             box-shadow: 0 0 15px rgba(0,0,0,0.2);
             padding: 0.5in;
-        }
-        
-        .job-actions {
-            text-align: center;
-            margin-bottom: 15px;
         }
         
         .btn {
@@ -237,6 +252,21 @@
                 {% endif %}
             </div>
         </div>
+
+        <!-- Requirements Section (only for rejected) -->
+        {% if requirements %}
+        <div class="section">
+            <h2 class="section-title">Job Requirements</h2>
+            <div class="requirements-list">
+                {% for req in requirements %}
+                <div class="requirement-item">
+                    <span class="relevance-score">{{ req.relevance|floatformat:2 }}</span>
+                    <span class="requirement-text">{{ req.text }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
         
         <!-- Resume Section -->
         {% if resume_exists %}
@@ -252,78 +282,81 @@
             <div class="no-content">No resume generated for this application</div>
         </div>
         {% endif %}
-        
-        <!-- Upcoming Interviews Section -->
-        <div class="section">
-            <h2 class="section-title">Upcoming Interviews</h2>
-            {% if upcoming_interviews %}
-                {% for interview in upcoming_interviews %}
-                <div class="interview-card">
-                    <div class="interview-header">
-                        <span class="interview-stage">{{ interview.get_stage_display }}</span>
-                        <span class="interview-time">
-                            {{ interview.scheduled_at|date:"M d, Y" }} at {{ interview.scheduled_at|date:"g:i A" }}
-                        </span>
-                    </div>
-                    <div class="interview-details">
-                        {% if interview.format %}
-                        <strong>Format:</strong> {{ interview.get_format_display }}
+
+        <!-- Interview sections (only for callback) -->
+        {% if application.status.state == 'callback' %}
+            <!-- Upcoming Interviews Section -->
+            <div class="section">
+                <h2 class="section-title">Upcoming Interviews</h2>
+                {% if upcoming_interviews %}
+                    {% for interview in upcoming_interviews %}
+                    <div class="interview-card">
+                        <div class="interview-header">
+                            <span class="interview-stage">{{ interview.get_stage_display }}</span>
+                            <span class="interview-time">
+                                {{ interview.scheduled_at|date:"M d, Y" }} at {{ interview.scheduled_at|date:"g:i A" }}
+                            </span>
+                        </div>
+                        <div class="interview-details">
+                            {% if interview.format %}
+                            <strong>Format:</strong> {{ interview.get_format_display }}
+                            {% endif %}
+                            {% if interview.focus %}
+                            | <strong>Focus:</strong> {{ interview.get_focus_display }}
+                            {% endif %}
+                        </div>
+                        {% if interview.interviewer_name %}
+                        <div class="interview-details">
+                            <strong>Interviewer:</strong> {{ interview.interviewer_name }}
+                            {% if interview.interviewer_title %}({{ interview.interviewer_title }}){% endif %}
+                        </div>
                         {% endif %}
-                        {% if interview.focus %}
-                        | <strong>Focus:</strong> {{ interview.get_focus_display }}
-                        {% endif %}
-                    </div>
-                    {% if interview.interviewer_name %}
-                    <div class="interview-details">
-                        <strong>Interviewer:</strong> {{ interview.interviewer_name }}
-                        {% if interview.interviewer_title %}({{ interview.interviewer_title }}){% endif %}
-                    </div>
-                    {% endif %}
-                    {% if interview.notes %}
-                    <div class="interview-notes">{{ interview.notes }}</div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            {% else %}
-                <div class="no-content">No upcoming interviews scheduled</div>
-            {% endif %}
-        </div>
-        
-        <!-- Past Interviews Section -->
-        <div class="section">
-            <h2 class="section-title">Interview History</h2>
-            {% if past_interviews %}
-                {% for interview in past_interviews %}
-                <div class="interview-card">
-                    <div class="interview-header">
-                        <span class="interview-stage">{{ interview.get_stage_display }}</span>
-                        <span class="interview-time">
-                            {{ interview.scheduled_at|date:"M d, Y" }} at {{ interview.scheduled_at|date:"g:i A" }}
-                        </span>
-                    </div>
-                    <div class="interview-details">
-                        {% if interview.format %}
-                        <strong>Format:</strong> {{ interview.get_format_display }}
-                        {% endif %}
-                        {% if interview.focus %}
-                        | <strong>Focus:</strong> {{ interview.get_focus_display }}
+                        {% if interview.notes %}
+                        <div class="interview-notes">{{ interview.notes }}</div>
                         {% endif %}
                     </div>
-                    {% if interview.interviewer_name %}
-                    <div class="interview-details">
-                        <strong>Interviewer:</strong> {{ interview.interviewer_name }}
-                        {% if interview.interviewer_title %}({{ interview.interviewer_title }}){% endif %}
+                    {% endfor %}
+                {% else %}
+                    <div class="no-content">No upcoming interviews scheduled</div>
+                {% endif %}
+            </div>
+            
+            <!-- Past Interviews Section -->
+            <div class="section">
+                <h2 class="section-title">Interview History</h2>
+                {% if past_interviews %}
+                    {% for interview in past_interviews %}
+                    <div class="interview-card">
+                        <div class="interview-header">
+                            <span class="interview-stage">{{ interview.get_stage_display }}</span>
+                            <span class="interview-time">
+                                {{ interview.scheduled_at|date:"M d, Y" }} at {{ interview.scheduled_at|date:"g:i A" }}
+                            </span>
+                        </div>
+                        <div class="interview-details">
+                            {% if interview.format %}
+                            <strong>Format:</strong> {{ interview.get_format_display }}
+                            {% endif %}
+                            {% if interview.focus %}
+                            | <strong>Focus:</strong> {{ interview.get_focus_display }}
+                            {% endif %}
+                        </div>
+                        {% if interview.interviewer_name %}
+                        <div class="interview-details">
+                            <strong>Interviewer:</strong> {{ interview.interviewer_name }}
+                            {% if interview.interviewer_title %}({{ interview.interviewer_title }}){% endif %}
+                        </div>
+                        {% endif %}
+                        {% if interview.notes %}
+                        <div class="interview-notes">{{ interview.notes }}</div>
+                        {% endif %}
                     </div>
-                    {% endif %}
-                    {% if interview.notes %}
-                    <div class="interview-notes">{{ interview.notes }}</div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            {% else %}
-                <div class="no-content">No past interviews</div>
-            {% endif %}
-        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-content">No past interviews</div>
+                {% endif %}
+            </div>
+        {% endif %}
         
         <!-- Navigation -->
         <div style="text-align: center; margin-top: 30px;">
