@@ -22,9 +22,3 @@ class WorkSetting(models.TextChoices):
     ON_SITE = "On-site"
     HYBRID = "Hybrid"
     REMOTE = "Remote"
-
-
-class ApplicationState(models.TextChoices):
-    CALLBACK = "Callback"
-    CLOSED = "Closed"
-    REJECTED = "Rejected"
