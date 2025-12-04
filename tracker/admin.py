@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.html import format_html
 
 from .models import (
     Application,
@@ -44,6 +45,7 @@ class ApplicationAdmin(admin.ModelAdmin):
         'job__listing_job_title',
         'job__specialization',
         'status__state',
+        'view_detail_link',
     ]
     list_filter = ['applied_date', 'job__role', 'job__specialization', 'status__state']
     search_fields = ['job__company']
@@ -52,10 +54,14 @@ class ApplicationAdmin(admin.ModelAdmin):
         InterviewInline,
     ]
 
-
     def applied_date_no_time(self, obj):
         return timezone.localtime(obj.applied_date).date()
     applied_date_no_time.short_description = 'Applied Date'
+
+    def view_detail_link(self, obj):
+        url = reverse('tracker:application_detail', args=[obj.id])
+        return format_html('<a href="{}">View Full Details →</a>', url)
+    view_detail_link.short_description = 'Quick Actions'
 
 
 class ApplicationStatusAdmin(admin.ModelAdmin):

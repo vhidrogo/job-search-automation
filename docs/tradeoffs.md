@@ -495,6 +495,53 @@ This decision prioritizes workflow efficiency over formatting capabilities. The 
 
 ---
 
+#### Application Detail View: Content Scope and Dynamic Display by Application State
+
+**Context:**  
+When designing the application detail view, two key questions emerged: (1) whether to include parsed job requirements alongside job metadata, resume, and interview timeline, and (2) whether the view should dynamically adapt based on application outcome (callback vs rejection). The view serves two distinct workflows: interview preparation (for callbacks) and rejection analysis (for rejections).
+
+**Options Considered:**  
+1. **Static view with all sections:**  
+   - Show job details, requirements, resume, and interview sections for all applications regardless of state.
+2. **Static view excluding requirements:**  
+   - Show job details, resume, and interviews only; requirements accessible via admin link.
+3. **Dynamic view based on application state:**  
+   - For **callbacks**: Show job details, resume, upcoming interviews, and interview history (omit requirements).
+   - For **rejections**: Show job details, requirements, and resume (omit interview sections entirely, not just empty states).
+   - For **no status/pending**: Show only job details and resume.
+
+**Tradeoffs:**  
+- **Static view with all sections:**  
+  - ✅ Comprehensive—all information in one place.  
+  - ❌ Cluttered—10-20+ requirements create visual noise during interview prep.  
+  - ❌ Empty interview cards shown for rejections add no value.  
+  - ❌ Not optimized for either workflow.
+- **Static view excluding requirements:**  
+  - ✅ Clean, focused interface for interview prep.  
+  - ✅ Resume serves as requirements reference—bullets address requirements.  
+  - ❌ Rejection analysis requires navigation to admin.  
+  - ❌ Empty "No interviews" cards still shown for rejections.
+- **Dynamic view based on state:**  
+  - ✅ Context-optimized—shows exactly what's relevant for each workflow.  
+  - ✅ Interview prep (callback): Job → Resume → Interviews (no requirements clutter).  
+  - ✅ Rejection analysis (rejected): Job → Requirements → Resume (no empty interview sections).  
+  - ✅ Single source of truth—one URL adapts to use case.  
+  - ✅ Eliminates all visual noise (no empty cards, no irrelevant sections).  
+  - ❌ Slightly more complex template logic (conditional rendering).
+
+**Decision:**  
+Implement **dynamic view based on application state**. Use conditional rendering to show:
+- **Callbacks:** Job details + Resume + Upcoming Interviews + Interview History (requirements omitted)
+- **Rejections:** Job details + Requirements (sorted by relevance) + Resume (interview sections omitted entirely)
+- **Pending/No Status:** Job details + Resume only
+
+Requirements are fetched and rendered only when `application.status.state == 'rejected'`. Interview sections are rendered only when `application.status.state == 'callback'`.
+
+**Reflection:**  
+This decision demonstrates user-centered design that adapts to workflow context rather than forcing a one-size-fits-all approach. The key insight is recognizing that interview prep and rejection analysis are fundamentally different workflows with different information needs. By the interview stage, requirements are satisfied (resume proves it), making them visual noise. During rejection analysis, requirements become critical for gap identification, while empty interview sections add no value. The slight increase in template complexity (simple conditionals) is vastly outweighed by the improved usability for both workflows. This also avoids the pitfall of showing empty state messages ("No interviews") when the application state inherently precludes interviews—the absence itself is the signal, not something to explicitly display. The dynamic approach maintains a single view implementation (avoiding duplication) while optimizing for distinct use cases, exemplifying the principle that views should adapt to user intent rather than rigidly displaying all available data.
+
+---
+
 ### Analytics & Evaluation
 Decisions related to measuring resume quality and tracking application outcomes.
 

@@ -53,21 +53,34 @@ class Resume(models.Model):
 
     def __str__(self) -> str:
         return f"{self.job} - Resume"
-
-    def render_to_pdf(self, output_dir: str = "output/resumes") -> str:
+    
+    def render_to_html(self) -> str:
         """
-        Render this resume to a PDF file.
-        
+        Render this resume to an HTML string.
         Assembles the resume by:
         1. Fetching the template and its role configurations
         2. Querying experience bullets (filtered by exclude=False, ordered by order)
-        3. Querying skill bullets
+        3. Querying skill categories
         4. Rendering HTML via Django templates with bullets and skills
-        5. Converting HTML to PDF via WeasyPrint
+        
+        Returns:
+            HTML string of the rendered resume.
+        """
+        context = self._build_template_context()
+        html_string = render_to_string(self.template.template_path, context)
+        return html_string
+    
+   
+    def render_to_pdf(self, output_dir: str = "output/resumes") -> str:
+        """
+        Render this resume to a PDF file.
+        Assembles the resume by:
+        1. Calling render_to_html() to get the HTML string
+        2. Converting HTML to PDF via WeasyPrint
         
         Args:
             output_dir: Directory where the PDF should be saved.
-            
+        
         Returns:
             Path to the generated PDF file.
         """
@@ -76,9 +89,7 @@ class Resume(models.Model):
         pdf_filename = self._generate_pdf_filename()
         pdf_path = output_path.joinpath(pdf_filename)
         
-        context = self._build_template_context()
-        html_string = render_to_string(self.template.template_path, context)
-
+        html_string = self.render_to_html()
         css_path = Path(settings.BASE_DIR).joinpath("resume", "templates", self.style_path)
         
         HTML(string=html_string).write_pdf(
@@ -87,6 +98,17 @@ class Resume(models.Model):
         )
         
         return str(pdf_path)
+    
+    def get_css_content(self) -> str:
+        """
+        Read and return the CSS content for this resume's style.
+        
+        Returns:
+            CSS file content as a string.
+        """
+        css_path = Path(settings.BASE_DIR).joinpath("resume", "templates", self.style_path)
+        with open(css_path, 'r') as f:
+            return f.read()
 
     def _generate_pdf_filename(self) -> str:
         company = self._sanitize_filename(self.job.company)

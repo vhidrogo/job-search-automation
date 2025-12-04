@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ job.company }} - {{ job.listing_job_title }} | Application Details</title>
+    <style>
+        /* Main page styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            color: #333;
+            margin: 0 0 10px 0;
+        }
+        
+        .page-subtitle {
+            font-size: 18px;
+            color: #666;
+            margin: 0;
+        }
+        
+        .section {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 22px;
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .requirements-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .requirement-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border-left: 3px solid #ff9800;
+        }
+
+        .relevance-score {
+            background-color: #ff9800;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 12px;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .requirement-text {
+            flex: 1;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        /* Interview card styles */
+        .interview-card {
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .interview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .interview-stage {
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .interview-time {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .interview-details {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .interview-notes {
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            white-space: pre-wrap;
+        }
+        
+        .no-content {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-style: italic;
+        }
+        
+        /* Resume wrapper styles */
+        .resume-wrapper {
+            background-color: white;
+            max-width: 8.5in;
+            margin: 20px auto;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            padding: 0.5in;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: #417690;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2c5266;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            margin-left: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        
+        /* Resume-specific CSS injected here */
+        {{ resume_css|safe }}
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">{{ job.company }}</h1>
+            <p class="page-subtitle">{{ job.listing_job_title }}</p>
+        </div>
+        
+        <!-- Job Information Section -->
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 class="section-title" style="margin: 0; border: none; padding: 0;">Job Details</h2>
+                <a href="{% url 'admin:tracker_job_change' job.id %}" class="btn btn-secondary">View in Admin</a>
+            </div>
+            <div class="info-grid">
+                {% if job.specialization %}
+                <div class="info-item">
+                    <span class="info-label">Specialization</span>
+                    <span class="info-value">{{ job.specialization }}</span>
+                </div>
+                {% endif %}
+                <div class="info-item">
+                    <span class="info-label">Location</span>
+                    <span class="info-value">{{ job.location }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Work Setting</span>
+                    <span class="info-value">{{ job.work_setting }}</span>
+                </div>
+                {% if job.min_salary and job.max_salary %}
+                <div class="info-item">
+                    <span class="info-label">Salary Range</span>
+                    <span class="info-value">${{ job.salary_range }}</span>
+                </div>
+                {% endif %}
+                <div class="info-item">
+                    <span class="info-label">Applied Date</span>
+                    <span class="info-value">{{ application.applied_date|date:"M d, Y" }}</span>
+                </div>
+                {% if application.status %}
+                <div class="info-item">
+                    <span class="info-label">{{ application.status.get_state_display }} Date</span>
+                    <span class="info-value">{{ application.status.status_date|date:"M d, Y" }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Requirements Section (only for rejected) -->
+        {% if requirements %}
+        <div class="section">
+            <h2 class="section-title">Job Requirements</h2>
+            <div class="requirements-list">
+                {% for req in requirements %}
+                <div class="requirement-item">
+                    <span class="relevance-score">{{ req.relevance|floatformat:2 }}</span>
+                    <span class="requirement-text">{{ req.text }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Resume Section -->
+        {% if resume_exists %}
+        <div class="section">
+            <h2 class="section-title">Resume</h2>
+            <div class="resume-wrapper">
+                {{ resume_html|safe }}
+            </div>
+        </div>
+        {% else %}
+        <div class="section">
+            <h2 class="section-title">Resume</h2>
+            <div class="no-content">No resume generated for this application</div>
+        </div>
+        {% endif %}
+
+        <!-- Interview sections (only for callback) -->
+        {% if application.status.state == 'callback' %}
+            <!-- Upcoming Interviews Section -->
+            <div class="section">
+                <h2 class="section-title">Upcoming Interviews</h2>
+                {% if upcoming_interviews %}
+                    {% for interview in upcoming_interviews %}
+                    <div class="interview-card">
+                        <div class="interview-header">
+                            <span class="interview-stage">{{ interview.get_stage_display }}</span>
+                            <span class="interview-time">
+                                {{ interview.scheduled_at|date:"M d, Y" }} at {{ interview.scheduled_at|date:"g:i A" }}
+                            </span>
+                        </div>
+                        <div class="interview-details">
+                            {% if interview.format %}
+                            <strong>Format:</strong> {{ interview.get_format_display }}
+                            {% endif %}
+                            {% if interview.focus %}
+                            | <strong>Focus:</strong> {{ interview.get_focus_display }}
+                            {% endif %}
+                        </div>
+                        {% if interview.interviewer_name %}
+                        <div class="interview-details">
+                            <strong>Interviewer:</strong> {{ interview.interviewer_name }}
+                            {% if interview.interviewer_title %}({{ interview.interviewer_title }}){% endif %}
+                        </div>
+                        {% endif %}
+                        {% if interview.notes %}
+                        <div class="interview-notes">{{ interview.notes }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-content">No upcoming interviews scheduled</div>
+                {% endif %}
+            </div>
+            
+            <!-- Past Interviews Section -->
+            <div class="section">
+                <h2 class="section-title">Interview History</h2>
+                {% if past_interviews %}
+                    {% for interview in past_interviews %}
+                    <div class="interview-card">
+                        <div class="interview-header">
+                            <span class="interview-stage">{{ interview.get_stage_display }}</span>
+                            <span class="interview-time">
+                                {{ interview.scheduled_at|date:"M d, Y" }} at {{ interview.scheduled_at|date:"g:i A" }}
+                            </span>
+                        </div>
+                        <div class="interview-details">
+                            {% if interview.format %}
+                            <strong>Format:</strong> {{ interview.get_format_display }}
+                            {% endif %}
+                            {% if interview.focus %}
+                            | <strong>Focus:</strong> {{ interview.get_focus_display }}
+                            {% endif %}
+                        </div>
+                        {% if interview.interviewer_name %}
+                        <div class="interview-details">
+                            <strong>Interviewer:</strong> {{ interview.interviewer_name }}
+                            {% if interview.interviewer_title %}({{ interview.interviewer_title }}){% endif %}
+                        </div>
+                        {% endif %}
+                        {% if interview.notes %}
+                        <div class="interview-notes">{{ interview.notes }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-content">No past interviews</div>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        <!-- Navigation -->
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{% url 'admin:tracker_application_changelist' %}" class="btn btn-primary">
+                ← Back to Applications
+            </a>
+            <a href="{% url 'tracker:upcoming_interviews' %}" class="btn btn-secondary">
+                View All Upcoming Interviews
+            </a>
+        </div>
+    </div>
+</body>
+</html>
