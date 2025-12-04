@@ -72,7 +72,7 @@ class Job(models.Model):
             return f"<= {self.max_salary}"
         if self.max_salary is None:
             return f">= {self.min_salary}"
-        return f"{self.min_salary:,} - {self.max_salary:,}"
+        return f"${self.min_salary:,} - ${self.max_salary:,}"
 
     @classmethod
     def bulk_create_from_parsed(
