@@ -27,7 +27,7 @@ class Requirement(models.Model):
     )
 
     class Meta:
-        app_label = "tracker"
+        ordering = ['-relevance']
         indexes = [
             models.Index(fields=["job", "relevance"]),
         ]
