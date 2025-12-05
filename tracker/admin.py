@@ -10,6 +10,7 @@ from .models import (
     ApplicationStatus,
     ContractJob,
     Interview,
+    InterviewProcessStatus,
     Job,
     LlmRequestLog,
     Requirement,
@@ -85,6 +86,11 @@ class InterviewAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['upcoming_interviews_url'] = reverse('tracker:upcoming_interviews')
         return super().changelist_view(request, extra_context)
+    
+
+class InterviewProcessStatusAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['application']
+    list_display = ['application', 'outcome', 'notes']
 
 
 class JobAdmin(admin.ModelAdmin):
@@ -106,6 +112,7 @@ admin.site.register(Application, ApplicationAdmin)
 admin.site.register(ApplicationStatus, ApplicationStatusAdmin)
 admin.site.register(ContractJob, ContractJobAdmin)
 admin.site.register(Interview, InterviewAdmin)
+admin.site.register(InterviewProcessStatus, InterviewProcessStatusAdmin)
 admin.site.register(Job, JobAdmin)
 admin.site.register(LlmRequestLog, LlmRequestLogAdmin)
 admin.site.register(Requirement)

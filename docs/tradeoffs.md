@@ -542,6 +542,45 @@ This decision demonstrates user-centered design that adapts to workflow context 
 
 ---
 
+#### Interview Outcome Tracking: Single ApplicationStatus vs Separate InterviewProcessStatus
+
+**Context:**  
+Applications that result in callbacks proceed through multiple interview stages (recruiter screen, technical rounds, final loop), after which the process concludes with an outcome (offer, rejection, ghosting, or withdrawal). The system already tracked initial application screening outcomes via `ApplicationStatus` (callback/rejected/closed), but needed a way to capture the final result of the interview pipeline without conflicting with callback-rate analytics.
+
+**Options Considered:**  
+1. **Extend ApplicationStatus with additional states:**  
+   - Add states like "interview_rejected", "interview_ghosted", "offer" to the existing `ApplicationStatus.state` choices.  
+2. **Add outcome field to individual Interview records:**  
+   - Store outcome (passed/failed/rejected) on each `Interview` record to track stage-by-stage progression.  
+3. **Create separate InterviewProcessStatus model:**  
+   - Event-driven model (OneToOne with Application) that captures only the final outcome of the entire interview pipeline, independent of individual interview stages.
+
+**Tradeoffs:**  
+- **Extend ApplicationStatus:**  
+  - ✅ Single status field, simple queries.  
+  - ❌ Conflates application screening outcomes with interview outcomes—breaks callback-rate analytics (can't distinguish "got callback" from "rejected after interviews").  
+  - ❌ Loses temporal separation between screening and interview phases.  
+- **Outcome on Interview records:**  
+  - ✅ Granular stage-by-stage tracking.  
+  - ❌ Requires updating previous interview outcome to "passed" when creating next stage interview (redundant—progression is already implied by existence of later stages).  
+  - ❌ Adds complexity for simple use case—most workflows only care about final outcome, not per-stage results.  
+  - ❌ No clean way to query "what was the final interview result?" without traversing all interviews.  
+- **Separate InterviewProcessStatus:**  
+  - ✅ Preserves ApplicationStatus for resume-driven outcomes (callback rate analytics remain intact).  
+  - ✅ Event-driven—only created when final outcome occurs, no intermediate updates required.  
+  - ✅ Clean separation between screening phase (ApplicationStatus) and interview phase (InterviewProcessStatus).  
+  - ✅ Simple queries for interview-to-offer conversion rates.  
+  - ✅ Individual Interview records track stages without needing outcome fields (existence of later stages implies progression).  
+  - ❌ Additional model in schema (minimal complexity trade).
+
+**Decision:**  
+Adopt **separate `InterviewProcessStatus` model** with OneToOne relationship to `Application`. This model captures only the final outcome of the interview pipeline (offer/rejected/failed/ghosted/withdrew) and is created event-driven when an outcome notification is received. Individual `Interview` records continue tracking stages without outcome fields—progression is implicit.
+
+**Reflection:**  
+This design maintains clean separation between application-phase and interview-phase analytics while avoiding redundant state management. The event-driven approach matches the existing `ApplicationStatus` pattern, creating consistency across the tracking system. By recognizing that stage progression is inherently implied by the existence of subsequent `Interview` records, the design avoids unnecessary outcome fields that would require manual updates. The model enables distinct funnel analytics: callback rate (ApplicationStatus), interview-to-offer rate (InterviewProcessStatus), and stage-specific analysis (Interview count by stage)—all without conflating conceptually separate workflow phases.
+
+---
+
 ### Analytics & Evaluation
 Decisions related to measuring resume quality and tracking application outcomes.
 

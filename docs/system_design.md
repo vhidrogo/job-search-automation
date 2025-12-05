@@ -414,6 +414,15 @@ flowchart TD
 | interviewer_title | CharField | Title/role of the interviewer - optional |
 | scheduled_at | DateTimeField | When the interview is scheduled |
 
+#### InterviewProcessStatus
+| Field | Type | Description |
+|--------|------|-------------|
+| id | IntegerField | Primary key |
+| application | OneToOne(Application) | Associated application (only exists if interviews happened) |
+| outcome | CharField | Final interview outcome (offer, rejected, failed, ghosted, withdrew) |
+| outcome_date | DateField | When the outcome occurred or was recorded |
+| notes | TextField | Optional context about the outcome |
+
 ---
 
 ### End-to-End Flow Diagram
