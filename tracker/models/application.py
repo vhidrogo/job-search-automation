@@ -23,4 +23,4 @@ class Application(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.applied_date.date()} {self.job.company} - {self.job.listing_job_title}"
+        return f"{timezone.localdate(self.applied_date)} {self.job.company} - {self.job.listing_job_title}"
