@@ -25,6 +25,7 @@ class Interview(models.Model):
         SYSTEM_DESIGN = 'system_design', 'System Design'
         BEHAVIORAL = 'behavioral', 'Behavioral'
         HIRING_MANAGER = 'hiring_manager', 'Hiring Manager'
+        REFACTORING = 'refactoring', 'Refactoring / Code Quality'
     
     application = models.ForeignKey(
         "Application",
