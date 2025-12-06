@@ -100,23 +100,3 @@ class Job(models.Model):
             )
         created = cls.objects.bulk_create(objs, batch_size=batch_size)
         return created
-
-    def generate_resume_pdf(self, output_dir: str = "output/resumes") -> str:
-        """
-        Generate a PDF resume for this job.
-        
-        Delegates to the associated Resume's render_to_pdf() method.
-        
-        Args:
-            output_dir: Directory where the PDF should be saved.
-            
-        Returns:
-            Path to the generated PDF file.
-            
-        Raises:
-            ValueError: If no resume exists for this job.
-        """
-        if not hasattr(self, "resume"):
-            raise ValueError(f"No resume found for job: {self}")
-        
-        return self.resume.render_to_pdf(output_dir=output_dir)
