@@ -96,13 +96,18 @@ class InterviewProcessStatusAdmin(admin.ModelAdmin):
 
 class JobAdmin(admin.ModelAdmin):
     search_fields = ['company']
-    list_display = ['company', 'listing_job_title', 'role', 'level']
+    list_display = ['company', 'listing_job_title', 'role', 'level', 'view_company_applications_link']
     list_filter = ['role']
     ordering = ['-created_at']
     readonly_fields = ['resume']
     inlines = [
         RequirementInline,
     ]
+
+    def view_company_applications_link(self, obj):
+        url = reverse('tracker:company_applications', kwargs={'company_name': obj.company})
+        return format_html('<a href="{}">View Company Apps →</a>', url)
+    view_company_applications_link.short_description = 'Company Apps'
 
 class LlmRequestLogAdmin(admin.ModelAdmin):
     list_display = ['timestamp', 'call_type', 'input_tokens', 'output_tokens']
