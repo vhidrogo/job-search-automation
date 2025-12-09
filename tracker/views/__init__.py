@@ -1,2 +1,3 @@
 from .application_detail import application_detail
+from .company_applications import company_applications
 from .interviews import upcoming_interviews

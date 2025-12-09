@@ -363,6 +363,9 @@
             <a href="{% url 'admin:tracker_application_changelist' %}" class="btn btn-primary">
                 ← Back to Applications
             </a>
+            <a href="{% url 'tracker:company_applications' job.company %}" class="btn btn-secondary">
+                View All {{ job.company }} Applications
+            </a>
             <a href="{% url 'tracker:upcoming_interviews' %}" class="btn btn-secondary">
                 View All Upcoming Interviews
             </a>
