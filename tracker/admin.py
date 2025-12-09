@@ -78,6 +78,7 @@ class ContractJobAdmin(admin.ModelAdmin):
 class InterviewAdmin(admin.ModelAdmin):
     autocomplete_fields = ['application']
     list_display = ['application', 'stage', 'format', 'focus', 'scheduled_at']
+    list_filter = ['stage']
     formfield_overrides = {
         models.TextField: {'widget': forms.Textarea(attrs={'rows': 20, 'cols': 60})},
     }
