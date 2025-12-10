@@ -13,6 +13,7 @@ class Metadata(BaseModel):
     min_experience_years: Optional[Annotated[int, Field(ge=0)]] = None
     min_salary: Optional[Annotated[int, Field(ge=0)]] = None
     max_salary: Optional[Annotated[int, Field(ge=0)]] = None
+    external_job_id: Optional[str] = None
 
 
 class RequirementSchema(BaseModel):

@@ -289,6 +289,7 @@ flowchart TD
 | min_experience_years | PositiveIntegerField | Minimum years of experience |
 | min_salary | IntegerField | Minimum salary |
 | max_salary | IntegerField | Maximum salary |
+| external_job_id | CharField | Company-provided job listing ID |
 
 #### ContractJob
 | Field | Type | Description |
