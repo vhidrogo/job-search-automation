@@ -2,6 +2,7 @@ from django.db import models
 
 
 class JobLevel(models.TextChoices):
+    ASSOCIATE = "associate", "Associate"
     I = "I", "I"
     II = "II", "II"
     III = "III", "III"
