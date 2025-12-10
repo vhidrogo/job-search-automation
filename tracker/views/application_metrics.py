@@ -1,8 +1,8 @@
 from collections import defaultdict
-from datetime import timedelta
 
-from django.shortcuts import render
 from django.db.models import Count
+from django.shortcuts import render
+from django.utils import timezone
 
 from tracker.models import Application
 
@@ -214,17 +214,15 @@ def _salary_range_breakdown(queryset, total):
 
 def _build_volume_timeline(queryset):
     """
-    Build application volume timeline grouped by week.
+    Build application volume timeline grouped by date.
     Returns list of {date, count} dicts for charting.
     """
     timeline = defaultdict(int)
     
     for app in queryset:
-        # Group by week (Monday as start of week)
-        week_start = app.applied_date - timedelta(days=app.applied_date.weekday())
-        timeline[week_start] += 1
+        local_date = timezone.localtime(app.applied_date).date()
+        timeline[local_date] += 1
     
-    # Convert to sorted list
     result = [
         {'date': date.isoformat(), 'count': count}
         for date, count in sorted(timeline.items())
@@ -236,18 +234,31 @@ def _build_volume_timeline(queryset):
 def _build_callback_timeline(queryset):
     """
     Build callback timeline showing when callbacks occurred (by applied_date).
+    Includes all dates in range with zero counts for dates without callbacks.
     Returns list of {date, count} dicts for charting.
     """
-    timeline = defaultdict(int)
+    from datetime import timedelta
+    
+    callback_dates = defaultdict(int)
     
     for app in queryset:
-        timeline[app.applied_date] += 1
+        local_date = timezone.localtime(app.applied_date).date()
+        callback_dates[local_date] += 1
     
-    # Convert to sorted list
-    result = [
-        {'date': date.isoformat(), 'count': count}
-        for date, count in sorted(timeline.items())
-    ]
+    if not callback_dates:
+        return []
+    
+    min_date = min(callback_dates.keys())
+    max_date = max(callback_dates.keys())
+    
+    result = []
+    current_date = min_date
+    while current_date <= max_date:
+        result.append({
+            'date': current_date.isoformat(),
+            'count': callback_dates.get(current_date, 0)
+        })
+        current_date += timedelta(days=1)
     
     return result
 
