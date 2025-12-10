@@ -132,6 +132,7 @@ class Orchestrator:
         print(f"Location:             {metadata.location}")
         print(f"Work Setting:         {metadata.work_setting}")
         print(f"Min Experience:       {f'{metadata.min_experience_years} years' if metadata.min_experience_years is not None else 'N/A'}")
+        print(f"External Job ID:      {metadata.external_job_id or 'N/A'}")
         
         salary_parts = []
         if metadata.min_salary is not None:

@@ -258,6 +258,7 @@
                         <tr>
                             <th>Applied Date</th>
                             <th>Job Title</th>
+                            <th>Job ID</th>
                             <th>Status</th>
                             <th></th>
                         </tr>
@@ -267,6 +268,7 @@
                         <tr>
                             <td>{{ item.application.applied_date|date:"M d, Y" }}</td>
                             <td class="job-title">{{ item.application.job.listing_job_title }}</td>
+                            <td>{{ item.application.job.external_job_id|default:"" }}</td>
                             <td>
                                 <span class="status-badge status-{{ item.display_status|lower|cut:" " }}">
                                     {{ item.display_status }}

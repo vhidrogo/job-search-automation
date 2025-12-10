@@ -21,6 +21,7 @@ class Job(models.Model):
       - work_setting: Work arrangement (e.g., 'Remote', 'On-site', 'Hybrid').
       - min_experience_years: Minimum experience required for the role.
       - min_salary / max_salary: Optional salary bounds.
+      - external_job_id: Company-provided job ID from the job listing.
     """
 
     company = models.CharField(max_length=255, db_index=True)
@@ -49,6 +50,14 @@ class Job(models.Model):
         null=True,
         validators=[MinValueValidator(0)],
         help_text="Maximum salary in the job listing (nullable).",
+    )
+
+    external_job_id = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="Company-provided job ID from the job listing.",
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
