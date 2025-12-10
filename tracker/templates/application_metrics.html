@@ -429,11 +429,27 @@
                 </div>
                 {% endif %}
                 
-                <!-- Salary Range -->
-                {% if callback_analysis.salary_range %}
+                <!-- Min Salary Range -->
+                {% if callback_analysis.min_salary_range %}
                 <div class="dimension-card">
-                    <div class="dimension-card-title">Salary Range</div>
-                    {% for item in callback_analysis.salary_range %}
+                    <div class="dimension-card-title">Min Salary Range</div>
+                    {% for item in callback_analysis.min_salary_range %}
+                    <div class="dimension-item">
+                        <span class="dimension-value">{{ item.value }}</span>
+                        <div class="dimension-stats">
+                            <span class="dimension-count">{{ item.count }}</span>
+                            <span class="dimension-percent">({{ item.percent }}%)</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Max Salary Range -->
+                {% if callback_analysis.max_salary_range %}
+                <div class="dimension-card">
+                    <div class="dimension-card-title">Max Salary Range</div>
+                    {% for item in callback_analysis.max_salary_range %}
                     <div class="dimension-item">
                         <span class="dimension-value">{{ item.value }}</span>
                         <div class="dimension-stats">

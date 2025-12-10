@@ -140,7 +140,8 @@ def _analyze_dimension_breakdowns(queryset):
         'location': _dimension_breakdown(queryset, 'job__location', total),
         'work_setting': _dimension_breakdown(queryset, 'job__work_setting', total),
         'min_experience_years': _dimension_breakdown(queryset, 'job__min_experience_years', total),
-        'salary_range': _salary_range_breakdown(queryset, total),
+        'min_salary_range': _salary_range_breakdown(queryset, 'min_salary', total),
+        'max_salary_range': _salary_range_breakdown(queryset, 'max_salary', total),
     }
     
     return analysis
@@ -165,40 +166,33 @@ def _dimension_breakdown(queryset, field, total):
     ]
 
 
-def _salary_range_breakdown(queryset, total):
+def _salary_range_breakdown(queryset, field, total):
     """
     Generate salary range breakdown with bucketing.
     Buckets: <$150k, $150k-$180k, $180k-$200k, >$200k
     """
     buckets = {
-        '<$150k': 0,
-        '$150k-$180k': 0,
-        '$180k-$200k': 0,
-        '>$200k': 0,
+        '< $150k': 0,
+        '$150k - $180k': 0,
+        '$180k - $200k': 0,
+        '> $200k': 0,
     }
     
     for app in queryset:
-        avg_salary = None
-        if app.job.min_salary and app.job.max_salary:
-            avg_salary = (app.job.min_salary + app.job.max_salary) / 2
-        elif app.job.min_salary:
-            avg_salary = app.job.min_salary
-        elif app.job.max_salary:
-            avg_salary = app.job.max_salary
+        salary = getattr(app.job, field)
         
-        if avg_salary is None:
+        if salary is None:
             continue
         
-        if avg_salary < 150000:
-            buckets['<$150k'] += 1
-        elif avg_salary < 180000:
-            buckets['$150k-$180k'] += 1
-        elif avg_salary < 200000:
-            buckets['$180k-$200k'] += 1
+        if salary < 150000:
+            buckets['< $150k'] += 1
+        elif salary < 180000:
+            buckets['$150k - $180k'] += 1
+        elif salary < 200000:
+            buckets['$180k - $200k'] += 1
         else:
-            buckets['>$200k'] += 1
+            buckets['> $200k'] += 1
     
-    # Convert to list format, sorted by count
     result = [
         {
             'value': bucket,
