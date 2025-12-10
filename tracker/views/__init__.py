@@ -1,3 +1,4 @@
 from .application_detail import application_detail
+from .application_metrics import application_metrics
 from .company_applications import company_applications
 from .interviews import upcoming_interviews

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Metrics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            color: #333;
+            margin: 0;
+        }
+        
+        .filters-section {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .filter-item label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .filter-item input,
+        .filter-item select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background-color: #417690;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .section-title {
+            font-size: 24px;
+            color: #333;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #4CAF50;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .summary-card-label {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+        
+        .summary-card-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .summary-card-percent {
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .chart-container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .dimension-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .dimension-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .dimension-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            text-transform: capitalize;
+        }
+        
+        .dimension-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .dimension-item:last-child {
+            border-bottom: none;
+        }
+        
+        .dimension-value {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .dimension-stats {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .dimension-count {
+            font-size: 18px;
+            font-weight: bold;
+            color: #417690;
+        }
+        
+        .dimension-percent {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-style: italic;
+        }
+        
+        .rejection-summary {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .rejection-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .rejection-summary-section h4 {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .rejection-item {
+            padding: 8px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header">
+            <h1 class="page-title">Application Metrics</h1>
+        </div>
+        
+        <!-- Filters -->
+        <div class="filters-section">
+            <form method="get">
+                <div class="filter-grid">
+                    <div class="filter-item">
+                        <label>Start Date</label>
+                        <input type="date" name="start_date" value="{{ filters.start_date }}">
+                    </div>
+                    <div class="filter-item">
+                        <label>End Date</label>
+                        <input type="date" name="end_date" value="{{ filters.end_date }}">
+                    </div>
+                    <div class="filter-item">
+                        <label>Role</label>
+                        <select name="role" multiple size="3">
+                            {% for role in filter_options.roles %}
+                            <option value="{{ role }}" {% if role in filters.role %}selected{% endif %}>{{ role }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>Work Setting</label>
+                        <select name="work_setting" multiple size="3">
+                            {% for setting in filter_options.work_settings %}
+                            <option value="{{ setting }}" {% if setting in filters.work_setting %}selected{% endif %}>{{ setting }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>Location</label>
+                        <select name="location" multiple size="3">
+                            {% for location in filter_options.locations %}
+                            <option value="{{ location }}" {% if location in filters.location %}selected{% endif %}>{{ location }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{% url 'tracker:application_metrics' %}" class="btn btn-secondary">Clear Filters</a>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Part 1: Overall Summary -->
+        <h2 class="section-title">Overall Summary</h2>
+        <div class="summary-cards">
+            <div class="summary-card">
+                <div class="summary-card-label">Total Applications</div>
+                <div class="summary-card-value">{{ overall_summary.total }}</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-label">Callbacks</div>
+                <div class="summary-card-value">{{ overall_summary.callbacks.count }}</div>
+                <div class="summary-card-percent">{{ overall_summary.callbacks.percent }}%</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-label">Rejected</div>
+                <div class="summary-card-value">{{ overall_summary.rejected.count }}</div>
+                <div class="summary-card-percent">{{ overall_summary.rejected.percent }}%</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-label">Closed</div>
+                <div class="summary-card-value">{{ overall_summary.closed.count }}</div>
+                <div class="summary-card-percent">{{ overall_summary.closed.percent }}%</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-label">No Response</div>
+                <div class="summary-card-value">{{ overall_summary.no_response.count }}</div>
+                <div class="summary-card-percent">{{ overall_summary.no_response.percent }}%</div>
+            </div>
+        </div>
+        
+        <!-- Application Volume Timeline -->
+        <div class="chart-container">
+            <div class="chart-title">Application Volume Over Time</div>
+            <canvas id="volumeChart"></canvas>
+        </div>
+        
+        <!-- Part 2: Callback Analysis -->
+        <h2 class="section-title">Callback Analysis</h2>
+        {% if callback_analysis.total > 0 %}
+            <p style="color: #666; margin-bottom: 20px;">
+                Analyzing {{ callback_analysis.total }} callback{{ callback_analysis.total|pluralize }} to identify success patterns.
+            </p>
+            
+            <!-- Callback Timeline -->
+            <div class="chart-container">
+                <div class="chart-title">Callbacks Over Time</div>
+                <canvas id="callbackChart"></canvas>
+            </div>
+            
+            <!-- Dimensional Breakdowns -->
+            <div class="dimension-cards">
+                <!-- Role -->
+                <div class="dimension-card">
+                    <div class="dimension-card-title">Role</div>
+                    {% for item in callback_analysis.role %}
+                    <div class="dimension-item">
+                        <span class="dimension-value">{{ item.value }}</span>
+                        <div class="dimension-stats">
+                            <span class="dimension-count">{{ item.count }}</span>
+                            <span class="dimension-percent">({{ item.percent }}%)</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Specialization -->
+                {% if callback_analysis.specialization %}
+                <div class="dimension-card">
+                    <div class="dimension-card-title">Specialization</div>
+                    {% for item in callback_analysis.specialization %}
+                    <div class="dimension-item">
+                        <span class="dimension-value">{{ item.value }}</span>
+                        <div class="dimension-stats">
+                            <span class="dimension-count">{{ item.count }}</span>
+                            <span class="dimension-percent">({{ item.percent }}%)</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Level -->
+                <div class="dimension-card">
+                    <div class="dimension-card-title">Level</div>
+                    {% for item in callback_analysis.level %}
+                    <div class="dimension-item">
+                        <span class="dimension-value">{{ item.value }}</span>
+                        <div class="dimension-stats">
+                            <span class="dimension-count">{{ item.count }}</span>
+                            <span class="dimension-percent">({{ item.percent }}%)</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Location -->
+                <div class="dimension-card">
+                    <div class="dimension-card-title">Location</div>
+                    {% for item in callback_analysis.location %}
+                    <div class="dimension-item">
+                        <span class="dimension-value">{{ item.value }}</span>
+                        <div class="dimension-stats">
+                            <span class="dimension-count">{{ item.count }}</span>
+                            <span class="dimension-percent">({{ item.percent }}%)</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Work Setting -->
+                <div class="dimension-card">
+                    <div class="dimension-card-title">Work Setting</div>
+                    {% for item in callback_analysis.work_setting %}
+                    <div class="dimension-item">
+                        <span class="dimension-value">{{ item.value }}</span>
+                        <div class="dimension-stats">
+                            <span class="dimension-count">{{ item.count }}</span>
+                            <span class="dimension-percent">({{ item.percent }}%)</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Min Experience Years -->
+                {% if callback_analysis.min_experience_years %}
+                <div class="dimension-card">
+                    <div class="dimension-card-title">Min Experience Years</div>
+                    {% for item in callback_analysis.min_experience_years %}
+                    <div class="dimension-item">
+                        <span class="dimension-value">{{ item.value }} years</span>
+                        <div class="dimension-stats">
+                            <span class="dimension-count">{{ item.count }}</span>
+                            <span class="dimension-percent">({{ item.percent }}%)</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Min Salary Range -->
+                {% if callback_analysis.min_salary_range %}
+                <div class="dimension-card">
+                    <div class="dimension-card-title">Min Salary Range</div>
+                    {% for item in callback_analysis.min_salary_range %}
+                    <div class="dimension-item">
+                        <span class="dimension-value">{{ item.value }}</span>
+                        <div class="dimension-stats">
+                            <span class="dimension-count">{{ item.count }}</span>
+                            <span class="dimension-percent">({{ item.percent }}%)</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Max Salary Range -->
+                {% if callback_analysis.max_salary_range %}
+                <div class="dimension-card">
+                    <div class="dimension-card-title">Max Salary Range</div>
+                    {% for item in callback_analysis.max_salary_range %}
+                    <div class="dimension-item">
+                        <span class="dimension-value">{{ item.value }}</span>
+                        <div class="dimension-stats">
+                            <span class="dimension-count">{{ item.count }}</span>
+                            <span class="dimension-percent">({{ item.percent }}%)</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="no-data">No callbacks yet. Keep applying!</div>
+        {% endif %}
+        
+        <!-- Part 3: Rejection Analysis -->
+        <h2 class="section-title">Rejection Analysis</h2>
+        {% if rejection_summary %}
+            <div class="rejection-summary">
+                <p style="color: #666; margin-bottom: 20px;">
+                    High-level summary of {{ rejection_summary.total }} rejection{{ rejection_summary.total|pluralize }}.
+                </p>
+                <div class="rejection-summary-grid">
+                    <div class="rejection-summary-section">
+                        <h4>Top Roles</h4>
+                        {% for item in rejection_summary.top_role %}
+                        <div class="rejection-item">
+                            <span>{{ item.value }}</span>
+                            <span><strong>{{ item.count }}</strong></span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="rejection-summary-section">
+                        <h4>Top Locations</h4>
+                        {% for item in rejection_summary.top_location %}
+                        <div class="rejection-item">
+                            <span>{{ item.value }}</span>
+                            <span><strong>{{ item.count }}</strong></span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="rejection-summary-section">
+                        <h4>Top Work Settings</h4>
+                        {% for item in rejection_summary.top_work_setting %}
+                        <div class="rejection-item">
+                            <span>{{ item.value }}</span>
+                            <span><strong>{{ item.count }}</strong></span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="no-data">No rejections recorded.</div>
+        {% endif %}
+        
+        <!-- Navigation -->
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{% url 'admin:tracker_application_changelist' %}" class="btn btn-primary">
+                ← Back to Applications
+            </a>
+        </div>
+    </div>
+    
+    <script>
+        // Application Volume Chart
+        const volumeCtx = document.getElementById('volumeChart').getContext('2d');
+        const volumeData = {{ volume_timeline|safe }};
+        new Chart(volumeCtx, {
+            type: 'line',
+            data: {
+                labels: volumeData.map(d => d.date),
+                datasets: [{
+                    label: 'Applications',
+                    data: volumeData.map(d => d.count),
+                    borderColor: '#417690',
+                    backgroundColor: 'rgba(65, 118, 144, 0.1)',
+                    tension: 0.3,
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+        
+        // Callback Timeline Chart
+        {% if callback_analysis.total > 0 %}
+        const callbackCtx = document.getElementById('callbackChart').getContext('2d');
+        const callbackData = {{ callback_timeline|safe }};
+        new Chart(callbackCtx, {
+            type: 'bar',
+            data: {
+                labels: callbackData.map(d => d.date),
+                datasets: [{
+                    label: 'Callbacks',
+                    data: callbackData.map(d => d.count),
+                    backgroundColor: '#4CAF50',
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        ticks: { stepSize: 1 }
+                    },
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day',
+                            displayFormats: {
+                                day: 'MMM d'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Applied Date'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                return context[0].label;
+                            },
+                            label: function(context) {
+                                return context.parsed.y === 1 
+                                    ? '1 callback' 
+                                    : context.parsed.y + ' callbacks';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    </script>
+</body>
+</html>
