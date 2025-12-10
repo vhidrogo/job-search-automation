@@ -137,7 +137,7 @@ def _analyze_dimension_breakdowns(queryset):
         'role': _dimension_breakdown(queryset, 'job__role', total),
         'specialization': _dimension_breakdown(queryset, 'job__specialization', total),
         'level': _dimension_breakdown(queryset, 'job__level', total),
-        'location': _dimension_breakdown(queryset, 'job__location', total),
+        'location': _location_breakdown(queryset, total),
         'work_setting': _dimension_breakdown(queryset, 'job__work_setting', total),
         'min_experience_years': _dimension_breakdown(queryset, 'job__min_experience_years', total),
         'min_salary_range': _salary_range_breakdown(queryset, 'min_salary', total),
@@ -164,6 +164,63 @@ def _dimension_breakdown(queryset, field, total):
         }
         for item in breakdown
     ]
+
+
+def _location_breakdown(queryset, total):
+    """
+    Generate location breakdown with grouping logic.
+    Groups Greater Seattle Area cities together.
+    """
+    location_counts = defaultdict(int)
+    
+    for app in queryset:
+        grouped_location = _group_location(app.job.location)
+        location_counts[grouped_location] += 1
+    
+    result = [
+        {
+            'value': location,
+            'count': count,
+            'percent': _safe_percentage(count, total),
+        }
+        for location, count in location_counts.items()
+    ]
+    
+    return sorted(result, key=lambda x: x['count'], reverse=True)
+
+
+def _group_location(location):
+    """
+    Group locations into meaningful categories for analysis.
+    Greater Seattle Area cities are grouped together.
+    """
+    if not location:
+        return 'Not specified'
+    
+    location_lower = location.lower()
+    
+    seattle_area_cities = [
+        'seattle',
+        'bellevue',
+        'redmond',
+        'kirkland',
+        'kent',
+        'renton',
+        'everett',
+        'tacoma',
+        'bothell',
+        'sammamish',
+        'issaquah',
+    ]
+    
+    for city in seattle_area_cities:
+        if city in location_lower:
+            return 'Greater Seattle Area'
+    
+    if 'remote' in location_lower or 'u.s.' in location_lower:
+        return 'Remote (U.S.)'
+    
+    return location
 
 
 def _salary_range_breakdown(queryset, field, total):
@@ -270,7 +327,7 @@ def _build_rejection_summary(queryset):
     summary = {
         'total': total,
         'top_role': _top_n_breakdown(queryset, 'job__role', 3),
-        'top_location': _top_n_breakdown(queryset, 'job__location', 3),
+        'top_location': _top_n_location_breakdown(queryset, 3),
         'top_work_setting': _top_n_breakdown(queryset, 'job__work_setting', 3),
     }
     
@@ -286,6 +343,26 @@ def _top_n_breakdown(queryset, field, n):
     return [
         {'value': item[field] or 'Not specified', 'count': item['count']}
         for item in breakdown
+    ]
+
+
+def _top_n_location_breakdown(queryset, n):
+    """Get top N grouped locations."""
+    location_counts = defaultdict(int)
+    
+    for app in queryset:
+        grouped_location = _group_location(app.job.location)
+        location_counts[grouped_location] += 1
+    
+    sorted_locations = sorted(
+        location_counts.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )[:n]
+    
+    return [
+        {'value': location, 'count': count}
+        for location, count in sorted_locations
     ]
 
 
