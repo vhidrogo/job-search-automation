@@ -49,7 +49,7 @@ class ApplicationAdmin(admin.ModelAdmin):
         'view_detail_link',
     ]
     list_filter = ['applied_date', 'job__role', 'job__specialization', 'status__state']
-    search_fields = ['job__company']
+    search_fields = ['job__company', 'job__external_job_id']
     readonly_fields = ['job']
     inlines = [
         InterviewInline,
