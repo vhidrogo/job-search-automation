@@ -226,14 +226,23 @@ def _group_location(location):
         'bothell',
         'sammamish',
         'issaquah',
+        'tukwila',
+        'silverdale',
     ]
     
     for city in seattle_area_cities:
         if city in location_lower:
             return 'Greater Seattle Area'
     
-    if 'remote' in location_lower or 'u.s.' in location_lower:
-        return 'Remote (U.S.)'
+    chicago_area_cities = [
+        'chicago',
+        'racine',
+        'aurora',
+    ]
+
+    for city in chicago_area_cities:
+        if city in location_lower:
+            return 'Greater Chicago Area'
     
     return location
 
