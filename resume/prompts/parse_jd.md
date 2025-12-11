@@ -10,7 +10,7 @@ Return a single JSON object matching exactly this structure:
     "listing_job_title": "<title from JD>",
     "role": "<one of: analytics_engineer, business_analyst, business_intelligence_engineer, data_analyst, data_engineer, data_scientist, software_engineer, solutions_engineer>",
     "specialization": "<optional: python/backend/fullstack, omit if not one of those>",
-    "level": "<I, II, III, Senior>",
+    "level": "<associate, I, II, III, enior>",
     "location": "<city/state (abbreviated) or Remote (U.S.)>",
     "work_setting": "<one of: On-site, Hybrid, Remote>",
     "min_experience_years": <numeric value, omit if not specified>,
