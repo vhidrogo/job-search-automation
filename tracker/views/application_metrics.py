@@ -17,18 +17,18 @@ def application_metrics(request):
     Supports dynamic filtering by date range and all job dimensions.
     """
     filters = _get_filters_from_request(request)
-    
+    selected_dimension = request.GET.get('dimension', 'role')
+
     applications = Application.objects.select_related(
         'job', 'status', 'interview_process_status'
     ).filter(**_build_filter_query(filters))
-    
-    # Part 1: Overall Summary
+
     total_count = applications.count()
     callback_count = applications.filter(status__state='callback').count()
     rejected_count = applications.filter(status__state='rejected').count()
     closed_count = applications.filter(status__state='closed').count()
     no_response_count = applications.filter(status__isnull=True).count()
-    
+
     overall_summary = {
         'total': total_count,
         'callbacks': {
@@ -48,28 +48,30 @@ def application_metrics(request):
             'percent': _safe_percentage(no_response_count, total_count),
         },
     }
-    
+
     volume_timeline = _build_volume_timeline(applications)
-    
-    # Part 2: Callback Analysis
+
     callbacks = applications.filter(status__state='callback')
     callback_analysis = _analyze_dimension_breakdowns(callbacks)
     callback_timeline = _build_callback_timeline(callbacks)
-    
-    # Part 3: Rejection Analysis (summary only)
+
     rejections = applications.filter(status__state='rejected')
     rejection_summary = _build_rejection_summary(rejections)
     
+    dimension_deep_dive = _build_dimension_deep_dive(applications, selected_dimension)
+
     context = {
         'overall_summary': overall_summary,
         'volume_timeline': volume_timeline,
         'callback_analysis': callback_analysis,
         'callback_timeline': callback_timeline,
         'rejection_summary': rejection_summary,
+        'dimension_deep_dive': dimension_deep_dive,
+        'selected_dimension': selected_dimension,
         'filters': filters,
         'filter_options': _get_filter_options(),
     }
-    
+
     return render(request, 'application_metrics.html', context)
 
 
@@ -371,3 +373,103 @@ def _safe_percentage(numerator, denominator):
     if denominator == 0:
         return 0
     return round((numerator / denominator) * 100, 1)
+
+
+def _build_dimension_deep_dive(queryset, dimension):
+    """
+    Build detailed breakdown for a single dimension showing:
+    - Total applications
+    - Callbacks
+    - Rejected
+    - Closed
+    - No Response
+    for each value in the dimension.
+    """
+    dimension_map = {
+        'role': 'job__role',
+        'specialization': 'job__specialization',
+        'level': 'job__level',
+        'location': None,
+    }
+    
+    field = dimension_map.get(dimension)
+    
+    if dimension == 'location':
+        return _build_location_deep_dive(queryset)
+    
+    value_stats = defaultdict(lambda: {
+        'total': 0,
+        'callbacks': 0,
+        'rejected': 0,
+        'closed': 0,
+        'no_response': 0,
+    })
+    
+    for app in queryset:
+        value = getattr(app.job, field.split('__')[1]) or 'Not specified'
+        value_stats[value]['total'] += 1
+        
+        if hasattr(app, 'status'):
+            state = app.status.state
+            if state == 'callback':
+                value_stats[value]['callbacks'] += 1
+            elif state == 'rejected':
+                value_stats[value]['rejected'] += 1
+            elif state == 'closed':
+                value_stats[value]['closed'] += 1
+        else:
+            value_stats[value]['no_response'] += 1
+    
+    result = [
+        {
+            'value': value,
+            'total': stats['total'],
+            'callbacks': stats['callbacks'],
+            'rejected': stats['rejected'],
+            'closed': stats['closed'],
+            'no_response': stats['no_response'],
+        }
+        for value, stats in value_stats.items()
+    ]
+    
+    return sorted(result, key=lambda x: x['total'], reverse=True)
+
+
+def _build_location_deep_dive(queryset):
+    """Build location deep dive with grouping."""
+    location_stats = defaultdict(lambda: {
+        'total': 0,
+        'callbacks': 0,
+        'rejected': 0,
+        'closed': 0,
+        'no_response': 0,
+    })
+    
+    for app in queryset:
+        grouped_location = _group_location(app.job.location)
+        location_stats[grouped_location]['total'] += 1
+        
+        if hasattr(app, 'status'):
+            state = app.status.state
+            if state == 'callback':
+                location_stats[grouped_location]['callbacks'] += 1
+            elif state == 'rejected':
+                location_stats[grouped_location]['rejected'] += 1
+            elif state == 'closed':
+                location_stats[grouped_location]['closed'] += 1
+        else:
+            location_stats[grouped_location]['no_response'] += 1
+    
+    result = [
+        {
+            'value': location,
+            'total': stats['total'],
+            'callbacks': stats['callbacks'],
+            'rejected': stats['rejected'],
+            'closed': stats['closed'],
+            'no_response': stats['no_response'],
+        }
+        for location, stats in location_stats.items()
+    ]
+    
+    return sorted(result, key=lambda x: x['total'], reverse=True)
