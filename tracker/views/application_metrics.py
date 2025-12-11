@@ -4,7 +4,7 @@ from django.db.models import Count
 from django.shortcuts import render
 from django.utils import timezone
 
-from tracker.models import Application
+from tracker.models import Application, Job
 
 
 def application_metrics(request):
@@ -22,6 +22,9 @@ def application_metrics(request):
     applications = Application.objects.select_related(
         'job', 'status', 'interview_process_status'
     ).filter(**_build_filter_query(filters))
+
+    if filters['location']:
+        applications = _filter_by_grouped_location(applications, filters['location'])
 
     total_count = applications.count()
     callback_count = applications.filter(status__state='callback').count()
@@ -88,6 +91,18 @@ def _get_filters_from_request(request):
     }
 
 
+def _filter_by_grouped_location(queryset, selected_locations):
+    """Filter applications by grouped location values."""
+    filtered_ids = []
+    
+    for app in queryset:
+        grouped_location = _group_location(app.job.location)
+        if grouped_location in selected_locations:
+            filtered_ids.append(app.id)
+    
+    return queryset.filter(id__in=filtered_ids)
+
+
 def _build_filter_query(filters):
     """Build Django ORM filter dict from filter parameters."""
     query = {}
@@ -102,8 +117,6 @@ def _build_filter_query(filters):
         query['job__specialization__in'] = filters['specialization']
     if filters['level']:
         query['job__level__in'] = filters['level']
-    if filters['location']:
-        query['job__location__in'] = filters['location']
     if filters['work_setting']:
         query['job__work_setting__in'] = filters['work_setting']
     
@@ -111,14 +124,14 @@ def _build_filter_query(filters):
 
 
 def _get_filter_options():
-    """Get all available filter options from existing jobs."""
-    from tracker.models import Job
-    
+    all_locations = Job.objects.values_list('location', flat=True).distinct()
+    grouped_locations = sorted(set(_group_location(loc) for loc in all_locations))
+
     return {
         'roles': Job.objects.values_list('role', flat=True).distinct().order_by('role'),
         'specializations': Job.objects.exclude(specialization='').values_list('specialization', flat=True).distinct().order_by('specialization'),
         'levels': Job.objects.values_list('level', flat=True).distinct().order_by('level'),
-        'locations': Job.objects.values_list('location', flat=True).distinct().order_by('location'),
+        'locations': grouped_locations,
         'work_settings': Job.objects.values_list('work_setting', flat=True).distinct().order_by('work_setting'),
     }
 
