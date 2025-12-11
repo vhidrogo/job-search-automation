@@ -238,6 +238,40 @@
             display: flex;
             justify-content: space-between;
         }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+            color: #333;
+        }
+
+        tbody tr:hover {
+            background-color: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -505,6 +539,55 @@
         {% else %}
             <div class="no-data">No rejections recorded.</div>
         {% endif %}
+
+        <!-- Dimension Deep Dive -->
+        <h2 class="section-title">Dimension Deep Dive</h2>
+        <div style="background-color: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px;">
+            <div style="margin-bottom: 20px;">
+                <label style="font-weight: 600; margin-right: 10px;">Select Dimension:</label>
+                <select id="dimensionSelector" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="role" {% if selected_dimension == 'role' %}selected{% endif %}>Role</option>
+                    <option value="specialization" {% if selected_dimension == 'specialization' %}selected{% endif %}>Specialization</option>
+                    <option value="level" {% if selected_dimension == 'level' %}selected{% endif %}>Level</option>
+                    <option value="location" {% if selected_dimension == 'location' %}selected{% endif %}>Location</option>
+                </select>
+            </div>
+            
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ selected_dimension|title }}</th>
+                            <th>Total</th>
+                            <th>Callbacks</th>
+                            <th>Rejected</th>
+                            <th>Closed</th>
+                            <th>No Response</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in dimension_deep_dive %}
+                        <tr>
+                            <td style="font-weight: 600;">{{ item.value }}</td>
+                            <td>{{ item.total }}</td>
+                            <td style="color: #4CAF50; font-weight: bold;">{{ item.callbacks }}</td>
+                            <td style="color: #c62828;">{{ item.rejected }}</td>
+                            <td style="color: #757575;">{{ item.closed }}</td>
+                            <td style="color: #ff9800;">{{ item.no_response }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <script>
+            document.getElementById('dimensionSelector').addEventListener('change', function() {
+                const url = new URL(window.location);
+                url.searchParams.set('dimension', this.value);
+                window.location = url;
+            });
+        </script>
         
         <!-- Navigation -->
         <div style="text-align: center; margin-top: 30px;">
