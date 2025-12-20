@@ -6,7 +6,7 @@ class JobLevel(models.TextChoices):
     I = "I", "I"
     II = "II", "II"
     III = "III", "III"
-    SENIOR = "Senior", "Senior"
+    SENIOR = "senior", "Senior"
 
 class JobRole(models.TextChoices):
     ANALYTICS_ENGINEER = "analytics_engineer", "Analytics Engineer"
