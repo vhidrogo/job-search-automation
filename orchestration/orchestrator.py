@@ -164,6 +164,7 @@ class Orchestrator:
                 min_experience_years=parsed_jd.metadata.min_experience_years,
                 min_salary=parsed_jd.metadata.min_salary,
                 max_salary=parsed_jd.metadata.max_salary,
+                external_job_id=parsed_jd.metadata.external_job_id,
             )
             
             Requirement.bulk_create_from_parsed(job, parsed_jd.requirements)
