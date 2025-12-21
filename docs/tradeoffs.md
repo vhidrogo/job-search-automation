@@ -78,6 +78,55 @@ This improves reliability, readability, and alignment with modern Python practic
 
 ---
 
+#### Multi-Platform Job Board Integration: Model Design Patterns
+
+**Context:**  
+The jobs app needed to support multiple job board platforms (Workday, Greenhouse, Lever, etc.) with platform-specific configuration (URLs, API tokens, location filter IDs). Each platform requires different fields, creating a design challenge for storing heterogeneous configuration data without schema pollution.
+
+**Options Considered:**  
+1. **JSONField for platform-specific config:**  
+   - Single `Company` model with a `platform_config` JSONField storing arbitrary key-value pairs per platform.
+2. **Multi-table inheritance:**  
+   - Base `Company` model with platform-specific subclasses (`WorkdayCompany`, `GreenhouseCompany`) using Django's multi-table inheritance.
+3. **Separate config models with OneToOne relationships:**  
+   - Core `Company` model with `platform` field, linked to platform-specific config models (`WorkdayConfig`, `GreenhouseConfig`) via OneToOne foreign keys.
+4. **Generic foreign keys (ContentTypes):**  
+   - `Company` model with GenericForeignKey to arbitrary platform config models.
+
+**Tradeoffs:**  
+- **JSONField:**  
+  - ✅ Simple, flexible, easy to add new platforms.
+  - ❌ No database-level validation or type safety.
+  - ❌ Difficult to query platform-specific fields.
+  - ❌ No IDE autocomplete for config fields.
+- **Multi-table inheritance:**  
+  - ✅ Type-safe with proper field validation.
+  - ✅ Clean queries per platform.
+  - ❌ Creates separate tables causing JOIN overhead.
+  - ❌ Complex cross-platform queries.
+  - ❌ Polymorphic retrieval requires careful handling.
+- **Separate OneToOne configs:**  
+  - ✅ Type-safe with database-level validation.
+  - ✅ No NULL fields—each platform has only its required fields.
+  - ✅ Clean separation of concerns (core company data vs platform specifics).
+  - ✅ Easy to query: `Company.objects.filter(workday_config__isnull=False)`.
+  - ✅ IDE autocomplete works (e.g., `company.workday_config.base_url`).
+  - ✅ Simple extension—just add new config model for new platform.
+  - ❌ Slightly more models in schema (minimal complexity).
+- **Generic foreign keys:**  
+  - ✅ Maximum flexibility.
+  - ❌ Loses referential integrity.
+  - ❌ Complex, harder to understand and maintain.
+  - ❌ Poor query performance.
+
+**Decision:**  
+Adopt **separate config models with OneToOne relationships** (Option 3). Each platform has a dedicated config model (e.g., `WorkdayConfig`) with a OneToOne relationship to `Company`. The `Company` model includes a `platform` CharField and a factory method `get_job_fetcher()` that instantiates the appropriate client based on platform type.
+
+**Reflection:**  
+This design prioritizes maintainability and type safety over schema simplicity. The "more models" concern is negligible—each config model is small, self-contained, and maps directly to a real-world entity (platform-specific configuration). The pattern scales elegantly: adding Greenhouse support requires only creating `GreenhouseConfig` and `GreenhouseClient`, with no changes to existing models or migration risks. The OneToOne relationship provides the right balance of normalization (no NULL fields) and usability (direct attribute access via related_name). This approach also demonstrates understanding of Django's relationship patterns and separation of concerns—skills directly applicable to production systems. The decision exemplifies choosing architectural clarity over premature optimization, recognizing that a few extra lightweight models are far less problematic than type-unsafe JSONFields or complex inheritance hierarchies.
+
+---
+
 ### Job Description Processing
 Decisions related to parsing and extracting requirements from job descriptions.
 
