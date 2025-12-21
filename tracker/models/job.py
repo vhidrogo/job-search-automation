@@ -12,6 +12,7 @@ class Job(models.Model):
     Represents a job listing parsed from a job description.
 
     Fields:
+      - source: Origin of job listing (linkedin, company_site, indeed)
       - company: Name of the employer.
       - listing_job_title: Job title as listed in the job description.
       - role: Standardized role classification (e.g., 'Software Engineer').
@@ -24,6 +25,14 @@ class Job(models.Model):
       - external_job_id: Company-provided job ID from the job listing.
     """
 
+    class Source(models.TextChoices):
+        LINKEDIN = "linkedin", "LinkedIn"
+        COMPANY_SITE = "company_site", "Company Site"
+        INDEED = "indeed", "Indeed"
+        INTERNAL_RECRUITER = "internal_recruiter", "Internal Recruiter"
+        EXTERNAL_RECRUITER = "external_recruiter", "External Recruiter / Headhunter"
+
+    source = models.CharField(max_length=64, choices=Source.choices)
     company = models.CharField(max_length=255, db_index=True)
     listing_job_title = models.CharField(max_length=255, db_index=True)
     role = models.CharField(max_length=64, choices=JobRole.choices, db_index=True)

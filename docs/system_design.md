@@ -290,6 +290,7 @@ flowchart TD
 | min_salary | IntegerField | Minimum salary |
 | max_salary | IntegerField | Maximum salary |
 | external_job_id | CharField | Company-provided job listing ID |
+| source | CharField | Origin of job listing (linkedin, company_site, indeed) |
 
 #### ContractJob
 | Field | Type | Description |

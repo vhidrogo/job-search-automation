@@ -35,6 +35,7 @@ class Orchestrator:
         jd_parser: JDParser = None,
         resume_writer: ResumeWriter = None,
         custom_template_id: int = None,
+        source: str = None,
     ):
         """Initialize orchestrator with service dependencies.
         
@@ -42,10 +43,12 @@ class Orchestrator:
             jd_parser: Service for parsing job descriptions. Defaults to JDParser().
             resume_writer: Service for generating resume content. Defaults to ResumeWriter().
             custom_template_id: Optional ID of custom ResumeTemplate to use instead of auto-selecting.
+            source: Source of the job listing being processed.
         """
         self.jd_parser = jd_parser or JDParser()
         self.resume_writer = resume_writer or ResumeWriter()
         self.custom_template_id = custom_template_id
+        self.source = source
     
     def run(
         self,
@@ -154,6 +157,7 @@ class Orchestrator:
         """
         with transaction.atomic():
             job = Job.objects.create(
+                source=self.source,
                 company=parsed_jd.metadata.company,
                 listing_job_title=parsed_jd.metadata.listing_job_title,
                 role=parsed_jd.metadata.role,
