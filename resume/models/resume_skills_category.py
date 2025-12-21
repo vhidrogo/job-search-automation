@@ -10,6 +10,7 @@ class ResumeSkillsCategory(models.Model):
       - order: Display order of this category within the resume.
       - category: Category label such as "Programming Languages" or "Data & Visualization".
       - skills_text: CSV string of related skills (e.g., "Python, Java").
+      - override_text: Optional edited version of the bullet that overrides `skills_text`.
       - exclude: Whether to exclude this category from rendering.
     """
 
@@ -28,6 +29,11 @@ class ResumeSkillsCategory(models.Model):
     skills_text = models.TextField(
         help_text='CSV string of related skills (e.g., "Python, Java").',
     )
+    override_text = models.TextField(
+        blank=True,
+        default="",
+        help_text="Optional edited version of the bullet that overrides `skills_text`.",
+    )
     exclude = models.BooleanField(
         default=False,
         help_text="Whether to exclude this category from rendering.",
@@ -40,3 +46,11 @@ class ResumeSkillsCategory(models.Model):
 
     def __str__(self):
         return f"Category {self.order}"
+
+    def display_text(self) -> str:
+        """
+        Returns the text to display, prioritizing override_text if set.
+        """
+        if self.override_text.strip():
+            return self.override_text.strip()
+        return self.skills_text.strip()

@@ -231,7 +231,8 @@ class Resume(models.Model):
             return ""
 
         html = "\n".join(
-            f'<div class="skill-category"><strong>{x.category}:</strong> {x.skills_text}</div>' for x in skill_bullets
+            f'<div class="skill-category"><strong>{escape(x.category)}:</strong> {escape(x.display_text())}</div>'
+            for x in skill_bullets
         )
         
         return mark_safe(html)
