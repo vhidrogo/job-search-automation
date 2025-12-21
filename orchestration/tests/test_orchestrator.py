@@ -117,6 +117,7 @@ class TestOrchestrator(TestCase):
         self.orchestrator = Orchestrator(
             jd_parser=self.mock_jd_parser,
             resume_writer=self.mock_resume_writer,
+            source=Job.Source.COMPANY_SITE,
         )
 
         patcher = patch("orchestration.orchestrator.Resume.render_to_pdf")

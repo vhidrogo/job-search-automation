@@ -32,15 +32,30 @@ class Command(BaseCommand):
             type=int,
             help="ID of custom ResumeTemplate to use instead of auto-selecting based on job metadata",
         )
+        parser.add_argument(
+            "--source",
+            type=str,
+            choices=[
+                "linkedin",
+                "company_site",
+                "indeed",
+                "internal_recruiter",
+                "external_recruiter",
+            ],
+            required=True,
+            help="Source of the job listing being processed",
+        )
 
     def handle(self, *args, **options):
         jd_path = options["jd_path"]
         output_dir = options["output_dir"]
         auto_open = options["auto_open_pdf"]
         custom_template_id = options["custom_template_id"]
+        source = options["source"]
 
         orchestrator = Orchestrator(
             custom_template_id=custom_template_id,
+            source=source,
         )
         start_time = time.time()
 
