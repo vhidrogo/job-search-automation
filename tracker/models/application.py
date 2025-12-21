@@ -24,7 +24,8 @@ class Application(models.Model):
 
     def __str__(self):
         external_job_id = f" ({self.job.external_job_id})" if self.job.external_job_id else ""
+        status = f" [Status = {self.status.state}]" if hasattr(self, 'status') else ""
         return (
             f"{timezone.localdate(self.applied_date)} {self.job.company}"
-            f" - {self.job.listing_job_title}{external_job_id}"
+            f" - {self.job.listing_job_title}{external_job_id}{status}"
         )
