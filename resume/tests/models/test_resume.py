@@ -156,8 +156,8 @@ class TestResumeModel(TestCase):
         self.assertIn(bullet1_text, experience_html)
         self.assertIn(bullet2_text, experience_html)
         self.assertLess(experience_html.index(bullet1_text), experience_html.index(bullet2_text))
-        self.assertIn('<ul', experience_html)
-        self.assertIn('<li>', experience_html)
+        self.assertIn("<ul", experience_html)
+        self.assertIn("<li>", experience_html)
 
     def test_render_to_pdf_uses_bullet_override_text_when_present(self):
         role = ResumeRole.objects.create(resume=self.resume, source_role=self.role1, order=1)
@@ -216,8 +216,8 @@ class TestResumeModel(TestCase):
         self.assertIn(category2, skills_html)
         self.assertIn(skills2, skills_html)
         self.assertLess(skills_html.index(category1), skills_html.index(category2))
-        self.assertIn('class="skill-category"', skills_html)
-        self.assertIn('<strong>', skills_html)
+        self.assertIn("class='skill-category'", skills_html)
+        self.assertIn("<strong>", skills_html)
 
     def test_render_to_pdf_does_not_render_excluded_skills(self):
         category = "Programming Languages"

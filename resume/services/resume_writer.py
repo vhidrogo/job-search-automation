@@ -63,7 +63,7 @@ class ResumeWriter:
         """
         projects = ExperienceProject.objects.filter(
             experience_role=experience_role
-        ).order_by('id')
+        ).order_by("id")
 
         if not projects.exists():
             raise ValueError(
@@ -117,7 +117,7 @@ class ResumeWriter:
             Validated SkillsListModel instance containing generated skills categories.
             
         Raises:
-            ValueError: If no tools can be extracted from template's configured roles.
+            ValueError: If no tools can be extracted from template"s configured roles.
             ValueError: If LLM output is truncated or malformed.
             ValueError: If parsed JSON fails schema validation.
         """
@@ -197,7 +197,7 @@ class ResumeWriter:
 
         project_tools = ExperienceProject.objects.filter(
             experience_role_id__in=role_ids
-        ).values_list('tools', flat=True)
+        ).values_list("tools", flat=True)
         if not project_tools:
             raise ValueError(f"No projects found for roles in template {template}")
         

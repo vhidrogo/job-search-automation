@@ -7,11 +7,11 @@ from tracker.views import (
 )
 
 
-app_name = 'tracker'
+app_name = "tracker"
 
 urlpatterns = [
-    path('applications/<int:pk>/', application_detail, name='application_detail'),
-    path('companies/<str:company_name>/', company_applications, name='company_applications'),
-    path('interviews/upcoming/', upcoming_interviews, name='upcoming_interviews'),
-    path('metrics/', application_metrics, name='application_metrics'),
+    path("applications/<int:pk>/", application_detail, name="application_detail"),
+    path("companies/<str:company_name>/", company_applications, name="company_applications"),
+    path("interviews/upcoming/", upcoming_interviews, name="upcoming_interviews"),
+    path("metrics/", application_metrics, name="application_metrics"),
 ]

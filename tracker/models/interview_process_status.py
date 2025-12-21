@@ -5,7 +5,7 @@ class InterviewProcessStatus(models.Model):
     """
     Represents the final outcome of the entire interview process for an application.
     This is an event-driven record created only when a final outcome is determined
-    (offer, rejection, ghosting, or withdrawal). Most applications won't have this
+    (offer, rejection, ghosting, or withdrawal). Most applications won"t have this
     record until the interview process concludes.
     
     Unlike individual Interview records which track each stage, this captures the
@@ -13,11 +13,11 @@ class InterviewProcessStatus(models.Model):
     """
     
     class Outcome(models.TextChoices):
-        OFFER = 'offer', 'Offer'
-        REJECTED = 'rejected', 'Rejected'
-        FAILED = 'failed', 'Failed'
-        GHOSTED = 'ghosted', 'Ghosted'
-        WITHDREW = 'withdrew', 'Withdrew'
+        OFFER = "offer", "Offer"
+        REJECTED = "rejected", "Rejected"
+        FAILED = "failed", "Failed"
+        GHOSTED = "ghosted", "Ghosted"
+        WITHDREW = "withdrew", "Withdrew"
     
     application = models.OneToOneField(
         "Application",

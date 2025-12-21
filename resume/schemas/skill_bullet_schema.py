@@ -27,7 +27,7 @@ class SkillsCategorySchema(BaseModel):
         )
     ]
     
-    @field_validator('category')
+    @field_validator("category")
     @classmethod
     def validate_category_quality(cls, v: str) -> str:
         """Ensure category name is non-empty after stripping whitespace.
@@ -46,7 +46,7 @@ class SkillsCategorySchema(BaseModel):
             raise ValueError("Category name cannot be empty or whitespace-only")
         return stripped
     
-    @field_validator('skills')
+    @field_validator("skills")
     @classmethod
     def validate_skills_quality(cls, v: str) -> str:
         """Ensure skills string is non-empty after stripping whitespace.
@@ -77,7 +77,7 @@ class SkillsListModel(BaseModel):
         description="List of generated skills categories"
     )
     
-    @field_validator('skills_categories')
+    @field_validator("skills_categories")
     @classmethod
     def validate_category_count(cls, v: List[SkillsCategorySchema]) -> List[SkillsCategorySchema]:
         """Ensure at least one skills category is returned.

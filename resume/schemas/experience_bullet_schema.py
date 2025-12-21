@@ -19,7 +19,7 @@ class ExperienceBullet(BaseModel):
         )
     ]
     
-    @field_validator('text')
+    @field_validator("text")
     @classmethod
     def validate_text_quality(cls, v: str) -> str:
         """Ensure bullet text is non-empty after stripping whitespace.
@@ -50,7 +50,7 @@ class BulletListModel(BaseModel):
         description="List of generated experience bullets"
     )
     
-    @field_validator('bullets')
+    @field_validator("bullets")
     @classmethod
     def validate_bullet_count(cls, v: List[ExperienceBullet]) -> List[ExperienceBullet]:
         """Ensure at least one bullet is returned.
