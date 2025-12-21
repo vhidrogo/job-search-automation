@@ -88,6 +88,7 @@ def _get_filters_from_request(request):
         'level': request.GET.getlist('level'),
         'location': request.GET.getlist('location'),
         'work_setting': request.GET.getlist('work_setting'),
+        'source': request.GET.getlist('source'),
     }
 
 
@@ -119,6 +120,8 @@ def _build_filter_query(filters):
         query['job__level__in'] = filters['level']
     if filters['work_setting']:
         query['job__work_setting__in'] = filters['work_setting']
+    if filters['source']:
+        query['job__source__in'] = filters['source']
     
     return query
 
@@ -133,6 +136,7 @@ def _get_filter_options():
         'levels': Job.objects.values_list('level', flat=True).distinct().order_by('level'),
         'locations': grouped_locations,
         'work_settings': Job.objects.values_list('work_setting', flat=True).distinct().order_by('work_setting'),
+        'sources': Job.objects.values_list('source', flat=True).distinct().order_by('source'),
     }
 
 
@@ -154,6 +158,7 @@ def _analyze_dimension_breakdowns(queryset):
         'level': _dimension_breakdown(queryset, 'job__level', total),
         'location': _location_breakdown(queryset, total),
         'work_setting': _dimension_breakdown(queryset, 'job__work_setting', total),
+        'source': _dimension_breakdown(queryset, 'job__source', total),
         'min_experience_years': _dimension_breakdown(queryset, 'job__min_experience_years', total),
         'min_salary_range': _salary_range_breakdown(queryset, 'min_salary', total),
         'max_salary_range': _salary_range_breakdown(queryset, 'max_salary', total),
@@ -353,6 +358,7 @@ def _build_rejection_summary(queryset):
         'top_role': _top_n_breakdown(queryset, 'job__role', 3),
         'top_location': _top_n_location_breakdown(queryset, 3),
         'top_work_setting': _top_n_breakdown(queryset, 'job__work_setting', 3),
+        'top_source': _top_n_breakdown(queryset, 'job__source', 3),
     }
     
     return summary
@@ -412,6 +418,7 @@ def _build_dimension_deep_dive(queryset, dimension):
         'specialization': 'job__specialization',
         'level': 'job__level',
         'location': None,
+        'source': 'job__source',
     }
     
     field = dimension_map.get(dimension)
