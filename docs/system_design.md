@@ -449,6 +449,102 @@ flowchart TD
 
 ---
 
+## User-Facing Views
+
+The system provides several custom views beyond the Django admin interface for operational workflows and analysis.
+
+### Application Detail View (`/applications/<id>/`)
+**Purpose**: Comprehensive single-application reference page  
+**Primary Use Case**: Review all information about a specific application when preparing for interviews or following up
+
+**Features**:
+- Job information and application timeline
+- HTML-rendered resume with template-specific styling
+- Interview history with notes from past rounds
+- Upcoming interviews with scheduling details
+- Job requirements analysis (for rejected applications)
+
+**Key Implementation Details**:
+- Uses `select_related` and `prefetch_related` for optimized queries
+- Dynamically injects resume CSS for proper rendering
+- Splits interviews into past/upcoming based on current time
+- Conditionally displays sections based on application status
+
+### Application Metrics View (`/metrics/`)
+**Purpose**: Multi-dimensional analysis dashboard for application performance  
+**Primary Use Case**: Identify success patterns, track progress, and optimize application strategy
+
+**Three-Part Analysis Structure**:
+
+1. **Overall Summary**
+   - Total applications with callback/rejection/closed/no-response counts and percentages
+   - Application volume timeline (line chart)
+
+2. **Callback Analysis** 
+   - Dimensional breakdowns showing success patterns across:
+     - Role, specialization, level
+     - Location (with Greater Seattle/Chicago area grouping)
+     - Work setting
+     - Experience requirements
+     - Salary ranges (bucketed: <$150k, $150k-$180k, $180k-$200k, >$200k)
+   - Callback timeline (bar chart by applied date)
+
+3. **Rejection Analysis**
+   - High-level summary showing top 3 values for role, location, and work setting
+
+4. **Dimension Deep Dive**
+   - Detailed table showing total/callbacks/rejected/closed/no-response for each value in selected dimension
+   - Supports role, specialization, level, and location dimensions
+
+**Filtering Capabilities**:
+- Date range (start/end date)
+- All job dimensions (role, specialization, level, location, work setting)
+- Filters apply to all analysis sections
+
+**Key Implementation Details**:
+- Location grouping logic consolidates Greater Seattle/Chicago area cities
+- Salary bucketing for meaningful range analysis
+- Timeline charts include zero-count dates for complete visualization
+- Uses Chart.js for interactive visualizations
+
+### Company Applications View (`/company/<company_name>/`)
+**Purpose**: Operational reference when browsing a company's careers page  
+**Primary Use Case**: Quickly check which roles at a company you've already applied to
+
+**Status Filtering**:
+- **All**: Every application to the company
+- **Active**: No response yet OR interviewing (callback without final outcome)
+- **Inactive**: Rejected, closed, or interview process concluded
+
+**Display Logic**:
+Status priority for each application:
+1. Interview process outcome (if exists)
+2. Callback → displays as "Interviewing"
+3. Other ApplicationStatus states
+4. No status → "No Response"
+
+**Key Implementation Details**:
+- Filters use Django Q objects for complex status logic
+- Status display derived from multiple related models
+- Ordered by applied_date (newest first)
+
+### Upcoming Interviews View (`/interviews/upcoming/`)
+**Purpose**: Interview preparation dashboard  
+**Primary Use Case**: See all scheduled interviews with key details for preparation
+
+**Features**:
+- Chronological list of all future interviews
+- Filter by interview stage
+- Days-until countdown for each interview
+- Direct links to full application details
+
+**Key Implementation Details**:
+- Filters interviews where `scheduled_at > now()`
+- Uses Django's `timeuntil` filter for countdown display
+- Select-related optimization for company/job information
+
+---
+
 ## Design Decisions & Tradeoffs
 
 See [Tradeoffs](./tradeoffs.md)
