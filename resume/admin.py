@@ -25,6 +25,15 @@ class ResumeRoleBulletInlineForm(forms.ModelForm):
         }
 
 
+class ResumeSkillsCategoryInlineForm(forms.ModelForm):
+    class Meta:
+        model = ResumeSkillsCategory
+        fields = ['category', 'skills_text', 'override_text', 'exclude']
+        widgets = {
+            'override_text': forms.Textarea(attrs={'rows': 2, 'cols': 50}),
+        }
+
+
 class ExperienceProjectInline(admin.TabularInline):
     model = ExperienceProject
     fields = ['short_name']
@@ -50,9 +59,10 @@ class ResumeRoleBulletInline(admin.TabularInline):
 
 class ResumeSkillsCategoryInline(admin.TabularInline):
     model = ResumeSkillsCategory
+    form = ResumeSkillsCategoryInlineForm
     extra = 0
     readonly_fields = ['category', 'skills_text']
-    fields = ['category', 'skills_text', 'exclude']
+    fields = ['category', 'skills_text', 'override_text', 'exclude']
 
     
 class TemplateRoleConfigInline(admin.TabularInline):
