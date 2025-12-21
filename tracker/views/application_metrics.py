@@ -215,39 +215,48 @@ def _group_location(location):
     Greater Seattle Area cities are grouped together.
     """
     if not location:
-        return 'Not specified'
+        return "Not specified"
     
-    location_lower = location.lower()
+    if location == "Remote (U.S.)":
+        return location
     
-    seattle_area_cities = [
-        'seattle',
-        'bellevue',
-        'redmond',
-        'kirkland',
-        'kent',
-        'renton',
-        'everett',
-        'tacoma',
-        'bothell',
-        'sammamish',
-        'issaquah',
-        'tukwila',
-        'silverdale',
-    ]
+    city = location.split(",")[0].lower()
     
-    for city in seattle_area_cities:
-        if city in location_lower:
-            return 'Greater Seattle Area'
-    
-    chicago_area_cities = [
-        'chicago',
-        'racine',
-        'aurora',
-    ]
+    seattle_area_cities = {
+        "seattle",
+        "bellevue",
+        "redmond",
+        "kirkland",
+        "kent",
+        "renton",
+        "everett",
+        "tacoma",
+        "bothell",
+        "sammamish",
+        "issaquah",
+        "tukwila",
+        "silverdale",
+        "seatac",
+    }
 
-    for city in chicago_area_cities:
-        if city in location_lower:
-            return 'Greater Chicago Area'
+    if city in seattle_area_cities:
+        return "Greater Seattle Area"
+    
+    chicago_area_cities = {
+        "chicago",
+        "aurora",
+    }
+
+    if city in chicago_area_cities:
+        return "Greater Chicago Area"
+    
+    milwaukee_area_cities = {
+        "milwaukee",
+        "racine",
+    }
+
+    if city in milwaukee_area_cities:
+        return "Greater Milwaukee Area"
     
     return location
 
