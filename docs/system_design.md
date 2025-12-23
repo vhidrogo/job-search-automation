@@ -21,7 +21,12 @@ job_search_automation/ (Django Project)
 │   ├── templates/                # HTML templates per role
 │   └── utils/                    # Shared helpers for the app (prompt manipulation, validation, content builders)
 ├── tracker/                      # Job/application logging and analytics
-│   ├── models/                   # Models for persisting job and application data
+│   ├── models/                   # Models for persisting job, application, and interview prep data
+│   ├── schemas/                  # Pydantic schemas for interview prep validation
+│   ├── services/                 # InterviewPrepGenerator
+│   ├── prompts/                  # Interview preparation prompts
+│   ├── templates/                # HTML templates for views
+│   ├── views/                    # Application and Interview views
 ├── orchestration/                # CLI / orchestration entrypoints (management commands or scripts)
 │   ├── orchestrator.py           # thin Orchestrator that imports resume + tracker logic and runs end-to-end
 │   ├── management/commands/      # CLI commands / Django commands (run_orchestrator.py)
@@ -41,6 +46,7 @@ job_search_automation/ (Django Project)
 | **Orchestrator** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative flows. |
 | **Job (model methods)** | `generate_resume_pdf()` — entry point for on-demand PDF generation via Django admin; delegates to `Resume.render_to_pdf()` for actual rendering. |
 | **Resume (model methods)** | `render_to_pdf()` — assembles template with bullets and skills, renders HTML via Jinja2, converts to PDF via WeasyPrint. |
+| **InterviewPrepGenerator** | Coordinates generation of interview preparation content via LLM; handles both base preparation (company context, drivers, narrative) and interview-specific preparation (predicted questions, interviewer questions). |
 
 ---
 
@@ -150,6 +156,36 @@ This approach:
 ### Application Logging
 - Store JD metadata, extracted requirements, and generated resume info.
 - Validate and persist via Django ORM.
+
+### Interview Preparation Generation
+
+The system generates structured interview preparation documents to support interview readiness.
+
+#### Base Preparation (Once per Application)
+Generated when an application has scheduled interviews:
+- Formatted job description with bolded callback drivers
+- Company and product context
+- Primary callback drivers (1-3 key screening signals)
+- Targeted background narrative (opening, core, forward hook)
+
+#### Interview-Specific Preparation (Per Interview)
+Generated for each scheduled interview:
+- 3-5 predicted questions with structured STAR responses
+- 5 interviewer-aligned questions with strategic rationale
+- Calibrated to interview stage (recruiter/technical/hiring manager)
+
+#### Generation Approach
+- **Single prompt for base preparation:** Generates all base content in one LLM call (formatted JD, company context, drivers, narrative)
+- **Single prompt per interview type:** Generates predicted questions and interviewer questions based on stage/focus
+- **Markdown output format:** All LLM outputs are markdown-formatted for direct persistence
+- **Pydantic validation:** JSON responses are validated before persistence to ensure schema compliance
+
+#### User Workflow
+1. User triggers generation via Django admin command
+2. System generates `InterviewPreparationBase` for the application
+3. System generates `InterviewPreparation` for each scheduled interview
+4. User reviews preparation documents via custom view (filtered by interview)
+5. User can manually edit markdown fields in Django admin if needed
 
 ---
 
@@ -261,12 +297,18 @@ flowchart TD
         Req[Requirement]
         A[Application]
         AS[ApplicationStatus]
+        I[Interview]
+        IPB[InterviewPreparationBase]
+        IP[InterviewPreparation]
 
         J --> Req
         J --> C
         A --> R
         A --> J
         A --> AS
+        A --> I
+        A --> IPB
+        I --> IP
     end
 
     %% Cross-app references
@@ -426,6 +468,28 @@ flowchart TD
 | outcome_date | DateField | When the outcome occurred or was recorded |
 | notes | TextField | Optional context about the outcome |
 
+### Interview Preparation Models
+
+The interview preparation system generates structured preparation documents for interviews, consisting of base analysis (generated once per application) and interview-specific content (generated per interview).
+
+#### InterviewPreparationBase
+| Field | Type | Description |
+|-------|------|-------------|
+| id | IntegerField | Primary key |
+| application | OneToOne(Application) | Associated application |
+| formatted_jd | TextField | Markdown-formatted job description with bolded callback drivers |
+| company_context | TextField | Company product info, mission, team context (markdown) |
+| primary_drivers | TextField | 1-3 key resume screening signals with justifications (markdown) |
+| background_narrative | TextField | Opening line, core narrative, forward hook (markdown) |
+
+#### InterviewPreparation
+| Field | Type | Description |
+|-------|------|-------------|
+| id | IntegerField | Primary key |
+| interview | OneToOne(Interview) | Associated interview |
+| predicted_questions | TextField | 3-5 predicted questions with STAR responses (markdown) |
+| interviewer_questions | TextField | 5 strategic questions to ask with rationale (markdown) |
+
 ---
 
 ### End-to-End Flow Diagram
@@ -544,6 +608,29 @@ Status priority for each application:
 - Uses Django's `timeuntil` filter for countdown display
 - Select-related optimization for company/job information
 
+### Interview Preparation View (`/applications/<id>/interview-prep/`)
+**Purpose**: Single-page interview preparation reference with dynamic interview filtering  
+**Primary Use Case**: Review preparation materials before interviews
+
+**Features**:
+- Base preparation (always visible): formatted JD, company context, callback drivers, narrative
+- Interview-specific sections: predicted questions and interviewer questions
+- Dropdown selector to switch between interviews
+- Markdown rendering with proper formatting
+- Print-friendly styling
+
+**Dynamic Content**:
+- Dropdown lists all scheduled interviews for the application
+- Selecting an interview updates predicted questions and interviewer questions sections
+- Base sections remain constant across all interviews
+- URL parameter `?interview_id=X` allows direct linking to specific interview prep
+
+**Key Implementation Details**:
+- Uses `marked.js` for client-side markdown rendering
+- Fetches base prep via OneToOne relationship to application
+- Fetches interview-specific prep via OneToOne relationship to interview
+- Shows warning if interview-specific prep hasn't been generated yet
+
 ---
 
 ## Design Decisions & Tradeoffs
@@ -565,7 +652,8 @@ Incremental Build Plan
 | [x] Phase 5 | Template selection | Correct HTML template (TemplateRoleConfig-based) |
 | [x] Phase 6 | Resume rendering | `Job.generate_resume_pdf()` + `Resume.render_to_pdf()` |
 | [x] Phase 7 | orchestration app End-to-end automation | Persisted resume + tracker models |
-| [ ] Phase 8 | Analytics | dashboards: compute feedback loops & high-ROI insights |
+| [x] Phase 8 | Analytics | dashboards: compute feedback loops & high-ROI insights |
+| [x] Phase 9 | Interview Preparation System | `InterviewPrepGenerator`, models, view, command |
 
 ---
 
