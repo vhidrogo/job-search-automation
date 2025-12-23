@@ -1,9 +1,78 @@
-# Job Search Automation System Design
+# Job Search Automation Platform - System Design
+
+*An integrated Django application for resume generation, application tracking, and interview preparation*
 
 ## Overview
-The Job Search Automation project automates the generation and tailoring of resumes to job descriptions (JDs).  
-The system reads a JD, extracts structured requirements and metadata via an LLM, and generates role-specific experience bullet points and skills aligned with selected experience templates.  
-This design emphasizes modularity, configurability, and token-efficient LLM orchestration.
+
+The Job Search Automation System is a Django-based platform that automates and streamlines the entire job search lifecycle—from resume generation through application tracking to interview preparation. The system consists of three integrated subsystems:
+
+### 1. Job-Tailored Resume Generation & Logging
+Automates the creation of role-specific resumes by parsing job descriptions, extracting requirements, and generating targeted experience bullets and skills using LLM. Each job description is persisted with its parsed requirements, enabling resume generation to be traced back to source data for analytics and auditing.
+
+**Key capabilities:**
+- LLM-driven parsing of job descriptions into structured requirements
+- Per-role bullet generation optimized for token efficiency
+- Template-based PDF rendering with precise typography control
+- Resume versioning and bullet editability (override/exclude)
+
+### 2. Application Tracking & Metrics
+Tracks job applications from submission through final outcome, capturing status transitions (callbacks, rejections, closures) and enabling funnel analytics. Provides dimensional analysis across role, location, salary, and other attributes to identify success patterns.
+
+**Key capabilities:**
+- Application lifecycle tracking with timestamped status events
+- Multi-dimensional metrics dashboard (callback rates, rejection patterns, trends)
+- Company application history for avoiding duplicate applications
+- Interview process outcome tracking (offers, rejections, withdrawals)
+
+### 3. Interview Tracking & Preparation
+Manages interview scheduling and generates structured preparation materials (company context, callback drivers, background narratives, predicted questions) tailored to each interview stage. Preparation documents are dynamically rendered based on interview type (recruiter/technical/hiring manager).
+
+**Key capabilities:**
+- Interview scheduling with stage/focus/format tracking
+- LLM-generated preparation documents with markdown formatting
+- Dynamic view with interview dropdown for stage-specific content
+- Freeform interview notes integrated with application timeline
+
+### System Integration
+These subsystems share a unified data model where `Job` serves as the central entity. Requirements extracted during parsing inform resume generation. Applications link jobs to their generated resumes. Interviews link applications to preparation documents. This architecture enables end-to-end traceability from job posting through interview outcomes while maintaining clean separation of concerns across subsystems.
+
+## System Architecture
+```mermaid
+graph TB
+    subgraph "1. Resume Generation & Logging"
+        JD[Job Description] --> JDP[JD Parser]
+        JDP --> Job[(Job + Requirements)]
+        Job --> RW[Resume Writer]
+        RW --> Resume[(Resume + Bullets)]
+    end
+    
+    subgraph "2. Application Tracking"
+        Job --> App[Application]
+        App --> Status[Application Status]
+        App --> Interview[Interviews]
+        Interview --> Outcome[Interview Process Status]
+    end
+    
+    subgraph "3. Interview Preparation"
+        App --> PrepBase[Interview Prep Base]
+        Interview --> PrepSpec[Interview Preparation]
+        PrepBase -.context.-> PrepSpec
+    end
+    
+    Resume -.referenced by.-> App
+    
+    style JD fill:#e1f5ff
+    style Job fill:#fff4e1
+    style Resume fill:#e8f5e9
+    style App fill:#fff3e0
+    style PrepBase fill:#f3e5f5
+    style PrepSpec fill:#f3e5f5
+```
+
+**Data Flow:**
+1. **Resume Generation:** JD → Job/Requirements → Resume/Bullets → PDF
+2. **Application Tracking:** Job → Application → Status/Interviews → Outcomes
+3. **Interview Prep:** Application → Base Prep, Interview → Specific Prep
 
 ---
 
