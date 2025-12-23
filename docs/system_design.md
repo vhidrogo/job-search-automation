@@ -291,6 +291,7 @@ flowchart TD
 | max_salary | IntegerField | Maximum salary |
 | external_job_id | CharField | Company-provided job listing ID |
 | source | CharField | Origin of job listing (linkedin, company_site, indeed) |
+| raw_jd_text | TextField | Original job description text (stored for interview prep and re-parsing) |
 
 #### ContractJob
 | Field | Type | Description |
