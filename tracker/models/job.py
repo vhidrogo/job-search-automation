@@ -23,6 +23,7 @@ class Job(models.Model):
       - min_experience_years: Minimum experience required for the role.
       - min_salary / max_salary: Optional salary bounds.
       - external_job_id: Company-provided job ID from the job listing.
+      - raw_jd_text: Original job description text for interview prep generation.
     """
 
     class Source(models.TextChoices):
@@ -67,6 +68,10 @@ class Job(models.Model):
         null=True,
         db_index=True,
         help_text="Company-provided job ID from the job listing.",
+    )
+    raw_jd_text = models.TextField(
+        blank=True,
+        help_text="Original job description text. Used for interview prep generation and enables future re-parsing.",
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 from pypdf import PdfReader
 from typing import List
 
@@ -13,7 +14,7 @@ from resume.models import (
     TargetSpecialization,
     StylePath,
 )
-from resume.schemas import Metadata, RequirementSchema
+from resume.schemas import JDModel, Metadata, RequirementSchema
 from resume.services import JDParser, ResumeWriter
 from tracker.models import Application, Job, Requirement
 
@@ -73,14 +74,15 @@ class Orchestrator:
         print(f"\n{'='*60}")
         print("Parsing job description...")
 
-        parsed_jd = self.jd_parser.parse(jd_path)
+        jd_text = Path(jd_path).read_text()
+        parsed_jd = self.jd_parser.parse(jd_text=jd_text)
         self._print_parsed_metadata(parsed_jd.metadata)
 
         template = self._get_template(parsed_jd.metadata)
         print(f"\n{'='*60}")
         print(f"Fetched template: {template}")
 
-        job = self._persist_job_and_requirements(parsed_jd)
+        job = self._persist_job_and_requirements(parsed_jd, jd_text)
         print("Persisted Job")
 
         resume = self._create_resume(job, template)
@@ -146,11 +148,12 @@ class Orchestrator:
         print(f"Salary Range:         {salary_range}")
         print(f"{'='*60}")
     
-    def _persist_job_and_requirements(self, parsed_jd) -> Job:
+    def _persist_job_and_requirements(self, parsed_jd: JDModel, jd_text: str) -> Job:
         """Persist job metadata and requirements to database.
         
         Args:
             parsed_jd: Validated JDModel instance from parser.
+            jd_text: Job description text.
             
         Returns:
             Created Job instance.
@@ -169,6 +172,7 @@ class Orchestrator:
                 min_salary=parsed_jd.metadata.min_salary,
                 max_salary=parsed_jd.metadata.max_salary,
                 external_job_id=parsed_jd.metadata.external_job_id,
+                raw_jd_text=jd_text,
             )
             
             Requirement.bulk_create_from_parsed(job, parsed_jd.requirements)
