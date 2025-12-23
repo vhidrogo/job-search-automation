@@ -4,6 +4,8 @@ from django.utils import timezone
 
 class LlmRequestLog(models.Model):
     class CallType(models.TextChoices):
+        GENERATE_INTERVIEW_PREP_BASE = "generate_interivew_prep_base", "Generate Interview Prep Base"
+        GENERATE_INTERVIEW_PREP_SPECIFIC = "generate_interview_prep_specific", "Generate Interview Prep Specific"
         PARSE_JD = "parse_jd", "Parse Job Description"
         RESUME_BULLETS = "resume_bullets", "Resume Bullets"
         RESUME_SKILLS = "resume_skills", "Resume Skills"
