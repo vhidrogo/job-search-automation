@@ -96,7 +96,14 @@ class InterviewProcessStatusAdmin(admin.ModelAdmin):
 
 class JobAdmin(admin.ModelAdmin):
     search_fields = ["company", "listing_job_title"]
-    list_display = ["company", "listing_job_title", "role", "level", "view_company_applications_link"]
+    list_display = [
+        "company",
+        "listing_job_title",
+        "role",
+        "level",
+        "location",
+        "view_company_applications_link",
+    ]
     list_filter = ["role"]
     ordering = ["-created_at"]
     readonly_fields = ["resume"]
