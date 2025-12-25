@@ -16,7 +16,7 @@ from .models import (
     LlmRequestLog,
     Requirement,
 )
-from .utils import generate_base_prep_for_application
+from .utils import generate_base_prep_for_application, generate_prep_for_interview
 
 
 class InterviewInline(admin.TabularInline):
@@ -118,11 +118,44 @@ class InterviewAdmin(admin.ModelAdmin):
     formfield_overrides = {
         models.TextField: {"widget": forms.Textarea(attrs={"rows": 20, "cols": 60})},
     }
+    actions = ["generate_interview_prep_action"]
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context["upcoming_interviews_url"] = reverse("tracker:upcoming_interviews")
         return super().changelist_view(request, extra_context)
+    
+    def generate_interview_prep_action(modeladmin, request, queryset):
+        success_count = 0
+        error_count = 0
+        
+        for interview in queryset:
+            try:
+                created = generate_prep_for_interview(interview.id)
+                
+                if created:
+                    messages.success(
+                        request,
+                        f"{interview.application.job.company} - {interview.get_stage_display()}: prep created"
+                    )
+                    success_count += 1
+                else:
+                    messages.info(
+                        request,
+                        f"{interview.application.job.company} - {interview.get_stage_display()}: prep already exists"
+                    )
+                
+            except Exception as e:
+                messages.error(
+                    request,
+                    f"{interview.application.job.company} - {interview.get_stage_display()}: {str(e)}"
+                )
+                error_count += 1
+        
+        if success_count:
+            messages.success(request, f"Successfully generated prep for {success_count} interview(s)")
+        if error_count:
+            messages.error(request, f"Failed to process {error_count} interview(s)")
     
 
 class InterviewPreparationBaseAdmin(admin.ModelAdmin):
