@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
@@ -15,6 +15,7 @@ from .models import (
     LlmRequestLog,
     Requirement,
 )
+from .utils import generate_base_prep_for_application
 
 
 class InterviewInline(admin.TabularInline):
@@ -54,6 +55,7 @@ class ApplicationAdmin(admin.ModelAdmin):
     inlines = [
         InterviewInline,
     ]
+    actions = ["generate_base_prep_action"]
 
     def applied_date_no_time(self, obj):
         return timezone.localtime(obj.applied_date).date()
@@ -63,6 +65,39 @@ class ApplicationAdmin(admin.ModelAdmin):
         url = reverse("tracker:application_detail", args=[obj.id])
         return format_html("<a href='{}'>View Full Details →</a>", url)
     view_detail_link.short_description = "Quick Actions"
+
+    @admin.action(description="Generate base interview preparation")
+    def generate_base_prep_action(modeladmin, request, queryset):
+        success_count = 0
+        error_count = 0
+        
+        for application in queryset:
+            try:
+                created = generate_base_prep_for_application(application.id)
+                
+                if created:
+                    messages.success(
+                        request,
+                        f"{application.job.company} - {application.job.listing_job_title}: base prep created"
+                    )
+                    success_count += 1
+                else:
+                    messages.info(
+                        request,
+                        f"{application.job.company} - {application.job.listing_job_title}: base prep already exists"
+                    )
+                
+            except Exception as e:
+                messages.error(
+                    request,
+                    f"{application.job.company} - {application.job.listing_job_title}: {str(e)}"
+                )
+                error_count += 1
+        
+        if success_count:
+            messages.success(request, f"Successfully generated base prep for {success_count} application(s)")
+        if error_count:
+            messages.error(request, f"Failed to process {error_count} application(s)")
 
 
 class ApplicationStatusAdmin(admin.ModelAdmin):
