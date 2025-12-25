@@ -10,6 +10,7 @@ from .models import (
     ApplicationStatus,
     ContractJob,
     Interview,
+    InterviewPreparationBase,
     InterviewProcessStatus,
     Job,
     LlmRequestLog,
@@ -124,6 +125,43 @@ class InterviewAdmin(admin.ModelAdmin):
         return super().changelist_view(request, extra_context)
     
 
+class InterviewPreparationBaseAdmin(admin.ModelAdmin):
+    list_display = ['application', 'created_at', 'view_link']
+    readonly_fields = ['created_at', 'updated_at']
+    search_fields = ['application__job__company', 'application__job__listing_job_title']
+    
+    fieldsets = (
+        ('Application', {
+            'fields': ('application',)
+        }),
+        ('Formatted Job Description', {
+            'fields': ('formatted_jd',),
+            'classes': ('wide',)
+        }),
+        ('Company Context', {
+            'fields': ('company_context',),
+            'classes': ('wide',)
+        }),
+        ('Primary Callback Drivers', {
+            'fields': ('primary_drivers',),
+            'classes': ('wide',)
+        }),
+        ('Background Narrative', {
+            'fields': ('background_narrative',),
+            'classes': ('wide',)
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def view_link(self, obj):
+        url = reverse('tracker:interview_preparation', args=[obj.application.id])
+        return format_html('<a href="{}">View Prep</a>', url)
+    view_link.short_description = 'View'
+    
+
 class InterviewProcessStatusAdmin(admin.ModelAdmin):
     autocomplete_fields = ["application"]
     list_display = ["application", "outcome", "notes"]
@@ -160,6 +198,7 @@ admin.site.register(Application, ApplicationAdmin)
 admin.site.register(ApplicationStatus, ApplicationStatusAdmin)
 admin.site.register(ContractJob, ContractJobAdmin)
 admin.site.register(Interview, InterviewAdmin)
+admin.site.register(InterviewPreparationBase, InterviewPreparationBaseAdmin)
 admin.site.register(InterviewProcessStatus, InterviewProcessStatusAdmin)
 admin.site.register(Job, JobAdmin)
 admin.site.register(LlmRequestLog, LlmRequestLogAdmin)
