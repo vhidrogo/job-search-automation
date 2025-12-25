@@ -160,79 +160,79 @@ class InterviewAdmin(admin.ModelAdmin):
 
 
 class InterviewPreparationAdmin(admin.ModelAdmin):
-    list_display = ['interview', 'stage', 'created_at', 'view_link']
-    readonly_fields = ['created_at', 'updated_at']
+    list_display = ["interview", "stage", "created_at", "view_link"]
+    readonly_fields = ["created_at", "updated_at"]
     search_fields = [
-        'interview__application__job__company',
-        'interview__application__job__listing_job_title'
+        "interview__application__job__company",
+        "interview__application__job__listing_job_title"
     ]
-    list_filter = ['interview__stage']
+    list_filter = ["interview__stage"]
     
     fieldsets = (
-        ('Interview', {
-            'fields': ('interview',)
+        ("Interview", {
+            "fields": ("interview",)
         }),
-        ('Predicted Questions', {
-            'fields': ('predicted_questions',),
-            'classes': ('wide',)
+        ("Predicted Questions", {
+            "fields": ("predicted_questions",),
+            "classes": ("wide",)
         }),
-        ('Interviewer Questions', {
-            'fields': ('interviewer_questions',),
-            'classes': ('wide',)
+        ("Interviewer Questions", {
+            "fields": ("interviewer_questions",),
+            "classes": ("wide",)
         }),
-        ('Metadata', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
+        ("Metadata", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",)
         }),
     )
     
     def stage(self, obj):
         return obj.interview.get_stage_display()
-    stage.short_description = 'Stage'
-    stage.admin_order_field = 'interview__stage'
+    stage.short_description = "Stage"
+    stage.admin_order_field = "interview__stage"
     
     def view_link(self, obj):
-        url = reverse('tracker:interview_preparation', args=[obj.interview.application.id])
-        url += f'?interview_id={obj.interview.id}'
-        return format_html('<a href="{}">View Prep</a>', url)
-    view_link.short_description = 'View'
+        url = reverse("tracker:interview_preparation", args=[obj.interview.application.id])
+        url += f"?interview_id={obj.interview.id}"
+        return format_html("<a href='{}'>View Prep</a>", url)
+    view_link.short_description = "View"
     
 
 class InterviewPreparationBaseAdmin(admin.ModelAdmin):
-    list_display = ['application', 'created_at', 'view_link']
-    readonly_fields = ['created_at', 'updated_at']
-    search_fields = ['application__job__company', 'application__job__listing_job_title']
+    list_display = ["application", "created_at", "view_link"]
+    readonly_fields = ["created_at", "updated_at"]
+    search_fields = ["application__job__company", "application__job__listing_job_title"]
     
     fieldsets = (
-        ('Application', {
-            'fields': ('application',)
+        ("Application", {
+            "fields": ("application",)
         }),
-        ('Formatted Job Description', {
-            'fields': ('formatted_jd',),
-            'classes': ('wide',)
+        ("Formatted Job Description", {
+            "fields": ("formatted_jd",),
+            "classes": ("wide",)
         }),
-        ('Company Context', {
-            'fields': ('company_context',),
-            'classes': ('wide',)
+        ("Company Context", {
+            "fields": ("company_context",),
+            "classes": ("wide",)
         }),
-        ('Primary Callback Drivers', {
-            'fields': ('primary_drivers',),
-            'classes': ('wide',)
+        ("Primary Callback Drivers", {
+            "fields": ("primary_drivers",),
+            "classes": ("wide",)
         }),
-        ('Background Narrative', {
-            'fields': ('background_narrative',),
-            'classes': ('wide',)
+        ("Background Narrative", {
+            "fields": ("background_narrative",),
+            "classes": ("wide",)
         }),
-        ('Metadata', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
+        ("Metadata", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",)
         }),
     )
     
     def view_link(self, obj):
-        url = reverse('tracker:interview_preparation', args=[obj.application.id])
-        return format_html('<a href="{}">View Prep</a>', url)
-    view_link.short_description = 'View'
+        url = reverse("tracker:interview_preparation", args=[obj.application.id])
+        return format_html("<a href='{}'>View Prep</a>", url)
+    view_link.short_description = "View"
     
 
 class InterviewProcessStatusAdmin(admin.ModelAdmin):
