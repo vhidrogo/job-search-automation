@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Prep - {{ job.company }}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .header .meta {
+            color: #666;
+            font-size: 14px;
+        }
+        .interview-selector {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .interview-selector label {
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        .interview-selector select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            margin: 0 0 20px 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .section h3 {
+            color: #555;
+            margin: 20px 0 10px 0;
+        }
+        .section h4 {
+            color: #666;
+            margin: 15px 0 8px 0;
+        }
+        .markdown-content {
+            color: #333;
+        }
+        .markdown-content p {
+            margin: 10px 0;
+        }
+        .markdown-content ul, .markdown-content ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        .markdown-content li {
+            margin: 5px 0;
+        }
+        .markdown-content strong {
+            color: #000;
+            font-weight: 600;
+        }
+        .markdown-content code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .markdown-content pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .markdown-content hr {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 20px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        @media print {
+            body {
+                background: white;
+            }
+            .section {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                page-break-inside: avoid;
+            }
+            .interview-selector {
+                display: none;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>Interview Preparation</h1>
+        <div class="meta">
+            <strong>{{ job.listing_job_title }}</strong> at <strong>{{ job.company }}</strong><br>
+            {{ job.location }} • {{ job.work_setting }}
+        </div>
+    </div>
+
+    <div class="interview-selector">
+        <label for="interview-select">Interview Stage:</label>
+        <select id="interview-select" onchange="changeInterview()">
+            {% for interview in interviews %}
+            <option value="{{ interview.id }}" {% if interview.id == selected_interview.id %}selected{% endif %}>
+                {{ interview.get_stage_display }}
+                {% if interview.scheduled_at %}
+                    - {{ interview.scheduled_at|date:"M d, Y" }}
+                {% endif %}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Base Preparation Sections -->
+    <div class="section">
+        <h2>Job Description</h2>
+        <div class="markdown-content" id="formatted-jd"></div>
+    </div>
+
+    <div class="section">
+        <h2>Company & Product Context</h2>
+        <div class="markdown-content" id="company-context"></div>
+    </div>
+
+    <div class="section">
+        <h2>Primary Callback Drivers</h2>
+        <div class="markdown-content" id="primary-drivers"></div>
+    </div>
+
+    <div class="section">
+        <h2>Targeted Background Narrative</h2>
+        <div class="markdown-content" id="background-narrative"></div>
+    </div>
+
+    <!-- Interview-Specific Sections -->
+    {% if interview_prep %}
+    <div class="section">
+        <h2>Predicted Interview Questions & Responses</h2>
+        <div class="markdown-content" id="predicted-questions"></div>
+    </div>
+
+    <div class="section">
+        <h2>Interviewer-Aligned Questions</h2>
+        <div class="markdown-content" id="interviewer-questions"></div>
+    </div>
+    {% else %}
+    <div class="warning">
+        <strong>Note:</strong> Interview-specific preparation has not been generated for this interview yet.
+        Run the generation command to create it.
+    </div>
+    {% endif %}
+
+    <script>
+        // Render markdown content
+        function renderMarkdown() {
+            const sections = [
+                { id: 'formatted-jd', content: "{{ prep_base.formatted_jd|escapejs }}" },
+                { id: 'company-context', content: "{{ prep_base.company_context|escapejs }}" },
+                { id: 'primary-drivers', content: "{{ prep_base.primary_drivers|escapejs }}" },
+                { id: 'background-narrative', content: "{{ prep_base.background_narrative|escapejs }}" },
+                {% if interview_prep %}
+                { id: 'predicted-questions', content: "{{ interview_prep.predicted_questions|escapejs }}" },
+                { id: 'interviewer-questions', content: "{{ interview_prep.interviewer_questions|escapejs }}" },
+                {% endif %}
+            ];
+
+            sections.forEach(section => {
+                const element = document.getElementById(section.id);
+                if (element && section.content) {
+                    element.innerHTML = marked.parse(section.content);
+                }
+            });
+        }
+
+        function changeInterview() {
+            const select = document.getElementById('interview-select');
+            const interviewId = select.value;
+            const url = new URL(window.location);
+            url.searchParams.set('interview_id', interviewId);
+            window.location = url;
+        }
+
+        // Render on page load
+        renderMarkdown();
+    </script>
+</body>
+</html>
