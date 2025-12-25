@@ -96,7 +96,7 @@ class InterviewPrepGenerator:
             ValueError: If application has no associated resume.
             ValueError: If LLM output is malformed or fails validation.
         """
-        if not hasattr(interview.application, 'interview_prep_base'):
+        if not hasattr(interview.application, "interview_prep_base"):
             raise ValueError(
                 f"Base preparation must exist before generating interview-specific prep. "
                 f"Run generate_base_preparation() first for application {interview.application.id}"
@@ -144,7 +144,7 @@ class InterviewPrepGenerator:
         Raises:
             ValueError: If job has no associated resume.
         """
-        if not hasattr(job, 'resume'):
+        if not hasattr(job, "resume"):
             raise ValueError(f"Job {job.id} has no associated resume")
         
         resume = job.resume
