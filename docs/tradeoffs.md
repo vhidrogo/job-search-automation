@@ -503,6 +503,52 @@ This structure provides an elegant balance between normalization and practical u
 
 ---
 
+#### Interview Preparation Data Model: Granular Models vs Markdown Text Fields
+
+**Context:**  
+The interview preparation system generates structured content (company context, callback drivers, background narrative, predicted questions, interviewer questions) that users consume as complete documents during interview prep. The question was whether to model this content granularly (separate models for questions, answers, narrative sections) or store it as markdown text in minimal models.
+
+**Options Considered:**  
+1. **Granular models with separate Question/Answer objects:**  
+   - Create models like `PredictedQuestion`, `InterviewerQuestion`, `BackgroundNarrativeSection`.  
+   - Store each question, answer, and narrative component as separate database records.  
+2. **Minimal models with markdown text fields:**  
+   - `InterviewPreparationBase`: four markdown TextField (formatted_jd, company_context, primary_drivers, background_narrative).  
+   - `InterviewPreparation`: two markdown TextField (predicted_questions, interviewer_questions).  
+3. **Hybrid approach:**  
+   - Separate models for questions (to enable filtering/querying by question type).  
+   - Markdown fields for narrative sections.
+
+**Tradeoffs:**  
+- **Granular models:**  
+  - ✅ Enables querying individual questions or filtering by question type.  
+  - ✅ Schema-enforced structure for each component.  
+  - ✅ Facilitates analytics on question accuracy or user edits per question.  
+  - ❌ High model complexity (6-8 additional models).  
+  - ❌ Requires complex ORM queries to reconstruct full prep document.  
+  - ❌ Over-engineering for content consumed as complete documents.  
+  - ❌ Harder to edit in Django admin (navigate between related objects).  
+- **Minimal models with markdown:**  
+  - ✅ Simple schema (2 models total).  
+  - ✅ Natural consumption pattern—read entire prep doc without joins.  
+  - ✅ Easy editing in Django admin (single textarea per section).  
+  - ✅ Flexible—markdown allows formatting adjustments without schema changes.  
+  - ✅ Matches actual use case (users don't need to query/filter individual questions).  
+  - ❌ Cannot query or filter by individual questions.  
+  - ❌ Less structured—markdown parsing required for component extraction.  
+- **Hybrid approach:**  
+  - ✅ Structured questions, flexible narratives.  
+  - ❌ Inconsistent design pattern across preparation types.  
+  - ❌ Still adds schema complexity without clear benefit (no filtering requirement identified).
+
+**Decision:**  
+Adopt **minimal models with markdown text fields**. `InterviewPreparationBase` stores base content (formatted_jd, company_context, primary_drivers, background_narrative) and `InterviewPreparation` stores interview-specific content (predicted_questions, interviewer_questions). All content is markdown-formatted for flexibility and direct consumption.
+
+**Reflection:**  
+This decision prioritizes simplicity and alignment with actual usage patterns over speculative querying capabilities. The key insight is recognizing that interview preparation content is consumed holistically (users read entire documents), not queried atomically (no need to filter specific questions). Markdown provides sufficient structure for human readability while maintaining flexibility for future formatting changes. If future requirements emerge for question-level analytics or filtering (e.g., "show me all STAR answers mentioning X technology"), the markdown can be parsed or the schema refactored—but building granular models upfront would be premature optimization. The decision demonstrates restraint in data modeling: not every piece of text content requires its own table.
+
+---
+
 #### Interview Notes Storage: External Documents vs Integrated System Field
 
 **Context:**  

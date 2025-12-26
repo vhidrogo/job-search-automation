@@ -27,7 +27,7 @@ class Requirement(models.Model):
     )
 
     class Meta:
-        ordering = ['-relevance']
+        ordering = ["-relevance"]
         indexes = [
             models.Index(fields=["job", "relevance"]),
         ]

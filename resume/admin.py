@@ -19,83 +19,83 @@ from .models import (
 class ResumeRoleBulletInlineForm(forms.ModelForm):
     class Meta:
         model = ResumeRoleBullet
-        fields = ['text', 'override_text', 'exclude']
+        fields = ["text", "override_text", "exclude"]
         widgets = {
-            'override_text': forms.Textarea(attrs={'rows': 2, 'cols': 50}),
+            "override_text": forms.Textarea(attrs={"rows": 2, "cols": 50}),
         }
 
 
 class ResumeSkillsCategoryInlineForm(forms.ModelForm):
     class Meta:
         model = ResumeSkillsCategory
-        fields = ['category', 'skills_text', 'override_text', 'exclude']
+        fields = ["category", "skills_text", "override_text", "exclude"]
         widgets = {
-            'override_text': forms.Textarea(attrs={'rows': 2, 'cols': 50}),
+            "override_text": forms.Textarea(attrs={"rows": 2, "cols": 50}),
         }
 
 
 class ExperienceProjectInline(admin.TabularInline):
     model = ExperienceProject
-    fields = ['short_name']
+    fields = ["short_name"]
     extra = 0
 
 
 class ResumeRoleInline(admin.TabularInline):
     model = ResumeRole
     extra = 0
-    ordering = ['order']
-    readonly_fields = ['source_role']
-    fields = ['source_role', 'title']
+    ordering = ["order"]
+    readonly_fields = ["source_role"]
+    fields = ["source_role", "title"]
 
 
 class ResumeRoleBulletInline(admin.TabularInline):
     model = ResumeRoleBullet
     form = ResumeRoleBulletInlineForm
     extra = 0
-    ordering = ['order']
-    readonly_fields = ['text']
-    fields = ['text', 'exclude', 'override_text']
+    ordering = ["order"]
+    readonly_fields = ["text"]
+    fields = ["text", "exclude", "override_text"]
 
 
 class ResumeSkillsCategoryInline(admin.TabularInline):
     model = ResumeSkillsCategory
     form = ResumeSkillsCategoryInlineForm
     extra = 0
-    readonly_fields = ['category', 'skills_text']
-    fields = ['category', 'skills_text', 'override_text', 'exclude']
+    readonly_fields = ["category", "skills_text"]
+    fields = ["category", "skills_text", "override_text", "exclude"]
 
     
 class TemplateRoleConfigInline(admin.TabularInline):
     model = TemplateRoleConfig
     extra = 1
-    ordering = ['order']
+    ordering = ["order"]
 
 
 class ExperienceProjectAdmin(admin.ModelAdmin):
-    list_filter = ['experience_role']
-    search_fields = ['short_name', 'tools']
+    list_filter = ["experience_role"]
+    search_fields = ["short_name", "tools"]
     formfield_overrides = {
-        models.JSONField: {'widget': JSONEditorWidget},
+        models.JSONField: {"widget": JSONEditorWidget},
     }
 
 
 class ExperienceRoleAdmin(admin.ModelAdmin):
-    list_display = ['company', 'title', 'start_date', 'end_date', 'location']
-    ordering = ['-start_date']
+    list_display = ["company", "title", "start_date", "end_date", "location"]
+    ordering = ["-start_date"]
     inlines = [
         ExperienceProjectInline,
     ]
 
 
 class ResumeAdmin(admin.ModelAdmin):
-    search_fields = ['job__company']
-    actions = ['render_resume_to_pdf']
+    search_fields = ["job__company"]
+    actions = ["render_resume_to_pdf"]
     inlines = [
         ResumeRoleInline,
         ResumeSkillsCategoryInline,
     ]
     
-    @admin.action(description='Render resume to PDF')
+    @admin.action(description="Render resume to PDF")
     def render_resume_to_pdf(self, request, queryset):
         for resume in queryset:
             resume.render_to_pdf()
@@ -103,22 +103,22 @@ class ResumeAdmin(admin.ModelAdmin):
         count = queryset.count()
         self.message_user(
             request,
-            f'Successfully rendered {count} resume(s) to PDF.'
+            f"Successfully rendered {count} resume(s) to PDF."
         )
 
 
 class ResumeRoleAdmin(admin.ModelAdmin):
-    list_display = ['resume', 'source_role']
-    ordering = ['-resume__modified_at', 'order']
+    list_display = ["resume", "source_role"]
+    ordering = ["-resume__modified_at", "order"]
     inlines = [
         ResumeRoleBulletInline,
     ]
 
 
 class ResumeTemplateAdmin(admin.ModelAdmin):
-    list_display = ['id', 'target_role', 'target_level', 'target_specialization', 'description']
-    list_filter = ['target_role', 'target_level', 'target_specialization', 'is_custom']
-    readonly_fields = ['id']
+    list_display = ["id", "target_role", "target_level", "target_specialization", "description"]
+    list_filter = ["target_role", "target_level", "target_specialization", "is_custom"]
+    readonly_fields = ["id"]
     inlines = [
         TemplateRoleConfigInline,
     ]

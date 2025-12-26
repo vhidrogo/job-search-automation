@@ -286,12 +286,16 @@
             <form method="get">
                 <div class="filter-grid">
                     <div class="filter-item">
-                        <label>Start Date</label>
-                        <input type="date" name="start_date" value="{{ filters.start_date }}">
-                    </div>
-                    <div class="filter-item">
-                        <label>End Date</label>
-                        <input type="date" name="end_date" value="{{ filters.end_date }}">
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div>
+                                <label>Start Date</label>
+                                <input type="date" name="start_date" value="{{ filters.start_date }}">
+                            </div>
+                            <div>
+                                <label>End Date</label>
+                                <input type="date" name="end_date" value="{{ filters.end_date }}">
+                            </div>
+                        </div>
                     </div>
                     <div class="filter-item">
                         <label>Role</label>
@@ -306,6 +310,14 @@
                         <select name="work_setting" multiple size="3">
                             {% for setting in filter_options.work_settings %}
                             <option value="{{ setting }}" {% if setting in filters.work_setting %}selected{% endif %}>{{ setting }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>Source</label>
+                        <select name="source" multiple size="3">
+                            {% for source in filter_options.sources %}
+                            <option value="{{ source }}" {% if source in filters.source %}selected{% endif %}>{{ source }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -446,6 +458,20 @@
                     </div>
                     {% endfor %}
                 </div>
+
+                <!-- Source -->
+                <div class="dimension-card">
+                    <div class="dimension-card-title">Source</div>
+                    {% for item in callback_analysis.source %}
+                    <div class="dimension-item">
+                        <span class="dimension-value">{{ item.value }}</span>
+                        <div class="dimension-stats">
+                            <span class="dimension-count">{{ item.count }}</span>
+                            <span class="dimension-percent">({{ item.percent }}%)</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
                 
                 <!-- Min Experience Years -->
                 {% if callback_analysis.min_experience_years %}
@@ -534,6 +560,15 @@
                         </div>
                         {% endfor %}
                     </div>
+                    <div class="rejection-summary-section">
+                        <h4>Top Sources</h4>
+                        {% for item in rejection_summary.top_source %}
+                        <div class="rejection-item">
+                            <span>{{ item.value }}</span>
+                            <span><strong>{{ item.count }}</strong></span>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         {% else %}
@@ -550,6 +585,7 @@
                     <option value="specialization" {% if selected_dimension == 'specialization' %}selected{% endif %}>Specialization</option>
                     <option value="level" {% if selected_dimension == 'level' %}selected{% endif %}>Level</option>
                     <option value="location" {% if selected_dimension == 'location' %}selected{% endif %}>Location</option>
+                    <option value="source" {% if selected_dimension == 'source' %}selected{% endif %}>Source</option>
                 </select>
             </div>
             

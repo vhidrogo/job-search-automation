@@ -2,7 +2,7 @@ from typing import Any, Dict, Type, TypeVar
 from pydantic import BaseModel, ValidationError
 
 
-T = TypeVar('T', bound=BaseModel)
+T = TypeVar("T", bound=BaseModel)
 
 
 def validate_with_schema(data: Dict[str, Any], schema: Type[T]) -> T:

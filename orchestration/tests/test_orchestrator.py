@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import call, Mock, patch
 
 from django.test import TestCase
@@ -48,6 +49,7 @@ class TestOrchestrator(TestCase):
     TARGET_LEVEL = JobLevel.II
     TARGET_ROLE = JobRole.SOFTWARE_ENGINEER
     TARGET_SPECIALIZATION = TargetSpecialization.BACKEND
+    MOCK_JD_TEXT = "mock job description"
 
     @classmethod
     def setUpTestData(cls):
@@ -108,6 +110,13 @@ class TestOrchestrator(TestCase):
         cls.now = timezone.now()
 
     def setUp(self):
+        path_patcher = patch("orchestration.orchestrator.Path")
+        mock_path_class = path_patcher.start()
+        self.addCleanup(path_patcher.stop)
+        mock_path_instance = Mock()
+        mock_path_instance.read_text.return_value = self.MOCK_JD_TEXT
+        mock_path_class.return_value = mock_path_instance
+
         self.mock_jd_parser = Mock(spec=JDParser)
         self.mock_resume_writer = Mock(spec=ResumeWriter)
 
@@ -144,7 +153,7 @@ class TestOrchestrator(TestCase):
         self.orchestrator.run(self.JD_PATH, auto_open_pdf=False)
 
         # Verify Job was persisted
-        self.mock_jd_parser.parse.assert_called_once_with(self.JD_PATH)
+        self.mock_jd_parser.parse.assert_called_once_with(jd_text=self.MOCK_JD_TEXT)
         self.assertEqual(Job.objects.count(), 1)
         job = Job.objects.first()
         self.assertEqual(job.company, self.COMPANY)

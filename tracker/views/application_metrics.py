@@ -17,77 +17,78 @@ def application_metrics(request):
     Supports dynamic filtering by date range and all job dimensions.
     """
     filters = _get_filters_from_request(request)
-    selected_dimension = request.GET.get('dimension', 'role')
+    selected_dimension = request.GET.get("dimension", "role")
 
     applications = Application.objects.select_related(
-        'job', 'status', 'interview_process_status'
+        "job", "status", "interview_process_status"
     ).filter(**_build_filter_query(filters))
 
-    if filters['location']:
-        applications = _filter_by_grouped_location(applications, filters['location'])
+    if filters["location"]:
+        applications = _filter_by_grouped_location(applications, filters["location"])
 
     total_count = applications.count()
-    callback_count = applications.filter(status__state='callback').count()
-    rejected_count = applications.filter(status__state='rejected').count()
-    closed_count = applications.filter(status__state='closed').count()
+    callback_count = applications.filter(status__state="callback").count()
+    rejected_count = applications.filter(status__state="rejected").count()
+    closed_count = applications.filter(status__state="closed").count()
     no_response_count = applications.filter(status__isnull=True).count()
 
     overall_summary = {
-        'total': total_count,
-        'callbacks': {
-            'count': callback_count,
-            'percent': _safe_percentage(callback_count, total_count),
+        "total": total_count,
+        "callbacks": {
+            "count": callback_count,
+            "percent": _safe_percentage(callback_count, total_count),
         },
-        'rejected': {
-            'count': rejected_count,
-            'percent': _safe_percentage(rejected_count, total_count),
+        "rejected": {
+            "count": rejected_count,
+            "percent": _safe_percentage(rejected_count, total_count),
         },
-        'closed': {
-            'count': closed_count,
-            'percent': _safe_percentage(closed_count, total_count),
+        "closed": {
+            "count": closed_count,
+            "percent": _safe_percentage(closed_count, total_count),
         },
-        'no_response': {
-            'count': no_response_count,
-            'percent': _safe_percentage(no_response_count, total_count),
+        "no_response": {
+            "count": no_response_count,
+            "percent": _safe_percentage(no_response_count, total_count),
         },
     }
 
     volume_timeline = _build_volume_timeline(applications)
 
-    callbacks = applications.filter(status__state='callback')
+    callbacks = applications.filter(status__state="callback")
     callback_analysis = _analyze_dimension_breakdowns(callbacks)
     callback_timeline = _build_callback_timeline(callbacks)
 
-    rejections = applications.filter(status__state='rejected')
+    rejections = applications.filter(status__state="rejected")
     rejection_summary = _build_rejection_summary(rejections)
     
     dimension_deep_dive = _build_dimension_deep_dive(applications, selected_dimension)
 
     context = {
-        'overall_summary': overall_summary,
-        'volume_timeline': volume_timeline,
-        'callback_analysis': callback_analysis,
-        'callback_timeline': callback_timeline,
-        'rejection_summary': rejection_summary,
-        'dimension_deep_dive': dimension_deep_dive,
-        'selected_dimension': selected_dimension,
-        'filters': filters,
-        'filter_options': _get_filter_options(),
+        "overall_summary": overall_summary,
+        "volume_timeline": volume_timeline,
+        "callback_analysis": callback_analysis,
+        "callback_timeline": callback_timeline,
+        "rejection_summary": rejection_summary,
+        "dimension_deep_dive": dimension_deep_dive,
+        "selected_dimension": selected_dimension,
+        "filters": filters,
+        "filter_options": _get_filter_options(),
     }
 
-    return render(request, 'application_metrics.html', context)
+    return render(request, "application_metrics.html", context)
 
 
 def _get_filters_from_request(request):
     """Extract filter parameters from request."""
     return {
-        'start_date': request.GET.get('start_date'),
-        'end_date': request.GET.get('end_date'),
-        'role': request.GET.getlist('role'),
-        'specialization': request.GET.getlist('specialization'),
-        'level': request.GET.getlist('level'),
-        'location': request.GET.getlist('location'),
-        'work_setting': request.GET.getlist('work_setting'),
+        "start_date": request.GET.get("start_date"),
+        "end_date": request.GET.get("end_date"),
+        "role": request.GET.getlist("role"),
+        "specialization": request.GET.getlist("specialization"),
+        "level": request.GET.getlist("level"),
+        "location": request.GET.getlist("location"),
+        "work_setting": request.GET.getlist("work_setting"),
+        "source": request.GET.getlist("source"),
     }
 
 
@@ -107,32 +108,35 @@ def _build_filter_query(filters):
     """Build Django ORM filter dict from filter parameters."""
     query = {}
     
-    if filters['start_date']:
-        query['applied_date__gte'] = filters['start_date']
-    if filters['end_date']:
-        query['applied_date__lte'] = filters['end_date']
-    if filters['role']:
-        query['job__role__in'] = filters['role']
-    if filters['specialization']:
-        query['job__specialization__in'] = filters['specialization']
-    if filters['level']:
-        query['job__level__in'] = filters['level']
-    if filters['work_setting']:
-        query['job__work_setting__in'] = filters['work_setting']
+    if filters["start_date"]:
+        query["applied_date__gte"] = filters["start_date"]
+    if filters["end_date"]:
+        query["applied_date__lte"] = filters["end_date"]
+    if filters["role"]:
+        query["job__role__in"] = filters["role"]
+    if filters["specialization"]:
+        query["job__specialization__in"] = filters["specialization"]
+    if filters["level"]:
+        query["job__level__in"] = filters["level"]
+    if filters["work_setting"]:
+        query["job__work_setting__in"] = filters["work_setting"]
+    if filters["source"]:
+        query["job__source__in"] = filters["source"]
     
     return query
 
 
 def _get_filter_options():
-    all_locations = Job.objects.values_list('location', flat=True).distinct()
+    all_locations = Job.objects.values_list("location", flat=True).distinct()
     grouped_locations = sorted(set(_group_location(loc) for loc in all_locations))
 
     return {
-        'roles': Job.objects.values_list('role', flat=True).distinct().order_by('role'),
-        'specializations': Job.objects.exclude(specialization='').values_list('specialization', flat=True).distinct().order_by('specialization'),
-        'levels': Job.objects.values_list('level', flat=True).distinct().order_by('level'),
-        'locations': grouped_locations,
-        'work_settings': Job.objects.values_list('work_setting', flat=True).distinct().order_by('work_setting'),
+        "roles": Job.objects.values_list("role", flat=True).distinct().order_by("role"),
+        "specializations": Job.objects.exclude(specialization="").values_list("specialization", flat=True).distinct().order_by("specialization"),
+        "levels": Job.objects.values_list("level", flat=True).distinct().order_by("level"),
+        "locations": grouped_locations,
+        "work_settings": Job.objects.values_list("work_setting", flat=True).distinct().order_by("work_setting"),
+        "sources": Job.objects.values_list("source", flat=True).distinct().order_by("source"),
     }
 
 
@@ -148,15 +152,16 @@ def _analyze_dimension_breakdowns(queryset):
         return {}
     
     analysis = {
-        'total': total,
-        'role': _dimension_breakdown(queryset, 'job__role', total),
-        'specialization': _dimension_breakdown(queryset, 'job__specialization', total),
-        'level': _dimension_breakdown(queryset, 'job__level', total),
-        'location': _location_breakdown(queryset, total),
-        'work_setting': _dimension_breakdown(queryset, 'job__work_setting', total),
-        'min_experience_years': _dimension_breakdown(queryset, 'job__min_experience_years', total),
-        'min_salary_range': _salary_range_breakdown(queryset, 'min_salary', total),
-        'max_salary_range': _salary_range_breakdown(queryset, 'max_salary', total),
+        "total": total,
+        "role": _dimension_breakdown(queryset, "job__role", total),
+        "specialization": _dimension_breakdown(queryset, "job__specialization", total),
+        "level": _dimension_breakdown(queryset, "job__level", total),
+        "location": _location_breakdown(queryset, total),
+        "work_setting": _dimension_breakdown(queryset, "job__work_setting", total),
+        "source": _dimension_breakdown(queryset, "job__source", total),
+        "min_experience_years": _dimension_breakdown(queryset, "job__min_experience_years", total),
+        "min_salary_range": _salary_range_breakdown(queryset, "min_salary", total),
+        "max_salary_range": _salary_range_breakdown(queryset, "max_salary", total),
     }
     
     return analysis
@@ -168,14 +173,14 @@ def _dimension_breakdown(queryset, field, total):
     Returns list of dicts with value, count, and percent, sorted by count descending.
     """
     breakdown = queryset.values(field).annotate(
-        count=Count('id')
-    ).order_by('-count')
+        count=Count("id")
+    ).order_by("-count")
     
     return [
         {
-            'value': item[field] or 'Not specified',
-            'count': item['count'],
-            'percent': _safe_percentage(item['count'], total),
+            "value": item[field] or "Not specified",
+            "count": item["count"],
+            "percent": _safe_percentage(item["count"], total),
         }
         for item in breakdown
     ]
@@ -194,14 +199,14 @@ def _location_breakdown(queryset, total):
     
     result = [
         {
-            'value': location,
-            'count': count,
-            'percent': _safe_percentage(count, total),
+            "value": location,
+            "count": count,
+            "percent": _safe_percentage(count, total),
         }
         for location, count in location_counts.items()
     ]
     
-    return sorted(result, key=lambda x: x['count'], reverse=True)
+    return sorted(result, key=lambda x: x["count"], reverse=True)
 
 
 def _group_location(location):
@@ -210,39 +215,48 @@ def _group_location(location):
     Greater Seattle Area cities are grouped together.
     """
     if not location:
-        return 'Not specified'
+        return "Not specified"
     
-    location_lower = location.lower()
+    if location == "Remote (U.S.)":
+        return location
     
-    seattle_area_cities = [
-        'seattle',
-        'bellevue',
-        'redmond',
-        'kirkland',
-        'kent',
-        'renton',
-        'everett',
-        'tacoma',
-        'bothell',
-        'sammamish',
-        'issaquah',
-        'tukwila',
-        'silverdale',
-    ]
+    city = location.split(",")[0].lower()
     
-    for city in seattle_area_cities:
-        if city in location_lower:
-            return 'Greater Seattle Area'
-    
-    chicago_area_cities = [
-        'chicago',
-        'racine',
-        'aurora',
-    ]
+    seattle_area_cities = {
+        "seattle",
+        "bellevue",
+        "redmond",
+        "kirkland",
+        "kent",
+        "renton",
+        "everett",
+        "tacoma",
+        "bothell",
+        "sammamish",
+        "issaquah",
+        "tukwila",
+        "silverdale",
+        "seatac",
+    }
 
-    for city in chicago_area_cities:
-        if city in location_lower:
-            return 'Greater Chicago Area'
+    if city in seattle_area_cities:
+        return "Greater Seattle Area"
+    
+    chicago_area_cities = {
+        "chicago",
+        "aurora",
+    }
+
+    if city in chicago_area_cities:
+        return "Greater Chicago Area"
+    
+    milwaukee_area_cities = {
+        "milwaukee",
+        "racine",
+    }
+
+    if city in milwaukee_area_cities:
+        return "Greater Milwaukee Area"
     
     return location
 
@@ -253,10 +267,10 @@ def _salary_range_breakdown(queryset, field, total):
     Buckets: <$150k, $150k-$180k, $180k-$200k, >$200k
     """
     buckets = {
-        '< $150k': 0,
-        '$150k - $180k': 0,
-        '$180k - $200k': 0,
-        '> $200k': 0,
+        "< $150k": 0,
+        "$150k - $180k": 0,
+        "$180k - $200k": 0,
+        "> $200k": 0,
     }
     
     for app in queryset:
@@ -266,25 +280,25 @@ def _salary_range_breakdown(queryset, field, total):
             continue
         
         if salary < 150000:
-            buckets['< $150k'] += 1
+            buckets["< $150k"] += 1
         elif salary < 180000:
-            buckets['$150k - $180k'] += 1
+            buckets["$150k - $180k"] += 1
         elif salary < 200000:
-            buckets['$180k - $200k'] += 1
+            buckets["$180k - $200k"] += 1
         else:
-            buckets['> $200k'] += 1
+            buckets["> $200k"] += 1
     
     result = [
         {
-            'value': bucket,
-            'count': count,
-            'percent': _safe_percentage(count, total),
+            "value": bucket,
+            "count": count,
+            "percent": _safe_percentage(count, total),
         }
         for bucket, count in buckets.items()
         if count > 0
     ]
     
-    return sorted(result, key=lambda x: x['count'], reverse=True)
+    return sorted(result, key=lambda x: x["count"], reverse=True)
 
 
 def _build_volume_timeline(queryset):
@@ -299,7 +313,7 @@ def _build_volume_timeline(queryset):
         timeline[local_date] += 1
     
     result = [
-        {'date': date.isoformat(), 'count': count}
+        {"date": date.isoformat(), "count": count}
         for date, count in sorted(timeline.items())
     ]
     
@@ -330,8 +344,8 @@ def _build_callback_timeline(queryset):
     current_date = min_date
     while current_date <= max_date:
         result.append({
-            'date': current_date.isoformat(),
-            'count': callback_dates.get(current_date, 0)
+            "date": current_date.isoformat(),
+            "count": callback_dates.get(current_date, 0)
         })
         current_date += timedelta(days=1)
     
@@ -349,10 +363,11 @@ def _build_rejection_summary(queryset):
         return None
     
     summary = {
-        'total': total,
-        'top_role': _top_n_breakdown(queryset, 'job__role', 3),
-        'top_location': _top_n_location_breakdown(queryset, 3),
-        'top_work_setting': _top_n_breakdown(queryset, 'job__work_setting', 3),
+        "total": total,
+        "top_role": _top_n_breakdown(queryset, "job__role", 3),
+        "top_location": _top_n_location_breakdown(queryset, 3),
+        "top_work_setting": _top_n_breakdown(queryset, "job__work_setting", 3),
+        "top_source": _top_n_breakdown(queryset, "job__source", 3),
     }
     
     return summary
@@ -361,11 +376,11 @@ def _build_rejection_summary(queryset):
 def _top_n_breakdown(queryset, field, n):
     """Get top N values for a dimension."""
     breakdown = queryset.values(field).annotate(
-        count=Count('id')
-    ).order_by('-count')[:n]
+        count=Count("id")
+    ).order_by("-count")[:n]
     
     return [
-        {'value': item[field] or 'Not specified', 'count': item['count']}
+        {"value": item[field] or "Not specified", "count": item["count"]}
         for item in breakdown
     ]
 
@@ -385,7 +400,7 @@ def _top_n_location_breakdown(queryset, n):
     )[:n]
     
     return [
-        {'value': location, 'count': count}
+        {"value": location, "count": count}
         for location, count in sorted_locations
     ]
 
@@ -408,90 +423,91 @@ def _build_dimension_deep_dive(queryset, dimension):
     for each value in the dimension.
     """
     dimension_map = {
-        'role': 'job__role',
-        'specialization': 'job__specialization',
-        'level': 'job__level',
-        'location': None,
+        "role": "job__role",
+        "specialization": "job__specialization",
+        "level": "job__level",
+        "location": None,
+        "source": "job__source",
     }
     
     field = dimension_map.get(dimension)
     
-    if dimension == 'location':
+    if dimension == "location":
         return _build_location_deep_dive(queryset)
     
     value_stats = defaultdict(lambda: {
-        'total': 0,
-        'callbacks': 0,
-        'rejected': 0,
-        'closed': 0,
-        'no_response': 0,
+        "total": 0,
+        "callbacks": 0,
+        "rejected": 0,
+        "closed": 0,
+        "no_response": 0,
     })
     
     for app in queryset:
-        value = getattr(app.job, field.split('__')[1]) or 'Not specified'
-        value_stats[value]['total'] += 1
+        value = getattr(app.job, field.split("__")[1]) or "Not specified"
+        value_stats[value]["total"] += 1
         
-        if hasattr(app, 'status'):
+        if hasattr(app, "status"):
             state = app.status.state
-            if state == 'callback':
-                value_stats[value]['callbacks'] += 1
-            elif state == 'rejected':
-                value_stats[value]['rejected'] += 1
-            elif state == 'closed':
-                value_stats[value]['closed'] += 1
+            if state == "callback":
+                value_stats[value]["callbacks"] += 1
+            elif state == "rejected":
+                value_stats[value]["rejected"] += 1
+            elif state == "closed":
+                value_stats[value]["closed"] += 1
         else:
-            value_stats[value]['no_response'] += 1
+            value_stats[value]["no_response"] += 1
     
     result = [
         {
-            'value': value,
-            'total': stats['total'],
-            'callbacks': stats['callbacks'],
-            'rejected': stats['rejected'],
-            'closed': stats['closed'],
-            'no_response': stats['no_response'],
+            "value": value,
+            "total": stats["total"],
+            "callbacks": stats["callbacks"],
+            "rejected": stats["rejected"],
+            "closed": stats["closed"],
+            "no_response": stats["no_response"],
         }
         for value, stats in value_stats.items()
     ]
     
-    return sorted(result, key=lambda x: x['total'], reverse=True)
+    return sorted(result, key=lambda x: x["total"], reverse=True)
 
 
 def _build_location_deep_dive(queryset):
     """Build location deep dive with grouping."""
     location_stats = defaultdict(lambda: {
-        'total': 0,
-        'callbacks': 0,
-        'rejected': 0,
-        'closed': 0,
-        'no_response': 0,
+        "total": 0,
+        "callbacks": 0,
+        "rejected": 0,
+        "closed": 0,
+        "no_response": 0,
     })
     
     for app in queryset:
         grouped_location = _group_location(app.job.location)
-        location_stats[grouped_location]['total'] += 1
+        location_stats[grouped_location]["total"] += 1
         
-        if hasattr(app, 'status'):
+        if hasattr(app, "status"):
             state = app.status.state
-            if state == 'callback':
-                location_stats[grouped_location]['callbacks'] += 1
-            elif state == 'rejected':
-                location_stats[grouped_location]['rejected'] += 1
-            elif state == 'closed':
-                location_stats[grouped_location]['closed'] += 1
+            if state == "callback":
+                location_stats[grouped_location]["callbacks"] += 1
+            elif state == "rejected":
+                location_stats[grouped_location]["rejected"] += 1
+            elif state == "closed":
+                location_stats[grouped_location]["closed"] += 1
         else:
-            location_stats[grouped_location]['no_response'] += 1
+            location_stats[grouped_location]["no_response"] += 1
     
     result = [
         {
-            'value': location,
-            'total': stats['total'],
-            'callbacks': stats['callbacks'],
-            'rejected': stats['rejected'],
-            'closed': stats['closed'],
-            'no_response': stats['no_response'],
+            "value": location,
+            "total": stats["total"],
+            "callbacks": stats["callbacks"],
+            "rejected": stats["rejected"],
+            "closed": stats["closed"],
+            "no_response": stats["no_response"],
         }
         for location, stats in location_stats.items()
     ]
     
-    return sorted(result, key=lambda x: x['total'], reverse=True)
+    return sorted(result, key=lambda x: x["total"], reverse=True)

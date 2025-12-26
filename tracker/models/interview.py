@@ -11,21 +11,21 @@ class Interview(models.Model):
     """
     
     class Stage(models.TextChoices):
-        RECRUITER_SCREEN = 'recruiter_screen', 'Recruiter Screen'
-        HIRING_MANAGER_SCREEN = 'hiring_manager_screen', 'Hiring Manager Screen'
-        TECHNICAL_SCREEN = 'technical_screen', 'Technical Screen'
-        FINAL_LOOP = 'final_loop', 'Final Loop'
+        RECRUITER_SCREEN = "recruiter_screen", "Recruiter Screen"
+        HIRING_MANAGER_SCREEN = "hiring_manager_screen", "Hiring Manager Screen"
+        TECHNICAL_SCREEN = "technical_screen", "Technical Screen"
+        FINAL_LOOP = "final_loop", "Final Loop"
     
     class Format(models.TextChoices):
-        PHONE_CALL = 'phone_call', 'Phone Call'
-        VIRTUAL_MEETING = 'virtual_meeting', 'Virtual Meeting'
+        PHONE_CALL = "phone_call", "Phone Call"
+        VIRTUAL_MEETING = "virtual_meeting", "Virtual Meeting"
     
     class Focus(models.TextChoices):
-        CODING = 'coding', 'Coding'
-        SYSTEM_DESIGN = 'system_design', 'System Design'
-        BEHAVIORAL = 'behavioral', 'Behavioral'
-        HIRING_MANAGER = 'hiring_manager', 'Hiring Manager'
-        REFACTORING = 'refactoring', 'Refactoring / Code Quality'
+        CODING = "coding", "Coding"
+        SYSTEM_DESIGN = "system_design", "System Design"
+        BEHAVIORAL = "behavioral", "Behavioral"
+        HIRING_MANAGER = "hiring_manager", "Hiring Manager"
+        REFACTORING = "refactoring", "Refactoring / Code Quality"
     
     application = models.ForeignKey(
         "Application",

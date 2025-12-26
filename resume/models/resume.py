@@ -101,13 +101,13 @@ class Resume(models.Model):
     
     def get_css_content(self) -> str:
         """
-        Read and return the CSS content for this resume's style.
+        Read and return the CSS content for this resume"s style.
         
         Returns:
             CSS file content as a string.
         """
         css_path = Path(settings.BASE_DIR).joinpath("resume", "templates", self.style_path)
-        with open(css_path, 'r') as f:
+        with open(css_path, "r") as f:
             return f.read()
 
     def _generate_pdf_filename(self) -> str:
@@ -121,7 +121,7 @@ class Resume(models.Model):
 
     def _sanitize_filename(self, text: str) -> str:
         sanitized = text.replace(" ", "_")
-        sanitized = "".join(c for c in sanitized if c.isalnum() or c in ("_", "-", '&'))
+        sanitized = "".join(c for c in sanitized if c.isalnum() or c in ("_", "-", "&"))
 
         return sanitized
 
@@ -130,7 +130,7 @@ class Resume(models.Model):
         Build the context dictionary for template rendering.
         
         Returns:
-            Dictionary with 'experience' HTML string and 'skills' HTML string.
+            Dictionary with "experience" HTML string and "skills" HTML string.
         """
         context = {}
 
@@ -231,7 +231,7 @@ class Resume(models.Model):
             return ""
 
         html = "\n".join(
-            f'<div class="skill-category"><strong>{escape(x.category)}:</strong> {escape(x.display_text())}</div>'
+            f"<div class='skill-category'><strong>{escape(x.category)}:</strong> {escape(x.display_text())}</div>"
             for x in skill_bullets
         )
         
