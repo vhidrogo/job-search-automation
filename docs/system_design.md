@@ -1,12 +1,24 @@
 # Job Search Automation Platform - System Design
 
-*An integrated Django application for resume generation, application tracking, and interview preparation*
+*An integrated Django application for job discovery, resume generation, application tracking, and interview preparation*
 
 ## Overview
 
-The Job Search Automation System is a Django-based platform that automates and streamlines the entire job search lifecycle—from resume generation through application tracking to interview preparation. The system consists of three integrated subsystems:
+The Job Search Automation System is a Django-based platform that automates and streamlines the entire job search lifecycle—from job discovery through resume generation, application tracking, and interview preparation. The system consists of four integrated subsystems:
 
-### 1. Job-Tailored Resume Generation & Logging
+### 1. Job Discovery & Aggregation
+Automates discovery of job postings from company career sites and job boards, aggregating listings from multiple platforms (Workday, Greenhouse, Lever, Indeed) into a unified interface. Tracks user interactions (seen/interested/dismissed) and filters out previously applied positions to surface only new, relevant opportunities.
+
+**Key capabilities:**
+- Multi-platform job fetching via extensible client architecture
+- Automatic deduplication against applied jobs from tracker system
+- User interaction tracking (seen, interested, dismissed)
+- Seniority-level filtering (exclude senior/staff/principal roles)
+- Location-based filtering using platform-specific location IDs
+- Stale job detection and cleanup (jobs no longer appearing in API results)
+- Batch syncing via management command with keyword/location filters
+
+### 2. Job-Tailored Resume Generation & Logging
 Automates the creation of role-specific resumes by parsing job descriptions, extracting requirements, and generating targeted experience bullets and skills using LLM. Each job description is persisted with its parsed requirements, enabling resume generation to be traced back to source data for analytics and auditing.
 
 **Key capabilities:**
@@ -15,7 +27,7 @@ Automates the creation of role-specific resumes by parsing job descriptions, ext
 - Template-based PDF rendering with precise typography control
 - Resume versioning and bullet editability (override/exclude)
 
-### 2. Application Tracking & Metrics
+### 3. Application Tracking & Metrics
 Tracks job applications from submission through final outcome, capturing status transitions (callbacks, rejections, closures) and enabling funnel analytics. Provides dimensional analysis across role, location, salary, and other attributes to identify success patterns.
 
 **Key capabilities:**
@@ -24,7 +36,7 @@ Tracks job applications from submission through final outcome, capturing status 
 - Company application history for avoiding duplicate applications
 - Interview process outcome tracking (offers, rejections, withdrawals)
 
-### 3. Interview Tracking & Preparation
+### 4. Interview Tracking & Preparation
 Manages interview scheduling and generates structured preparation materials (company context, callback drivers, background narratives, predicted questions) tailored to each interview stage. Preparation documents are dynamically rendered based on interview type (recruiter/technical/hiring manager).
 
 **Key capabilities:**
@@ -34,26 +46,33 @@ Manages interview scheduling and generates structured preparation materials (com
 - Freeform interview notes integrated with application timeline
 
 ### System Integration
-These subsystems share a unified data model where `Job` serves as the central entity. Requirements extracted during parsing inform resume generation. Applications link jobs to their generated resumes. Interviews link applications to preparation documents. This architecture enables end-to-end traceability from job posting through interview outcomes while maintaining clean separation of concerns across subsystems.
+These subsystems share a unified data model where `Job` serves as the central entity. Job listings from discovery flow into the application pipeline when user decides to apply. Requirements extracted during parsing inform resume generation. Applications link jobs to their generated resumes. Interviews link applications to preparation documents. This architecture enables end-to-end traceability from job discovery through interview outcomes while maintaining clean separation of concerns across subsystems.
 
 ## System Architecture
 ```mermaid
 graph TB
-    subgraph "1. Resume Generation & Logging"
+    subgraph "1. Job Discovery"
+        Platform[Job Platforms] --> Fetcher[Platform Clients]
+        Fetcher --> Listing[(Job Listings)]
+        Listing -.filters out.-> Job
+        Listing --> UserAction[User Actions: seen/interested/dismissed]
+    end
+
+    subgraph "2. Resume Generation & Logging"
         JD[Job Description] --> JDP[JD Parser]
         JDP --> Job[(Job + Requirements)]
         Job --> RW[Resume Writer]
         RW --> Resume[(Resume + Bullets)]
     end
     
-    subgraph "2. Application Tracking"
+    subgraph "3. Application Tracking"
         Job --> App[Application]
         App --> Status[Application Status]
         App --> Interview[Interviews]
         Interview --> Outcome[Interview Process Status]
     end
     
-    subgraph "3. Interview Preparation"
+    subgraph "4. Interview Preparation"
         App --> PrepBase[Interview Prep Base]
         Interview --> PrepSpec[Interview Preparation]
         PrepBase -.context.-> PrepSpec
@@ -70,9 +89,10 @@ graph TB
 ```
 
 **Data Flow:**
-1. **Resume Generation:** JD → Job/Requirements → Resume/Bullets → PDF
-2. **Application Tracking:** Job → Application → Status/Interviews → Outcomes
-3. **Interview Prep:** Application → Base Prep, Interview → Specific Prep
+1. **Job Discovery:** Platform APIs → Client Fetch → Job Listings → User Review → Application
+2. **Resume Generation:** JD → Job/Requirements → Resume/Bullets → PDF
+3. **Application Tracking:** Job → Application → Status/Interviews → Outcomes
+4. **Interview Prep:** Application → Base Prep, Interview → Specific Prep
 
 ---
 
@@ -96,6 +116,8 @@ job_search_automation/ (Django Project)
 │   ├── prompts/                  # Interview preparation prompts
 │   ├── templates/                # HTML templates for views
 │   ├── views/                    # Application and Interview views
+│   ├── clients/                  # Platform API clients (WorkdayClient, etc.)
+│   ├── utils/                    # Job discovery utilities
 ├── orchestration/                # CLI / orchestration entrypoints (management commands or scripts)
 │   ├── orchestrator.py           # thin Orchestrator that imports resume + tracker logic and runs end-to-end
 │   ├── management/commands/      # CLI commands / Django commands (run_orchestrator.py)
@@ -110,6 +132,8 @@ job_search_automation/ (Django Project)
 | Class | Responsibility |
 |-------|----------------|
 | **ClaudeClient** | Wraps LLM API calls (`generate()`, `count_tokens()`), handles configuration and model defaults. |
+| **WorkdayClient** | Handles Workday API pagination, location filtering, and job fetching. Applies seniority filters and returns normalized job data. |
+| **JobFetcherService** | Coordinates job fetching across multiple companies/platforms, syncs results to database, marks stale jobs, and applies deduplication against tracker.Job records. |
 | **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skills()` to produce both experience and skill-section entries used by `Resume` rendering. |
 | **JDParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
 | **Orchestrator** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative flows. |
@@ -120,6 +144,38 @@ job_search_automation/ (Django Project)
 ---
 
 ## Functional Requirements
+
+### Job Discovery & Aggregation
+
+The system fetches job postings from multiple platforms and aggregates them into a unified review interface.
+
+#### Platform Support
+- **Workday**: Primary enterprise ATS platform (Nordstrom, Boeing, etc.)
+- **Future platforms**: Greenhouse, Lever, Ashby, Indeed (extensible architecture)
+
+#### Company Configuration
+- Company model stores platform type and active status
+- Platform-specific config models (WorkdayConfig, etc.) store API endpoints and location filters
+- Factory method `Company.get_job_fetcher()` returns appropriate client based on platform
+
+#### Fetching Process
+1. **Client initialization**: Platform client created from company config
+2. **API pagination**: Handles platform-specific pagination (Workday uses fixed 20-item pages)
+3. **Filtering**: Applies keyword, location, and seniority filters
+4. **Normalization**: Returns standardized job dict format across platforms
+5. **Syncing**: Updates database via `update_or_create`, tracking `last_fetched` timestamps
+6. **Stale detection**: Jobs not in current fetch marked as `is_stale=True`
+7. **Cleanup**: Stale jobs older than 30 days automatically deleted
+
+#### Deduplication
+- Fetched jobs filtered against `tracker.Job.external_job_id` to exclude applied positions
+- Prevents showing jobs user has already applied to via resume generation flow
+
+#### User Workflow
+1. Run sync command: `python manage.py sync_jobs --keywords engineer --location Seattle`
+2. Visit `/jobs/` to see unseen listings
+3. Review each job: mark as seen, interesting, or dismiss
+4. Next sync only shows NEW jobs since last review
 
 ### JD Ingestion
 - Read JD from a local file (e.g., `jd.txt`).
@@ -537,6 +593,41 @@ flowchart TD
 | outcome_date | DateField | When the outcome occurred or was recorded |
 | notes | TextField | Optional context about the outcome |
 
+#### Company
+| Field | Type | Description |
+|-------|------|-------------|
+| id | IntegerField | Primary key |
+| name | CharField | Company name (unique) |
+| platform | CharField | ATS platform (workday, greenhouse, lever, ashby) |
+| active | BooleanField | Whether to include in job syncing |
+
+#### WorkdayConfig
+| Field | Type | Description |
+|-------|------|-------------|
+| id | IntegerField | Primary key |
+| company | OneToOne(Company) | Associated company (platform must be workday) |
+| base_url | URLField | Workday careers site base URL |
+| tenant | CharField | Workday tenant identifier |
+| site | CharField | Workday site identifier |
+| location_filters | JSONField | Map of location names to Workday location IDs |
+
+#### JobListing
+| Field | Type | Description |
+|-------|------|-------------|
+| id | IntegerField | Primary key |
+| company | FK(Company) | Company posting this job |
+| external_id | CharField | Platform-specific job ID |
+| title | CharField | Job title |
+| location | CharField | Job location |
+| url | URLField | Link to job posting |
+| posted_on | CharField | Posted date from platform |
+| seen | BooleanField | User has reviewed this job |
+| interested | BooleanField | User flagged as potentially interesting |
+| dismissed | BooleanField | User dismissed as not a fit |
+| first_seen | DateTimeField | When job first appeared in sync |
+| last_fetched | DateTimeField | Last time job appeared in API results |
+| is_stale | BooleanField | No longer appears in API results |
+
 ### Interview Preparation Models
 
 The interview preparation system generates structured preparation documents for interviews, consisting of base analysis (generated once per application) and interview-specific content (generated per interview).
@@ -586,6 +677,32 @@ flowchart TD
 ## User-Facing Views
 
 The system provides several custom views beyond the Django admin interface for operational workflows and analysis.
+
+### Job Listings View (`/jobs/`)
+**Purpose**: Aggregated job discovery interface with filtering and interaction tracking  
+**Primary Use Case**: Review new job postings from multiple companies before deciding to apply
+
+**Features**:
+- Shows only unseen jobs by default (toggle to show all)
+- Filters out jobs user has already applied to (checks against `tracker.Job`)
+- Excludes dismissed and stale jobs
+- Company and keyword filters
+- Per-job actions: mark seen, mark interesting, dismiss
+- Stats display (total unseen count)
+
+**Interaction Workflow**:
+1. User reviews job title and company
+2. Clicks "View Job" to see full posting
+3. After review, marks as:
+   - **Seen**: Removes from default view (indicates reviewed)
+   - **Interesting**: Flags for follow-up (stays in view)
+   - **Dismiss**: Permanently hides (not a fit)
+
+**Key Implementation Details**:
+- AJAX endpoints for marking jobs without page reload
+- Queries `tracker.Job` for `external_job_id` to filter applied jobs
+- Default query: `seen=False, is_stale=False, dismissed=False, company__active=True`
+- Select-related optimization for company data
 
 ### Application Detail View (`/applications/<id>/`)
 **Purpose**: Comprehensive single-application reference page  
@@ -723,6 +840,7 @@ Incremental Build Plan
 | [x] Phase 7 | orchestration app End-to-end automation | Persisted resume + tracker models |
 | [x] Phase 8 | Analytics | dashboards: compute feedback loops & high-ROI insights |
 | [x] Phase 9 | Interview Preparation System | `InterviewPrepGenerator`, models, view, command |
+| [ ] Phase 10 | Job Discovery & Aggregation | `WorkdayClient`, `JobFetcherService`, models, views, sync command |
 
 ---
 
