@@ -116,8 +116,13 @@ job_search_automation/ (Django Project)
 │   ├── prompts/                  # Interview preparation prompts
 │   ├── templates/                # HTML templates for views
 │   ├── views/                    # Application and Interview views
+├── jobs/                         # Job discovery and aggregation
+│   ├── models/                   # JobListing, Company, platform configs
 │   ├── clients/                  # Platform API clients (WorkdayClient, etc.)
-│   ├── utils/                    # Job discovery utilities
+│   ├── services/                 # JobFetcherService
+│   ├── templates/                # Job listings view
+│   ├── views/                    # Job listings and interaction endpoints
+│   └── management/commands/      # sync_jobs command
 ├── orchestration/                # CLI / orchestration entrypoints (management commands or scripts)
 │   ├── orchestrator.py           # thin Orchestrator that imports resume + tracker logic and runs end-to-end
 │   ├── management/commands/      # CLI commands / Django commands (run_orchestrator.py)
@@ -356,8 +361,9 @@ To maintain modularity between the resume-generation domain and the job-tracking
 
 | App | Domain | Core Models | Responsibility |
 |------|---------|--------------|----------------|
-| **resume** | Resume generation | `ResumeTemplate`, `TemplateRoleConfig`, `Resume`, `ResumeSkillsCategory`, `ResumeSkillsCategory`, `ExperienceRole`, `ExperienceProject` | Manages templates, experience data, and generated resume artifacts. |
-| **tracker** | Job and application tracking | `Job`, `Requirement`, `ContractJob`, `Application`, `ApplicationStatus` | Manages job postings, parsed requirements, applications, and status updates. |
+| **jobs** | Job discovery | `Company`, `WorkdayConfig`, `JobListing` | Fetches and aggregates job postings from multiple platforms with user interaction tracking. |
+| **resume** | Resume generation | `ResumeTemplate`, `TemplateRoleConfig`, `Resume`, `ResumeSkillsCategory`, `ResumeRoleBullet`, `ExperienceRole`, `ExperienceProject` | Manages templates, experience data, and generated resume artifacts. |
+| **tracker** | Job and application tracking | `Job`, `Requirement`, `ContractJob`, `Application`, `ApplicationStatus`, `Interview`, `InterviewPreparationBase`, `InterviewPreparation` | Manages job postings, parsed requirements, applications, status updates, and interview preparation. |
 
 **Rationale:**
 - Keeps resume logic independent from job tracking logic.
@@ -399,6 +405,15 @@ Each directory includes an `__init__.py` file that imports all model classes, en
 ### Models by Domain Diagram
 ```mermaid
 flowchart TD
+    subgraph Jobs App
+        Comp[Company]
+        WC[WorkdayConfig]
+        JL[JobListing]
+
+        Comp --> WC
+        Comp --> JL
+    end
+
     subgraph Resume App
         RT[ResumeTemplate]
         TRC[TemplateRoleConfig]
@@ -593,6 +608,30 @@ flowchart TD
 | outcome_date | DateField | When the outcome occurred or was recorded |
 | notes | TextField | Optional context about the outcome |
 
+### Interview Preparation Models
+
+The interview preparation system generates structured preparation documents for interviews, consisting of base analysis (generated once per application) and interview-specific content (generated per interview).
+
+#### InterviewPreparationBase
+| Field | Type | Description |
+|-------|------|-------------|
+| id | IntegerField | Primary key |
+| application | OneToOne(Application) | Associated application |
+| formatted_jd | TextField | Markdown-formatted job description with bolded callback drivers |
+| company_context | TextField | Company product info, mission, team context (markdown) |
+| primary_drivers | TextField | 1-3 key resume screening signals with justifications (markdown) |
+| background_narrative | TextField | Opening line, core narrative, forward hook (markdown) |
+
+#### InterviewPreparation
+| Field | Type | Description |
+|-------|------|-------------|
+| id | IntegerField | Primary key |
+| interview | OneToOne(Interview) | Associated interview |
+| predicted_questions | TextField | 3-5 predicted questions with STAR responses (markdown) |
+| interviewer_questions | TextField | 5 strategic questions to ask with rationale (markdown) |
+
+### Job App Models
+
 #### Company
 | Field | Type | Description |
 |-------|------|-------------|
@@ -627,28 +666,6 @@ flowchart TD
 | first_seen | DateTimeField | When job first appeared in sync |
 | last_fetched | DateTimeField | Last time job appeared in API results |
 | is_stale | BooleanField | No longer appears in API results |
-
-### Interview Preparation Models
-
-The interview preparation system generates structured preparation documents for interviews, consisting of base analysis (generated once per application) and interview-specific content (generated per interview).
-
-#### InterviewPreparationBase
-| Field | Type | Description |
-|-------|------|-------------|
-| id | IntegerField | Primary key |
-| application | OneToOne(Application) | Associated application |
-| formatted_jd | TextField | Markdown-formatted job description with bolded callback drivers |
-| company_context | TextField | Company product info, mission, team context (markdown) |
-| primary_drivers | TextField | 1-3 key resume screening signals with justifications (markdown) |
-| background_narrative | TextField | Opening line, core narrative, forward hook (markdown) |
-
-#### InterviewPreparation
-| Field | Type | Description |
-|-------|------|-------------|
-| id | IntegerField | Primary key |
-| interview | OneToOne(Interview) | Associated interview |
-| predicted_questions | TextField | 3-5 predicted questions with STAR responses (markdown) |
-| interviewer_questions | TextField | 5 strategic questions to ask with rationale (markdown) |
 
 ---
 
@@ -700,7 +717,7 @@ The system provides several custom views beyond the Django admin interface for o
 
 **Key Implementation Details**:
 - AJAX endpoints for marking jobs without page reload
-- Queries `tracker.Job` for `external_job_id` to filter applied jobs
+- Cross-app query: `jobs.JobListing` excludes `tracker.Job.external_job_id`
 - Default query: `seen=False, is_stale=False, dismissed=False, company__active=True`
 - Select-related optimization for company data
 
