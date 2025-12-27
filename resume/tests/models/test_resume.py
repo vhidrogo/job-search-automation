@@ -15,6 +15,7 @@ from resume.models import (
     ResumeSkillsCategory,
     ResumeTemplate,
 )
+from resume.models.resume import STATE_LOCATION_OVERRIDES
 from tracker.models import Job, JobRole, JobLevel
 
 
@@ -232,6 +233,22 @@ class TestResumeModel(TestCase):
         
         skills_html = self._get_context("skills")
         self.assertNotIn(category, skills_html)
+
+    def test_render_to_pdf_uses_default_location(self):
+        self.resume.render_to_pdf()
+        location = self._get_context("location")
+        self.assertEqual(location, "Seattle, WA")
+
+    def test_render_to_pdf_uses_state_override(self):
+        state = "IL"
+        job = Job.objects.create(location=f"Some City, {state}")
+        resume = Resume.objects.create(job=job, template=self.template)
+
+        resume.render_to_pdf()
+
+        location = self._get_context("location")
+        self.assertEqual(location, STATE_LOCATION_OVERRIDES.get(state, ""))
+
 
     def test_str(self):
         self.assertEqual(str(self.resume), "Meta — Software Engineer - Resume")
