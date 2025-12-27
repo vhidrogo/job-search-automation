@@ -1,5 +1,6 @@
 from pathlib import Path
 from html import escape
+import re
 from typing import Dict
 from weasyprint import CSS, HTML
 
@@ -12,6 +13,16 @@ from django.utils.safestring import mark_safe
 from .experience_role import ExperienceRole
 from .resume_template import StylePath
 from .resume_role import ResumeRole
+
+
+STATE_LOCATION_OVERRIDES = {
+    "IL": "Chicago, IL",
+    "WI": "Racine, WI",
+}
+
+DEFAULT_LOCATION = "Seattle, WA"
+
+STATE_REGEX = re.compile(r",\s*([A-Z]{2})$")
 
 
 class Resume(models.Model):
@@ -139,10 +150,26 @@ class Resume(models.Model):
             entry_html = self._render_experience_entry(role)
             experience_entries.append(entry_html)
         
+        context["location"] = self._get_location()
         context["experience"] = mark_safe("\n\n".join(experience_entries))
         context["skills"] = self._render_skills()
         
         return context
+    
+    def _get_location(self):
+        """
+        Resolve the resume location based on the job's state.
+
+        Extracts a two-letter state code from the job location string (e.g. "City, ST").
+        If the state exists in STATE_LOCATION_OVERRIDES, returns the mapped display
+        location. Otherwise, falls back to DEFAULT_LOCATION.
+
+        Returns:
+            A formatted location string for use in the resume template.
+        """
+        m = STATE_REGEX.search(self.job.location)
+        state = m.group(1) if m else None
+        return STATE_LOCATION_OVERRIDES.get(state, DEFAULT_LOCATION)
 
     def _render_experience_entry(self, resume_role: ResumeRole) -> str:
         """
