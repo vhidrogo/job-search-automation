@@ -48,6 +48,7 @@ class ApplicationAdmin(admin.ModelAdmin):
         "job__company",
         "job__listing_job_title",
         "job__specialization",
+        "job__location",
         "status__state",
         "view_detail_link",
     ]
