@@ -36,7 +36,7 @@ Return a single JSON object matching exactly this structure:
   - Required Fields Only: infer conservatively if not explicitly stated.
   - Specialization: Extract only if the job description explicitly labels the role as Python, Backend, or Full Stack. Never infer. Omit if not explicitly stated.
   - Level: levels are relative to Amazon’s leveling structure; if the role’s level is unclear or ambiguous, determine the correct level by referencing that company’s closest Amazon-equivalent role.
-  - Location: only return city and abbreviated state like "Seattle, WA", if the job description mentions multiple locations, choose the one in Seattle area, if work_setting is remote, then return "Remote (U.S.)".
+  - Location: only return city and abbreviated state like "Seattle, WA", if the job description mentions multiple locations, choose the one in Seattle area or Chicago Area (in that order), if work_setting is remote, then return "Remote (U.S.)".
   - External Job ID: Extract any listing ID (e.g., after “Job ID”, “Req ID”, or alphanumeric like JR2025487769); return only the ID value; omit if none.
 - Exclude education/degree requirements.
 - Use valid JSON and include no explanations or extra text.
