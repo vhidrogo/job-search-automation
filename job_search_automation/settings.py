@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'tracker',
     'orchestration',
     'django_json_widget',
+    'jobs',
 ]
 
 MIDDLEWARE = [
