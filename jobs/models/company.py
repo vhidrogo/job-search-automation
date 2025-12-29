@@ -17,6 +17,11 @@ class Company(models.Model):
     
     name = models.CharField(max_length=200, unique=True, db_index=True)
     platform = models.CharField(max_length=50, choices=Platform.choices)
+    public_site_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text="Base URL for public job listings (e.g., https://nordstrom.wd501.myworkdayjobs.com/en-US/nordstrom_careers/)"
+    )
     active = models.BooleanField(
         default=True,
         help_text="Whether to include this company in job syncing"
