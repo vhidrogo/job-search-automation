@@ -3,7 +3,8 @@ from unittest.mock import Mock, patch
 
 from django.test import TestCase
 
-from jobs.clients import WorkdayClient, WorkdayClientError, WorkdayCompanyConfig
+from jobs.clients import WorkdayClient, WorkdayCompanyConfig
+from jobs.clients.exceptions import WorkdayClientError
 from jobs.models import Company, WorkdayConfig
 
 

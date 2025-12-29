@@ -1,1 +1,1 @@
-from .workday_client import WorkdayClient, WorkdayClientError, WorkdayCompanyConfig
+from .workday_client import WorkdayClient, WorkdayCompanyConfig

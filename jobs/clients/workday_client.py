@@ -2,16 +2,14 @@ import requests
 from typing import List, Dict, Optional
 from dataclasses import dataclass
 
+from jobs.clients.exceptions import WorkdayClientError
+
 
 HEADERS = {
     "Accept": "application/json",
     "Content-Type": "application/json",
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
 }
-
-
-class WorkdayClientError(Exception):
-    """Base exception for WorkdayClient failures."""
 
 
 @dataclass
