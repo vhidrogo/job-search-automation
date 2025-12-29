@@ -27,7 +27,7 @@ class JobListing(models.Model):
     
     title = models.CharField(max_length=500)
     location = models.CharField(max_length=200, blank=True)
-    url = models.URLField(max_length=1000)
+    url_path = models.CharField(max_length=1000, help_text="Relative job path from API")
     posted_on = models.CharField(max_length=100, blank=True)
     
     status = models.CharField(
