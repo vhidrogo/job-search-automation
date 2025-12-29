@@ -179,7 +179,7 @@
             <div class="job-meta" style="font-size: 13px;">
                 Posted: {{ job.posted_on }} | Last fetched: {{ job.last_fetched|date:"M d, Y" }}
             </div>
-            <p><a href="{{ job.url }}" target="_blank" style="color: #007bff;">View Job Posting →</a></p>
+            <p><a href="{{ job.company.public_site_url }}{{ job.url_path }}" target="_blank" style="color: #007bff;">View Job Posting →</a></p>
             
             <div class="job-actions">
                 {% if job.status == 'new' %}
