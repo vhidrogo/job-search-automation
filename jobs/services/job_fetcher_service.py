@@ -11,7 +11,13 @@ class JobFetcherService:
     """Service for fetching jobs from companies and syncing with database"""
     
     DEFAULT_EXCLUDE_SENIORITY = [
-        "Senior", "Sr.", "Staff", "Principal", "Lead", "Platform"
+        "Director",
+        "Lead",
+        "Manager",
+        "Principal",
+        "Senior",
+        "Sr.",
+        "Staff",
     ]
     STALE_JOB_CLEANUP_DAYS = 30
     
