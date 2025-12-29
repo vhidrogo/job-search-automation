@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 from jobs.models import Company
 
@@ -40,7 +41,7 @@ class JobListing(models.Model):
     
     first_seen = models.DateTimeField(auto_now_add=True)
     last_fetched = models.DateTimeField(
-        auto_now=True,
+        default=timezone.now,
         help_text="Last time this job appeared in API results"
     )
     is_stale = models.BooleanField(
