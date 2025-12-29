@@ -64,6 +64,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
+            BASE_DIR / 'jobs' / 'templates',
             BASE_DIR / 'resume' / 'templates',
             BASE_DIR / 'tracker' / 'templates',
         ],
