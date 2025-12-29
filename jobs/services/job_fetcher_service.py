@@ -107,7 +107,7 @@ class JobFetcherService:
                 defaults={
                     "title": job_data["title"],
                     "location": job_data["location"],
-                    "url": job_data["url"],
+                    "url_path": job_data["url"],
                     "posted_on": job_data["posted_on"],
                     "last_fetched": timezone.now(),
                     "is_stale": False,
