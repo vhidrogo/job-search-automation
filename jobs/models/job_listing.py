@@ -7,9 +7,13 @@ from jobs.models import Company
 class JobListing(models.Model):
     """
     Represents a job posting fetched from a company's job board.
-    Tracks user interaction: seen, interested, dismissed.
-    Named JobListing to avoid confusion with tracker.Job (applied jobs).
     """
+
+    class Status(models.TextChoices):
+        NEW = 'new', 'New'
+        INTERESTED = 'interested', 'Interested'
+        DISMISSED = 'dismissed', 'Dismissed'
+        APPLIED = 'applied', 'Applied'
     
     company = models.ForeignKey(
         Company,
@@ -26,20 +30,13 @@ class JobListing(models.Model):
     url = models.URLField(max_length=1000)
     posted_on = models.CharField(max_length=100, blank=True)
     
-    seen = models.BooleanField(
-        default=False,
-        help_text="User has reviewed this job"
-    )
-    interested = models.BooleanField(
-        default=False,
-        help_text="User marked as potentially interesting"
-    )
-    dismissed = models.BooleanField(
-        default=False,
-        help_text="User dismissed as not a fit"
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.NEW,
+        help_text="Current review status of this job listing"
     )
     
-    first_seen = models.DateTimeField(auto_now_add=True)
     last_fetched = models.DateTimeField(
         default=timezone.now,
         help_text="Last time this job appeared in API results"
@@ -51,9 +48,9 @@ class JobListing(models.Model):
     
     class Meta:
         unique_together = [["company", "external_id"]]
-        ordering = ["-first_seen"]
+        ordering = ["-last_fetched"]
         indexes = [
-            models.Index(fields=["seen", "is_stale", "dismissed"]),
+            models.Index(fields=["status", "is_stale"]),
             models.Index(fields=["company", "external_id"]),
         ]
     
