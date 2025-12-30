@@ -13,7 +13,7 @@ Automates discovery of job postings from company career sites and job boards, ag
 - Multi-platform job fetching via extensible client architecture
 - Automatic deduplication against applied jobs from tracker system
 - User status tracking (new, interested, dismissed, applied)
-- Seniority-level filtering (exclude senior/staff/principal roles)
+- Search configuration management (search terms with role-specific exclusions via SearchConfig model)
 - Location-based filtering using platform-specific location IDs
 - Stale job detection and cleanup (jobs no longer appearing in API results)
 - Batch syncing via management command with keyword/location filters
@@ -138,7 +138,7 @@ job_search_automation/ (Django Project)
 |-------|----------------|
 | **ClaudeClient** | Wraps LLM API calls (`generate()`, `count_tokens()`), handles configuration and model defaults. |
 | **WorkdayClient** | Handles Workday API pagination, location filtering, and job fetching. Applies seniority filters and returns normalized job data. |
-| **JobFetcherService** | Coordinates job fetching across multiple companies/platforms, syncs results to database, marks stale jobs, and automatically sets status=APPLIED for jobs found in tracker.Job (scoped by company) to maintain consistency. |
+| **JobFetcherService** | Coordinates job fetching across multiple companies/platforms and search configurations. Applies search-specific title exclusions (via SearchConfig), syncs results to database, marks stale jobs, and automatically sets status=APPLIED for jobs found in tracker.Job (scoped by company). |
 | **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skills()` to produce both experience and skill-section entries used by `Resume` rendering. |
 | **JDParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
 | **Orchestrator** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative flows. |
@@ -165,8 +165,7 @@ The system fetches job postings from multiple platforms and aggregates them into
 
 #### Syncing Process
 1. **Client initialization**: Platform client created from company config
-2. **API pagination**: Handles platform-specific pagination (Workday uses fixed 20-item pages)
-3. **Filtering**: Applies keyword, location, and seniority filters
+3. **Search-based filtering**: Applies location filters and search-specific title exclusions (configured via SearchConfig model)
 4. **Normalization**: Returns standardized job dict format across platforms
 5. **Applied job detection**: Checks fetched jobs against tracker.Job records for the company and marks matching jobs as APPLIED
 6. **Syncing**: Updates database via `update_or_create`, tracking `last_fetched` timestamps
@@ -192,8 +191,29 @@ Status transitions are managed through:
 2. **User actions**: View provides controls to transition between NEW → INTERESTED → APPLIED or NEW → DISMISSED
 3. **Immutable applied status**: Once marked APPLIED (either via sync or user action), jobs maintain this status
 
+#### Search Configuration Management
+Job filtering is configured per search term via the SearchConfig model:
+
+- Each active SearchConfig defines a search term (e.g., "Software Engineer", "Data Analyst")
+- Each config can specify exclusion terms (e.g., ["Senior", "Staff", "Principal"])
+- Exclusion logic is handled in JobFetcherService after fetching, not in platform clients
+- Configuration is managed via Django admin without code changes
+- New search terms can be added dynamically without modifying code
+
+**Service behavior:**
+- When `keywords` parameter is provided, syncs only SearchConfigs where search_term contains the keyword
+- When `keywords` is omitted, syncs all active SearchConfigs
+- This enables both exploratory searches and standardized role-based syncing
+
+**Example configurations:**
+- SearchConfig(search_term="Software Engineer", exclude_terms=["Staff", "Principal", "Frontend"])
+- SearchConfig(search_term="Data Analyst", exclude_terms=[])
+- SearchConfig(search_term="Business Intelligence Engineer", exclude_terms=["Director", "Manager"])
+
+This design allows flexible search exploration while maintaining role-specific filtering rules.
+
 #### User Workflow
-1. Run sync command: `python manage.py sync_jobs --keywords engineer --location Seattle`
+1. Run sync command: `python manage.py sync_jobs --keywords engineer --location Seattle` (filters to search configs containing "engineer", or omit --keywords to sync all active configs)
 2. Visit `/jobs/` to see new listings (default filter: `status=NEW`)
 3. Review each job and update status:
    - Mark as **INTERESTED** to flag for potential application
@@ -673,6 +693,14 @@ The interview preparation system generates structured preparation documents for 
 | site | CharField | Workday site identifier |
 | location_filters | JSONField | Map of location names to Workday location IDs |
 
+#### SearchConfig
+| Field | Type | Description |
+|-------|------|-------------|
+| id | IntegerField | Primary key |
+| search_term | CharField | Primary search keyword (e.g., "Software Engineer", "Data Analyst") - unique |
+| exclude_terms | JSONField | List of terms to exclude from job titles |
+| active | BooleanField | Include in automated syncs |
+
 #### JobListing
 | Field | Type | Description |
 |-------|------|-------------|
@@ -886,7 +914,7 @@ Incremental Build Plan
 | [x] Phase 7 | orchestration app End-to-end automation | Persisted resume + tracker models |
 | [x] Phase 8 | Analytics | dashboards: compute feedback loops & high-ROI insights |
 | [x] Phase 9 | Interview Preparation System | `InterviewPrepGenerator`, models, view, command |
-| [ ] Phase 10 | Job Discovery & Aggregation | `WorkdayClient`, `JobFetcherService`, models, views, sync command |
+| [x] Phase 10 | Job Discovery & Aggregation | `WorkdayClient`, `JobFetcherService`, models, views, sync command |
 
 ---
 
