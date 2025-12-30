@@ -62,7 +62,7 @@ class WorkdayClient:
             verbose: Print progress messages
             
         Returns:
-            List of job dicts: {company_name, title, location, url, posted_on, external_id}
+            List of job dicts: {company_name, title, location, url_path, posted_on, external_id}
         """
         location_ids = self._get_location_ids(location)
         
@@ -138,7 +138,7 @@ class WorkdayClient:
             "company_name": self.config.name,
             "title": job.get("title", ""),
             "location": job.get("locationsText", ""),
-            "url": job.get("externalPath", ""),
+            "url_path": job.get("externalPath", ""),
             "posted_on": job.get("postedOn", ""),
             "external_id": job.get("bulletFields", [None])[0] or job.get("externalPath", "").split("/")[-1],
         }
