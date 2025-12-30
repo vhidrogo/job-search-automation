@@ -5,6 +5,7 @@ from django.utils import timezone
 from jobs.clients.exceptions import JobFetcherClientError
 from jobs.models import Company, JobListing
 from jobs.services.exceptions import JobFetcherServiceError
+from tracker.models import Job
 
 
 class JobFetcherService:
@@ -91,9 +92,15 @@ class JobFetcherService:
     def _sync_jobs_to_database(self, company, jobs):
         """
         Sync fetched jobs to database and return stats.
-        
-        Creates/updates job records, marks missing jobs as stale.
+    
+        Creates/updates job records, marks missing jobs as stale,
+        sets status=APPLIED for jobs user has already applied to.
         """
+        applied_external_ids = set(
+            Job.objects.filter(company=company.name)
+            .values_list("external_job_id", flat=True)
+        )
+        
         fetched_ids = set()
         new_count = 0
         updated_count = 0
@@ -101,7 +108,7 @@ class JobFetcherService:
         for job_data in jobs:
             fetched_ids.add(job_data["external_id"])
             
-            _, created = JobListing.objects.update_or_create(
+            job_listing, created = JobListing.objects.update_or_create(
                 company=company,
                 external_id=job_data["external_id"],
                 defaults={
@@ -113,6 +120,10 @@ class JobFetcherService:
                     "is_stale": False,
                 }
             )
+
+            if job_data["external_id"] in applied_external_ids:
+                job_listing.status = JobListing.Status.APPLIED
+                job_listing.save(update_fields=["status"])
             
             if created:
                 new_count += 1
