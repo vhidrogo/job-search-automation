@@ -50,7 +50,6 @@ class WorkdayClient:
         self,
         keywords: Optional[str] = None,
         location: Optional[str] = None,
-        exclude_seniority: Optional[List[str]] = None,
         max_results: Optional[int] = None,
     ) -> List[Dict]:
         """
@@ -59,7 +58,6 @@ class WorkdayClient:
         Args:
             keywords: Search keywords (server-side filter)
             location: Location name (uses location_id if configured)
-            exclude_seniority: Terms to exclude from titles
             max_results: Maximum number of jobs to return
             verbose: Print progress messages
             
@@ -82,9 +80,6 @@ class WorkdayClient:
                 break
             
             for job in jobs:
-                if self._should_exclude(job["title"], exclude_seniority):
-                    continue
-                
                 all_jobs.append(self._normalize_job(job))
             
             if max_results and len(all_jobs) >= max_results:
@@ -136,12 +131,6 @@ class WorkdayClient:
             raise WorkdayClientError(
                 f"Failed to fetch jobs from Workday for {self.config.name}"
             ) from e
-
-    def _should_exclude(self, title, exclude_seniority):
-        """Check if job title should be excluded based on seniority filters."""
-        if not exclude_seniority:
-            return False
-        return any(term.lower() in title.lower() for term in exclude_seniority)
 
     def _normalize_job(self, job):
         """Normalize Workday job data to standard format."""

@@ -77,20 +77,6 @@ class TestWorkdayClient(TestCase):
         jobs = self.client.fetch_jobs()
         self.assertEqual(jobs, [])
 
-    def test_fetch_jobs_excludes_seniority_terms(self):
-        self.mock_post.return_value.json.return_value = {
-            "total": 2,
-            "jobPostings": [
-                {"title": "Senior Software Engineer", "externalPath": "/job/1"},
-                {"title": "Software Engineer", "externalPath": "/job/2"},
-            ],
-        }
-
-        jobs = self.client.fetch_jobs(exclude_seniority=["Senior"])
-        
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(jobs[0]["title"], "Software Engineer")
-
     def test_fetch_jobs_applies_location_filter(self):
         self.client.fetch_jobs(location=self.LOCATION_NAME)
 
