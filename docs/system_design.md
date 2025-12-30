@@ -12,7 +12,7 @@ Automates discovery of job postings from company career sites and job boards, ag
 **Key capabilities:**
 - Multi-platform job fetching via extensible client architecture
 - Automatic deduplication against applied jobs from tracker system
-- User interaction tracking (seen, interested, dismissed)
+- User status tracking (new, interested, dismissed, applied)
 - Seniority-level filtering (exclude senior/staff/principal roles)
 - Location-based filtering using platform-specific location IDs
 - Stale job detection and cleanup (jobs no longer appearing in API results)
@@ -138,7 +138,7 @@ job_search_automation/ (Django Project)
 |-------|----------------|
 | **ClaudeClient** | Wraps LLM API calls (`generate()`, `count_tokens()`), handles configuration and model defaults. |
 | **WorkdayClient** | Handles Workday API pagination, location filtering, and job fetching. Applies seniority filters and returns normalized job data. |
-| **JobFetcherService** | Coordinates job fetching across multiple companies/platforms, syncs results to database, marks stale jobs, and applies deduplication against tracker.Job records. |
+| **JobFetcherService** | Coordinates job fetching across multiple companies/platforms, syncs results to database, marks stale jobs, and automatically sets status=APPLIED for jobs found in tracker.Job (scoped by company) to maintain consistency. |
 | **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skills()` to produce both experience and skill-section entries used by `Resume` rendering. |
 | **JDParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
 | **Orchestrator** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative flows. |
@@ -163,24 +163,46 @@ The system fetches job postings from multiple platforms and aggregates them into
 - Platform-specific config models (WorkdayConfig, etc.) store API endpoints and location filters
 - Factory method `Company.get_job_fetcher()` returns appropriate client based on platform
 
-#### Fetching Process
+#### Syncing Process
 1. **Client initialization**: Platform client created from company config
 2. **API pagination**: Handles platform-specific pagination (Workday uses fixed 20-item pages)
 3. **Filtering**: Applies keyword, location, and seniority filters
 4. **Normalization**: Returns standardized job dict format across platforms
-5. **Syncing**: Updates database via `update_or_create`, tracking `last_fetched` timestamps
-6. **Stale detection**: Jobs not in current fetch marked as `is_stale=True`
-7. **Cleanup**: Stale jobs older than 30 days automatically deleted
+5. **Applied job detection**: Checks fetched jobs against tracker.Job records for the company and marks matching jobs as APPLIED
+6. **Syncing**: Updates database via `update_or_create`, tracking `last_fetched` timestamps
+7. **Stale detection**: Jobs not in current fetch marked as `is_stale=True`
+8. **Cleanup**: Stale jobs older than 30 days automatically deleted
 
 #### Deduplication
-- Fetched jobs filtered against `tracker.Job.external_job_id` to exclude applied positions
-- Prevents showing jobs user has already applied to via resume generation flow
+- During sync, fetched jobs are checked against `tracker.Job.external_job_id` (scoped to company)
+- Jobs found in tracker are automatically set to `status=APPLIED` in JobListing
+- This prevents duplicate applications and maintains consistency across views
+- Applied jobs are excluded from default view but visible when filtering by "Applied" status
+
+#### Status Management
+Job listings track their review state through a single `status` field with four possible values:
+
+- **NEW**: Default state for all fetched jobs (unless already applied via tracker.Job)
+- **INTERESTED**: User has flagged job for potential application
+- **DISMISSED**: User has rejected job as not a fit
+- **APPLIED**: Job was found in tracker.Job during sync (user already applied)
+
+Status transitions are managed through:
+1. **Automatic sync detection**: JobFetcherService sets status=APPLIED for jobs matching tracker.Job records
+2. **User actions**: View provides controls to transition between NEW → INTERESTED → APPLIED or NEW → DISMISSED
+3. **Immutable applied status**: Once marked APPLIED (either via sync or user action), jobs maintain this status
 
 #### User Workflow
 1. Run sync command: `python manage.py sync_jobs --keywords engineer --location Seattle`
-2. Visit `/jobs/` to see unseen listings
-3. Review each job: mark as seen, interesting, or dismiss
-4. Next sync only shows NEW jobs since last review
+2. Visit `/jobs/` to see new listings (default filter: `status=NEW`)
+3. Review each job and update status:
+   - Mark as **INTERESTED** to flag for potential application
+   - Mark as **DISMISSED** to hide permanently
+   - Bulk action: "Mark All as Dismissed" for remaining new jobs
+4. Switch to interested view (`status=INTERESTED`) to see flagged jobs
+5. Apply to jobs, then mark as **APPLIED** to remove from interested view
+6. Bulk action: "Mark All as Applied" for remaining interested jobs
+7. Next sync only shows NEW jobs that haven't been reviewed
 
 ### JD Ingestion
 - Read JD from a local file (e.g., `jd.txt`).
@@ -638,6 +660,7 @@ The interview preparation system generates structured preparation documents for 
 | id | IntegerField | Primary key |
 | name | CharField | Company name (unique) |
 | platform | CharField | ATS platform (workday, greenhouse, lever, ashby) |
+| public_site_url | URLField | Base URL for public job listings (e.g., https://nordstrom.wd501.myworkdayjobs.com/en-US/nordstrom_careers/) |
 | active | BooleanField | Whether to include in job syncing |
 
 #### WorkdayConfig
@@ -658,12 +681,9 @@ The interview preparation system generates structured preparation documents for 
 | external_id | CharField | Platform-specific job ID |
 | title | CharField | Job title |
 | location | CharField | Job location |
-| url | URLField | Link to job posting |
+| url_path | CharField | Relative job path from API (combined with company.public_site_url for full URL) |
 | posted_on | CharField | Posted date from platform |
-| seen | BooleanField | User has reviewed this job |
-| interested | BooleanField | User flagged as potentially interesting |
-| dismissed | BooleanField | User dismissed as not a fit |
-| first_seen | DateTimeField | When job first appeared in sync |
+| status | CharField | Current review status (new, interested, dismissed, applied) |
 | last_fetched | DateTimeField | Last time job appeared in API results |
 | is_stale | BooleanField | No longer appears in API results |
 
@@ -696,30 +716,39 @@ flowchart TD
 The system provides several custom views beyond the Django admin interface for operational workflows and analysis.
 
 ### Job Listings View (`/jobs/`)
-**Purpose**: Aggregated job discovery interface with filtering and interaction tracking  
+**Purpose**: Aggregated job discovery interface with status filtering and interaction tracking  
 **Primary Use Case**: Review new job postings from multiple companies before deciding to apply
 
 **Features**:
-- Shows only unseen jobs by default (toggle to show all)
-- Filters out jobs user has already applied to (checks against `tracker.Job`)
-- Excludes dismissed and stale jobs
+- Status filter with options: All, New (default), Interested, Dismissed, Applied
+- Automatically excludes stale jobs from all views
+- Applied jobs (from tracker.Job) are automatically marked status=APPLIED during sync
 - Company and keyword filters
-- Per-job actions: mark seen, mark interesting, dismiss
-- Stats display (total unseen count)
+- Per-job status actions based on current state:
+  - **New jobs**: Mark Interesting or Dismiss
+  - **Interested jobs**: Mark Applied or Dismiss
+- Bulk actions:
+  - "Mark All as Dismissed" (visible when viewing new jobs)
+  - "Mark All as Applied" (visible when viewing interested jobs)
+- Stats display (total new jobs available)
 
-**Interaction Workflow**:
+**Status Workflow**:
 1. User reviews job title and company
-2. Clicks "View Job" to see full posting
-3. After review, marks as:
-   - **Seen**: Removes from default view (indicates reviewed)
-   - **Interesting**: Flags for follow-up (stays in view)
-   - **Dismiss**: Permanently hides (not a fit)
+2. Clicks "View Job Posting" to see full listing on company site
+3. Updates status based on review:
+   - **NEW → INTERESTED**: Flags job for potential application
+   - **NEW → DISMISSED**: Permanently hides job (not a fit)
+   - **INTERESTED → APPLIED**: Marks job as applied after submission
+   - **INTERESTED → DISMISSED**: Changes mind, hides job
 
 **Key Implementation Details**:
-- AJAX endpoints for marking jobs without page reload
+- AJAX endpoint for status updates without page reload
 - Cross-app query: `jobs.JobListing` excludes `tracker.Job.external_job_id`
-- Default query: `seen=False, is_stale=False, dismissed=False, company__active=True`
+- Default query: `status=NEW, is_stale=False, company__active=True`
+- Applied job status set during sync by JobFetcherService, no cross-app queries in view
+- Full job URL constructed from `company.public_site_url + job.url_path`
 - Select-related optimization for company data
+- Bulk operations filter by current status and exclude applied jobs from tracker
 
 ### Application Detail View (`/applications/<id>/`)
 **Purpose**: Comprehensive single-application reference page  
