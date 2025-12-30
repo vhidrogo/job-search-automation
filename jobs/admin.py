@@ -28,6 +28,7 @@ class JobListingAdmin(admin.ModelAdmin):
         "is_stale",
         "last_fetched",
     ]
+    list_filter = ["status"]
     search_fields = ["title", "location", "external_id"]
     readonly_fields = ["last_fetched"]
 
