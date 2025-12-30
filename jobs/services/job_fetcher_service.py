@@ -3,64 +3,62 @@ from datetime import timedelta
 from django.utils import timezone
 
 from jobs.clients.exceptions import JobFetcherClientError
-from jobs.models import Company, JobListing
+from jobs.models import Company, JobListing, SearchRole, SearchRoleConfig
 from jobs.services.exceptions import JobFetcherServiceError
 from tracker.models import Job
 
 
 class JobFetcherService:
     """Service for fetching jobs from companies and syncing with database"""
-    
-    DEFAULT_EXCLUDE_SENIORITY = [
-        "Director",
-        "Lead",
-        "Manager",
-        "Principal",
-        "Senior",
-        "Sr.",
-        "Staff",
-    ]
+
     STALE_JOB_CLEANUP_DAYS = 30
     
     def fetch_and_sync_jobs(
         self,
+        search_role,
         company_name: str = None,
-        keywords: str = None,
         location: str = None,
-        exclude_seniority: list = None,
         max_results: int = None,
     ):
         """
         Fetch jobs from companies and sync with database.
         
         Args:
+            search_role: The role to use as search keywords
             company_name: Specific company to fetch from (None = all active)
-            keywords: Search keywords
             location: Location filter
-            exclude_seniority: Terms to exclude from titles (None = use defaults)
             max_results: Max results per company
             
         Returns:
             Dict with stats: {company_name: {new: X, updated: Y, total: Z}}
         """
-        if exclude_seniority is None:
-            exclude_seniority = self.DEFAULT_EXCLUDE_SENIORITY
+        role_label = SearchRole(search_role).label
+        exclude_terms = self._get_exclude_terms(search_role)
         
         companies = self._get_companies(company_name)
         stats = {}
         
         for company in companies:
+            key = f"{company.name} - {role_label}"
+
             try:
                 jobs = self._fetch_jobs_for_company(
-                    company, keywords, location, exclude_seniority, max_results
+                    company,
+                    role_label,
+                    location,
+                    max_results
                 )
                 
-                sync_stats = self._sync_jobs_to_database(company, jobs)
-                stats[company.name] = sync_stats
+                filtered_jobs = self._filter_excluded_jobs(jobs, exclude_terms)
+                
+                sync_stats = self._sync_jobs_to_database(
+                    company, filtered_jobs, search_role
+                )
+                stats[key] = sync_stats
                 
             except JobFetcherClientError as e:
                 print(f"Error fetching jobs from {company.name}: {e}")
-                stats[company.name] = {"error": str(e)}
+                stats[key] = {"error": str(e)}
 
             except Exception as e:
                 raise JobFetcherServiceError(
@@ -68,8 +66,28 @@ class JobFetcherService:
                 ) from e
         
         self._cleanup_stale_jobs()
-        
+
         return stats
+    
+    def _get_exclude_terms(self, role):
+        try:
+            config = SearchRoleConfig.objects.get(role=role)
+
+            return config.exclude_terms
+        
+        except SearchRoleConfig.DoesNotExist:
+            return []
+        
+    def _filter_excluded_jobs(self, jobs, exclude_terms):
+        if not exclude_terms:
+            return jobs
+        
+        filtered = []
+        for job in jobs:
+            if not any(term.lower() in job["title"].lower() for term in exclude_terms):
+                filtered.append(job)
+
+        return filtered
     
     def _get_companies(self, company_name: str = None):
         """Get active companies to fetch from."""
@@ -78,18 +96,18 @@ class JobFetcherService:
             companies = companies.filter(name=company_name)
         return companies
     
-    def _fetch_jobs_for_company(self, company, keywords, location, exclude_seniority, max_results):
+    def _fetch_jobs_for_company(self, company, search_term, location, max_results):
         """Fetch jobs from a single company using appropriate client."""
         client = company.get_job_fetcher()
+
         return client.fetch_jobs(
-            keywords=keywords,
+            keywords=search_term,
             location=location,
-            exclude_seniority=exclude_seniority,
             max_results=max_results,
         )
     
     
-    def _sync_jobs_to_database(self, company, jobs):
+    def _sync_jobs_to_database(self, company, jobs, search_role):
         """
         Sync fetched jobs to database and return stats.
     
@@ -114,8 +132,9 @@ class JobFetcherService:
                 defaults={
                     "title": job_data["title"],
                     "location": job_data["location"],
-                    "url_path": job_data["url"],
+                    "url_path": job_data["url_path"],
                     "posted_on": job_data["posted_on"],
+                    "search_role": search_role,
                     "last_fetched": timezone.now(),
                     "is_stale": False,
                 }
@@ -132,6 +151,7 @@ class JobFetcherService:
         
         JobListing.objects.filter(
             company=company,
+            search_role=search_role,
             is_stale=False
         ).exclude(
             external_id__in=fetched_ids
