@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 
-from jobs.models import Company, SearchRole
+from jobs.models import Company
 
 
 class JobListing(models.Model):
@@ -29,13 +29,6 @@ class JobListing(models.Model):
     location = models.CharField(max_length=200, blank=True)
     url_path = models.CharField(max_length=1000, help_text="Relative job path from API")
     posted_on = models.CharField(max_length=100, blank=True)
-
-    search_role = models.CharField(
-        max_length=100,
-        choices=SearchRole.choices,
-        blank=True,
-        help_text="Role category this job was fetched for"
-    )
     
     status = models.CharField(
         max_length=20,
