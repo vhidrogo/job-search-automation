@@ -1,5 +1,5 @@
 from django.contrib import admin
-from jobs.models import Company, WorkdayConfig, JobListing
+from jobs.models import Company, WorkdayConfig, JobListing, SearchConfig
 
 
 class WorkdayConfigInline(admin.StackedInline):
@@ -45,3 +45,24 @@ class JobListingAdmin(admin.ModelAdmin):
     @admin.action(description="Mark selected jobs as applied")
     def mark_as_applied(self, request, queryset):
         queryset.update(status=JobListing.Status.APPLIED)
+
+@admin.register(SearchConfig)
+class SearchConfigAdmin(admin.ModelAdmin):
+    list_display = ['search_term', 'active', 'get_exclude_terms_display']
+    list_filter = ['active']
+    search_fields = ['search_term']
+    list_editable = ['active']
+    
+    fieldsets = (
+        (None, {
+            'fields': ('search_term', 'active')
+        }),
+        ('Exclusion Configuration', {
+            'fields': ('exclude_terms',),
+            'description': 'List of terms to exclude from job titles (e.g., ["Manager", "Principal", "Staff"])'
+        }),
+    )
+    
+    def get_exclude_terms_display(self, obj):
+        return ', '.join(obj.exclude_terms) if obj.exclude_terms else 'None'
+    get_exclude_terms_display.short_description = 'Exclude Terms'
