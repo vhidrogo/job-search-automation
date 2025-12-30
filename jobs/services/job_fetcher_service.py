@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 from jobs.clients.exceptions import JobFetcherClientError
-from jobs.models import Company, JobListing, SearchRole, SearchRoleConfig
+from jobs.models import Company, JobListing, SearchConfig
 from jobs.services.exceptions import JobFetcherServiceError
 from tracker.models import Job
 
@@ -15,68 +15,78 @@ class JobFetcherService:
     
     def fetch_and_sync_jobs(
         self,
-        search_role,
         company_name: str = None,
+        keywords: str = None,
         location: str = None,
         max_results: int = None,
     ):
         """
         Fetch jobs from companies and sync with database.
         
+        Loops through all active search configurations (or filters by keywords)
+        and all active companies (or filters by company_name). For each 
+        company-search combination, fetches jobs, applies exclusion filtering,
+        and syncs to database.
+        
         Args:
-            search_role: The role to use as search keywords
-            company_name: Specific company to fetch from (None = all active)
-            location: Location filter
-            max_results: Max results per company
+            company_name: Specific company to fetch from (None = all active companies)
+            keywords: Filter search configurations by search_term (None = all active configs)
+            location: Location filter passed to platform client
+            max_results: Max results per company per search
             
         Returns:
-            Dict with stats: {company_name: {new: X, updated: Y, total: Z}}
+            Dict with stats keyed by "{company_name} - {search_term}":
+            {
+                "Company - Search Term": {
+                    "new": X,
+                    "updated": Y,
+                    "total": Z
+                },
+                ...
+            }
+            
+        Example:
+            service.fetch_and_sync_jobs(keywords="engineer", location="Seattle")
+            # Returns stats for all companies, all search configs containing "engineer"
         """
-        role_label = SearchRole(search_role).label
-        exclude_terms = self._get_exclude_terms(search_role)
-        
         companies = self._get_companies(company_name)
-        stats = {}
+        search_configs = self._get_search_configs(keywords)
+        
+        all_stats = {}
         
         for company in companies:
-            key = f"{company.name} - {role_label}"
+            for config in search_configs:
+                key = f"{company.name} - {config.search_term}"
+                
+                try:
+                    jobs = self._fetch_jobs_for_company(
+                        company,
+                        config.search_term,
+                        location,
+                        max_results
+                    )
+                    filtered_jobs = self._filter_excluded_jobs(jobs, config.exclude_terms)
+                    all_stats[key] = self._sync_jobs_to_database(company, filtered_jobs)
+                    
+                except JobFetcherClientError as e:
+                    print(f"Error fetching jobs from {company.name}: {e}")
+                    all_stats[key] = {"error": str(e)}
 
-            try:
-                jobs = self._fetch_jobs_for_company(
-                    company,
-                    role_label,
-                    location,
-                    max_results
-                )
-                
-                filtered_jobs = self._filter_excluded_jobs(jobs, exclude_terms)
-                
-                sync_stats = self._sync_jobs_to_database(
-                    company, filtered_jobs, search_role
-                )
-                stats[key] = sync_stats
-                
-            except JobFetcherClientError as e:
-                print(f"Error fetching jobs from {company.name}: {e}")
-                stats[key] = {"error": str(e)}
-
-            except Exception as e:
-                raise JobFetcherServiceError(
-                    f"Unexpected error while fetching jobs for {company.name}"
-                ) from e
+                except Exception as e:
+                    raise JobFetcherServiceError(
+                        f"Unexpected error while fetching jobs for {company.name}"
+                    ) from e
         
         self._cleanup_stale_jobs()
 
-        return stats
+        return all_stats
     
-    def _get_exclude_terms(self, role):
-        try:
-            config = SearchRoleConfig.objects.get(role=role)
+    def _get_search_configs(self, keywords):
+        configs = SearchConfig.objects.filter(active=True)
+        if keywords:
+            configs = configs.filter(search_term__icontains=keywords)
 
-            return config.exclude_terms
-        
-        except SearchRoleConfig.DoesNotExist:
-            return []
+        return configs
         
     def _filter_excluded_jobs(self, jobs, exclude_terms):
         if not exclude_terms:
@@ -107,7 +117,7 @@ class JobFetcherService:
         )
     
     
-    def _sync_jobs_to_database(self, company, jobs, search_role):
+    def _sync_jobs_to_database(self, company, jobs):
         """
         Sync fetched jobs to database and return stats.
     
@@ -134,7 +144,6 @@ class JobFetcherService:
                     "location": job_data["location"],
                     "url_path": job_data["url_path"],
                     "posted_on": job_data["posted_on"],
-                    "search_role": search_role,
                     "last_fetched": timezone.now(),
                     "is_stale": False,
                 }
@@ -151,7 +160,6 @@ class JobFetcherService:
         
         JobListing.objects.filter(
             company=company,
-            search_role=search_role,
             is_stale=False
         ).exclude(
             external_id__in=fetched_ids
