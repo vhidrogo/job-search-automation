@@ -36,6 +36,12 @@ class JobListing(models.Model):
         default=Status.NEW,
         help_text="Current review status of this job listing"
     )
+
+    search_term = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Search keyword used to fetch this job (from SearchConfig)"
+    )
     
     last_fetched = models.DateTimeField(
         default=timezone.now,

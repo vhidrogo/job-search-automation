@@ -712,6 +712,7 @@ The interview preparation system generates structured preparation documents for 
 | url_path | CharField | Relative job path from API (combined with company.public_site_url for full URL) |
 | posted_on | CharField | Posted date from platform |
 | status | CharField | Current review status (new, interested, dismissed, applied) |
+| search_term | CharField | Search keyword used to fetch this job (e.g., "Software Engineer") |
 | last_fetched | DateTimeField | Last time job appeared in API results |
 | is_stale | BooleanField | No longer appears in API results |
 

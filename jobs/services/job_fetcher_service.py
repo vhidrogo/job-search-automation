@@ -66,7 +66,7 @@ class JobFetcherService:
                         max_results
                     )
                     filtered_jobs = self._filter_excluded_jobs(jobs, config.exclude_terms)
-                    all_stats[key] = self._sync_jobs_to_database(company, filtered_jobs)
+                    all_stats[key] = self._sync_jobs_to_database(company, filtered_jobs, config.search_term)
                     
                 except JobFetcherClientError as e:
                     print(f"Error fetching jobs from {company.name}: {e}")
@@ -117,7 +117,7 @@ class JobFetcherService:
         )
     
     
-    def _sync_jobs_to_database(self, company, jobs):
+    def _sync_jobs_to_database(self, company, jobs, search_term):
         """
         Sync fetched jobs to database and return stats.
     
@@ -144,6 +144,7 @@ class JobFetcherService:
                     "location": job_data["location"],
                     "url_path": job_data["url_path"],
                     "posted_on": job_data["posted_on"],
+                    "search_term": search_term,
                     "last_fetched": timezone.now(),
                     "is_stale": False,
                 }
@@ -160,7 +161,8 @@ class JobFetcherService:
         
         JobListing.objects.filter(
             company=company,
-            is_stale=False
+            search_term=search_term,
+            is_stale=False,
         ).exclude(
             external_id__in=fetched_ids
         ).update(is_stale=True)
