@@ -9,6 +9,7 @@ class SearchConfig(models.Model):
     )
     exclude_terms = models.JSONField(
         default=list,
+        blank=True,
         help_text="Terms to exclude from job titles"
     )
     active = models.BooleanField(
