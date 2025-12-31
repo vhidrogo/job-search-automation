@@ -160,8 +160,23 @@ def _analyze_dimension_breakdowns(queryset):
         "work_setting": _dimension_breakdown(queryset, "job__work_setting", total),
         "source": _dimension_breakdown(queryset, "job__source", total),
         "min_experience_years": _dimension_breakdown(queryset, "job__min_experience_years", total),
-        "min_salary_range": _salary_range_breakdown(queryset, "min_salary", total),
-        "max_salary_range": _salary_range_breakdown(queryset, "max_salary", total),
+        "min_salary_range": _numeric_range_breakdown(
+            queryset,
+            "min_salary",
+            total,
+            base=100_000,
+            interval=20_000,
+            count=4,
+        ),
+
+        "max_salary_range": _numeric_range_breakdown(
+            queryset,
+            "max_salary",
+            total,
+            base=150_000,
+            interval=20_000,
+            count=4,
+        ),
     }
     
     return analysis
@@ -267,43 +282,60 @@ def _group_location(location):
     return location
 
 
-def _salary_range_breakdown(queryset, field, total):
+def _numeric_range_breakdown(
+    queryset,
+    field,
+    total,
+    *,
+    base,
+    interval,
+    count,
+    formatter=lambda x: f"${int(x/1000)}k",
+):
     """
-    Generate salary range breakdown with bucketing.
-    Buckets: <$150k, $150k-$180k, $180k-$200k, >$200k
+    Generic numeric range bucketing.
+
+    Example:
+      base=100_000, interval=20_000, count=4
+      -> <100k, 100-120k, 120-140k, >=140k
     """
-    buckets = {
-        "< $150k": 0,
-        "$150k - $180k": 0,
-        "$180k - $200k": 0,
-        "> $200k": 0,
-    }
-    
+    assert count >= 2
+
+    # Build bucket boundaries
+    edges = [base + i * interval for i in range(count)]
+    buckets = {}
+
+    # Labels
+    buckets[f"< {formatter(base)}"] = 0
+    for start, end in zip(edges[:-1], edges[1:]):
+        buckets[f"{formatter(start)} - {formatter(end)}"] = 0
+    buckets[f">= {formatter(edges[-1])}"] = 0
+
     for app in queryset:
-        salary = getattr(app.job, field)
-        
-        if salary is None:
+        value = getattr(app.job, field)
+        if value is None:
             continue
-        
-        if salary < 150000:
-            buckets["< $150k"] += 1
-        elif salary < 180000:
-            buckets["$150k - $180k"] += 1
-        elif salary < 200000:
-            buckets["$180k - $200k"] += 1
+
+        if value < base:
+            buckets[f"< {formatter(base)}"] += 1
+        elif value >= edges[-1]:
+            buckets[f">= {formatter(edges[-1])}"] += 1
         else:
-            buckets["> $200k"] += 1
-    
+            idx = (value - base) // interval
+            start = edges[int(idx)]
+            end = start + interval
+            buckets[f"{formatter(start)} - {formatter(end)}"] += 1
+
     result = [
         {
-            "value": bucket,
+            "value": label,
             "count": count,
             "percent": _safe_percentage(count, total),
         }
-        for bucket, count in buckets.items()
+        for label, count in buckets.items()
         if count > 0
     ]
-    
+
     return sorted(result, key=lambda x: x["count"], reverse=True)
 
 
