@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Listings</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .stats {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .filters form {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filters input[type="text"],
+        .filters select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .filters button {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .filters button:hover {
+            background: #0056b3;
+        }
+        .filters a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .job {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .job h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .job-meta {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .job-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-seen {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-interested {
+            background: #2196F3;
+            color: white;
+        }
+        .btn-dismiss {
+            background: #f44336;
+            color: white;
+        }
+        .btn:hover {
+            opacity: 0.8;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #666;
+            color: white;
+            font-size: 12px;
+            border-radius: 3px;
+            margin-left: 8px;
+        }
+        .badge-interested {
+            background: #2196F3;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Job Listings</h1>
+    
+    <div class="stats">
+        <strong>{{ total_unseen }} new jobs available</strong>
+        {% if filters.status == 'new' and total_unseen > 0 %}
+            <button class="btn btn-dismiss" onclick="bulkDismissNew()" style="margin-left: 15px;">
+                Mark All as Dismissed
+            </button>
+        {% endif %}
+        {% if filters.status == 'interested' and jobs.count > 0 %}
+            <button class="btn btn-seen" onclick="bulkMarkApplied()" style="margin-left: 15px;">
+                Mark All as Applied
+            </button>
+        {% endif %}
+    </div>
+    
+    <div class="filters">
+        <form method="get">
+            <input type="text" name="keywords" placeholder="Search keywords..." value="{{ filters.keywords|default:'' }}">
+            
+            <select name="status">
+                <option value="">All Statuses</option>
+                <option value="new" {% if filters.status == 'new' %}selected{% endif %}>New</option>
+                <option value="interested" {% if filters.status == 'interested' %}selected{% endif %}>Interested</option>
+                <option value="dismissed" {% if filters.status == 'dismissed' %}selected{% endif %}>Dismissed</option>
+                <option value="applied" {% if filters.status == 'applied' %}selected{% endif %}>Applied</option>
+            </select>
+
+            <select name="company">
+                <option value="">All Companies</option>
+                {% for company in companies %}
+                    <option value="{{ company.name }}" {% if filters.company == company.name %}selected{% endif %}>
+                        {{ company.name }}
+                    </option>
+                {% endfor %}
+            </select>
+            
+            <button type="submit">Filter</button>
+            <a href="{% url 'jobs:job_listings' %}">Clear Filters</a>
+        </form>
+    </div>
+    
+    <p style="color: #666;">
+        Showing {{ jobs.count }} 
+        {% if filters.status %}{{ filters.status }}{% else %}total{% endif %} 
+        jobs
+    </p>
+    
+    {% for job in jobs %}
+        <div class="job" id="job-{{ job.id }}">
+            <h3>{{ job.title }}</h3>
+            <div class="job-meta">
+                <strong>{{ job.company.name }}</strong> - {{ job.location }}
+                {% if job.status == 'interested' %}<span class="badge badge-interested">INTERESTED</span>{% endif %}
+                {% if job.status == 'applied' %}<span class="badge" style="background: #4CAF50;">APPLIED</span>{% endif %}
+            </div>
+            <div class="job-meta" style="font-size: 13px;">
+                Posted: {{ job.posted_on }} | Last fetched: {{ job.last_fetched|date:"M d, Y" }}
+            </div>
+            <p><a href="{{ job.company.public_site_url }}{{ job.url_path }}" target="_blank" style="color: #007bff;">View Job Posting →</a></p>
+            
+            <div class="job-actions">
+                {% if job.status == 'new' %}
+                    <button class="btn btn-interested" onclick="updateStatus({{ job.id }}, 'interested')">Mark Interesting</button>
+                    <button class="btn btn-dismiss" onclick="updateStatus({{ job.id }}, 'dismissed')">Dismiss</button>
+                {% elif job.status == 'interested' %}
+                    <button class="btn btn-dismiss" onclick="updateStatus({{ job.id }}, 'dismissed')">Dismiss</button>
+                    <button class="btn btn-seen" onclick="updateStatus({{ job.id }}, 'applied')">Mark Applied</button>
+                {% endif %}
+            </div>
+        </div>
+    {% empty %}
+        <div class="empty-state">
+            <p>No jobs found. Try adjusting your filters or run: <code>python manage.py sync_jobs</code></p>
+        </div>
+    {% endfor %}
+    
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== "") {
+                const cookies = document.cookie.split(";");
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        const csrftoken = getCookie("csrftoken");
+        
+        function markAsSeen(jobId) {
+            fetch(`/jobs/${jobId}/seen/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrftoken,
+                    "Content-Type": "application/json"
+                }
+            }).then(response => {
+                if (response.ok) {
+                    document.getElementById(`job-${jobId}`).style.opacity = "0.5";
+                    setTimeout(() => location.reload(), 500);
+                }
+            });
+        }
+        
+        function updateStatus(jobId, newStatus) {
+            const formData = new FormData();
+            formData.append('status', newStatus);
+            
+            fetch(`/jobs/${jobId}/update-status/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrftoken
+                },
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    if (newStatus === 'dismissed') {
+                        document.getElementById(`job-${jobId}`).remove();
+                    } else {
+                        location.reload();
+                    }
+                }
+            });
+        }
+
+        function bulkDismissNew() {
+            if (confirm("Mark all new jobs as dismissed?")) {
+                fetch('/jobs/bulk-dismiss-new/', {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": csrftoken
+                    }
+                }).then(response => response.json()).then(data => {
+                    if (data.status === "success") {
+                        alert(`${data.count} jobs dismissed`);
+                        location.reload();
+                    }
+                });
+            }
+        }
+
+        function bulkMarkApplied() {
+            if (confirm("Mark all interested jobs as applied?")) {
+                fetch('/jobs/bulk-mark-applied/', {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": csrftoken
+                    }
+                }).then(response => response.json()).then(data => {
+                    if (data.status === "success") {
+                        alert(`${data.count} jobs marked as applied`);
+                        location.reload();
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

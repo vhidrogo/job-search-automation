@@ -78,6 +78,55 @@ This improves reliability, readability, and alignment with modern Python practic
 
 ---
 
+#### Multi-Platform Job Board Integration: Model Design Patterns
+
+**Context:**  
+The jobs app needed to support multiple job board platforms (Workday, Greenhouse, Lever, etc.) with platform-specific configuration (URLs, API tokens, location filter IDs). Each platform requires different fields, creating a design challenge for storing heterogeneous configuration data without schema pollution.
+
+**Options Considered:**  
+1. **JSONField for platform-specific config:**  
+   - Single `Company` model with a `platform_config` JSONField storing arbitrary key-value pairs per platform.
+2. **Multi-table inheritance:**  
+   - Base `Company` model with platform-specific subclasses (`WorkdayCompany`, `GreenhouseCompany`) using Django's multi-table inheritance.
+3. **Separate config models with OneToOne relationships:**  
+   - Core `Company` model with `platform` field, linked to platform-specific config models (`WorkdayConfig`, `GreenhouseConfig`) via OneToOne foreign keys.
+4. **Generic foreign keys (ContentTypes):**  
+   - `Company` model with GenericForeignKey to arbitrary platform config models.
+
+**Tradeoffs:**  
+- **JSONField:**  
+  - ✅ Simple, flexible, easy to add new platforms.
+  - ❌ No database-level validation or type safety.
+  - ❌ Difficult to query platform-specific fields.
+  - ❌ No IDE autocomplete for config fields.
+- **Multi-table inheritance:**  
+  - ✅ Type-safe with proper field validation.
+  - ✅ Clean queries per platform.
+  - ❌ Creates separate tables causing JOIN overhead.
+  - ❌ Complex cross-platform queries.
+  - ❌ Polymorphic retrieval requires careful handling.
+- **Separate OneToOne configs:**  
+  - ✅ Type-safe with database-level validation.
+  - ✅ No NULL fields—each platform has only its required fields.
+  - ✅ Clean separation of concerns (core company data vs platform specifics).
+  - ✅ Easy to query: `Company.objects.filter(workday_config__isnull=False)`.
+  - ✅ IDE autocomplete works (e.g., `company.workday_config.base_url`).
+  - ✅ Simple extension—just add new config model for new platform.
+  - ❌ Slightly more models in schema (minimal complexity).
+- **Generic foreign keys:**  
+  - ✅ Maximum flexibility.
+  - ❌ Loses referential integrity.
+  - ❌ Complex, harder to understand and maintain.
+  - ❌ Poor query performance.
+
+**Decision:**  
+Adopt **separate config models with OneToOne relationships** (Option 3). Each platform has a dedicated config model (e.g., `WorkdayConfig`) with a OneToOne relationship to `Company`. The `Company` model includes a `platform` CharField and a factory method `get_job_fetcher()` that instantiates the appropriate client based on platform type.
+
+**Reflection:**  
+This design prioritizes maintainability and type safety over schema simplicity. The "more models" concern is negligible—each config model is small, self-contained, and maps directly to a real-world entity (platform-specific configuration). The pattern scales elegantly: adding Greenhouse support requires only creating `GreenhouseConfig` and `GreenhouseClient`, with no changes to existing models or migration risks. The OneToOne relationship provides the right balance of normalization (no NULL fields) and usability (direct attribute access via related_name). This approach also demonstrates understanding of Django's relationship patterns and separation of concerns—skills directly applicable to production systems. The decision exemplifies choosing architectural clarity over premature optimization, recognizing that a few extra lightweight models are far less problematic than type-unsafe JSONFields or complex inheritance hierarchies.
+
+---
+
 ### Job Description Processing
 Decisions related to parsing and extracting requirements from job descriptions.
 
@@ -698,3 +747,44 @@ Evolved consideration: Realized this would require passing full requirement text
 
 **Reflection:**  
 This decision exemplifies the principle of building for current concrete needs rather than speculative future requirements. The original design assumed automated matching would be valuable, but deeper analysis revealed high cost and low ROI. Manual workflows—already necessary for job selection—provide better gap identification at zero additional cost. The system architecture (persisted data, modular services) enables adding automated analysis later if real-world usage demonstrates a clear need, making this a low-risk deferral rather than a permanent rejection.
+
+### Job Discovery & Aggregation
+Decisions related to fetching, filtering, and aggregating job listings from external platforms.
+
+---
+
+#### Workday API Job Fetching: List Accumulation vs Generator Streaming
+
+**Context:**  
+The WorkdayClient fetches jobs via paginated API calls (20 jobs per page), requiring iteration through multiple pages until all results are retrieved. The question was whether to accumulate results in a list and return everything at once, or yield results one-by-one using a generator pattern.
+
+**Options Considered:**  
+1. **List-based accumulation:**  
+   - Append each job to an in-memory list during pagination loop.
+   - Return complete list after all pages fetched.
+2. **Generator with yield:**  
+   - Yield each job individually as pages are fetched.
+   - Caller iterates over generator to process jobs incrementally.
+
+**Tradeoffs:**  
+- **List-based accumulation:**  
+  - ✅ Simple, straightforward implementation.
+  - ✅ Enables reporting total count (`len(jobs)`) for stats.
+  - ✅ Allows multiple iterations over results (needed for ID tracking and sync).
+  - ✅ Atomic operation—fetch completes before sync begins.
+  - ✅ Better error handling—partial results don't corrupt database.
+  - ❌ Holds all results in memory (though dataset is small: 50-200 jobs ≈ 50-200KB).
+- **Generator with yield:**  
+  - ✅ Memory-efficient for large datasets.
+  - ✅ Enables early termination if desired.
+  - ✅ Streams data through processing pipeline.
+  - ❌ Cannot report total count without consuming entire generator.
+  - ❌ Cannot iterate multiple times—would need to convert to list anyway for ID tracking.
+  - ❌ Interleaves fetch and sync operations, complicating error handling.
+  - ❌ More complex code with minimal benefit for small datasets.
+
+**Decision:**  
+Adopt **list-based accumulation**. The WorkdayClient returns a complete list of job dictionaries after fetching all pages. The small dataset size (typically 50-200 jobs per company) makes memory overhead negligible, while the workflow requires the complete list for stats reporting, ID tracking, and database sync operations.
+
+**Reflection:**  
+This decision prioritizes simplicity and workflow requirements over premature optimization. Generators excel with truly large datasets (thousands/millions of records) or when early termination is needed—neither applies here. The sync workflow requires iterating over results multiple times (once for tracking IDs, again for database operations) and reporting stats on completion, both of which conflict with generator semantics. The list-based approach provides clearer separation between fetch and sync phases, simpler error handling, and more straightforward debugging. If future requirements involve processing significantly larger result sets or streaming to external systems, the implementation could be refactored to use generators—but current use cases don't justify that complexity.
