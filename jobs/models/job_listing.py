@@ -40,7 +40,7 @@ class JobListing(models.Model):
     search_term = models.CharField(
         max_length=100,
         blank=True,
-        help_text="Search keyword used to fetch this job (from SearchRole label)"
+        help_text="Search keyword used to fetch this job (from SearchConfig)"
     )
     
     last_fetched = models.DateTimeField(
