@@ -30,6 +30,9 @@ class Command(BaseCommand):
             if "error" in result:
                 self.stdout.write(self.style.ERROR(f"{key}: {result['error']}"))
             else:
+                applied_msg = f" ({result['applied']} already applied)" if result['applied'] > 0 else ""
                 self.stdout.write(
-                    self.style.SUCCESS(f"{key}: {result['new']} new, {result['updated']} updated, {result['total']} total")
+                    self.style.SUCCESS(
+                        f"{key}: {result['new']} new{applied_msg}, {result['updated']} updated, {result['total']} total"
+                    )
                 )
