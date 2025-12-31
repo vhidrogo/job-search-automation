@@ -89,6 +89,7 @@ class TestJobFetcherService(TestCase):
         JobListing.objects.create(
             company=self.company,
             external_id="JOB-OLD",
+            search_term=self.DEFAULT_SEARCH_TERM,
             is_stale=False,
         )
         self.mock_client.fetch_jobs.return_value = []
@@ -106,6 +107,21 @@ class TestJobFetcherService(TestCase):
 
         job = JobListing.objects.get(external_id="JOB-OLD")
         self.assertTrue(job.is_stale)
+
+    def test_fetch_and_sync_jobs_does_not_mark_other_search_term_jobs_as_stale(self):
+        SearchConfig.objects.create(search_term="other search")
+        JobListing.objects.create(
+            company=self.company,
+            external_id="ANALYST-JOB",
+            search_term="other search",
+            is_stale=False,
+        )
+        self.mock_client.fetch_jobs.return_value = []
+        
+        self.service.fetch_and_sync_jobs(keywords="engineer")
+        
+        analyst_job = JobListing.objects.get(external_id="ANALYST-JOB")
+        self.assertFalse(analyst_job.is_stale)
 
     def test_fetch_and_sync_jobs_handles_client_error(self):
         self.mock_client.fetch_jobs.side_effect = JobFetcherClientError("API failure")

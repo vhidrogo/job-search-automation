@@ -161,7 +161,8 @@ class JobFetcherService:
         
         JobListing.objects.filter(
             company=company,
-            is_stale=False
+            search_term=search_term,
+            is_stale=False,
         ).exclude(
             external_id__in=fetched_ids
         ).update(is_stale=True)
