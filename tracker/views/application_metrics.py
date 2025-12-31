@@ -237,6 +237,7 @@ def _group_location(location):
         "tukwila",
         "silverdale",
         "seatac",
+        "joint base lewis-mcchord",
     }
 
     if city in seattle_area_cities:
@@ -245,6 +246,11 @@ def _group_location(location):
     chicago_area_cities = {
         "chicago",
         "aurora",
+        "deerfield",
+        "lombard",
+        "oak brook",
+        "oakbrook terrace",
+        "schaumburg",
     }
 
     if city in chicago_area_cities:
