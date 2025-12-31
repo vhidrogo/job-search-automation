@@ -59,6 +59,7 @@ class TestJobFetcherService(TestCase):
         )
 
         self.assertEqual(job.title, self.DEFAULT_SEARCH_TERM)
+        self.assertEqual(job.search_term, self.DEFAULT_SEARCH_TERM)
         self.assertFalse(job.is_stale)
 
     def test_fetch_and_sync_jobs_updates_existing_job_listing(self):
