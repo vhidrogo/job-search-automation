@@ -49,6 +49,7 @@ class TestJobFetcherService(TestCase):
             {
                 "new": 1,
                 "updated": 0,
+                "applied": 0,
                 "total": 1,
             }
         )
@@ -77,6 +78,7 @@ class TestJobFetcherService(TestCase):
             {
                 "new": 0,
                 "updated": 1,
+                "applied": 0,
                 "total": 1,
             }
         )
@@ -101,6 +103,7 @@ class TestJobFetcherService(TestCase):
             {
                 "new": 0,
                 "updated": 0,
+                "applied": 0,
                 "total": 0,
             }
         )
@@ -173,6 +176,7 @@ class TestJobFetcherService(TestCase):
             {
                 "new": 1,
                 "updated": 0,
+                "applied": 1,
                 "total": 1,
             }
         )
@@ -200,6 +204,7 @@ class TestJobFetcherService(TestCase):
             {
                 "new": 0,
                 "updated": 1,
+                "applied": 1,
                 "total": 1,
             }
         )
@@ -260,6 +265,7 @@ class TestJobFetcherService(TestCase):
             {
                 "new": 1,
                 "updated": 0,
+                "applied": 0,
                 "total": 1,
             }
         )

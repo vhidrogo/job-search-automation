@@ -132,6 +132,7 @@ class JobFetcherService:
         fetched_ids = set()
         new_count = 0
         updated_count = 0
+        applied_count = 0
         
         for job_data in jobs:
             fetched_ids.add(job_data["external_id"])
@@ -153,6 +154,7 @@ class JobFetcherService:
             if job_data["external_id"] in applied_external_ids:
                 job_listing.status = JobListing.Status.APPLIED
                 job_listing.save(update_fields=["status"])
+                applied_count += 1
             
             if created:
                 new_count += 1
@@ -170,6 +172,7 @@ class JobFetcherService:
         return {
             "new": new_count,
             "updated": updated_count,
+            "applied": applied_count,
             "total": len(jobs)
         }
     
