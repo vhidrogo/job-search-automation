@@ -78,7 +78,7 @@ class JobFetcherService:
                     exact_matched_jobs = self._filter_exact_match(jobs, term)
                     filtered_jobs = self._filter_excluded_jobs(exact_matched_jobs, exclude_terms)
                     all_stats[key] = self._sync_jobs_to_database(company, filtered_jobs, config.search_term)
-                    
+
         self._cleanup_stale_jobs()
 
         return all_stats
@@ -100,12 +100,12 @@ class JobFetcherService:
         if not exclude_terms:
             return jobs
         
-        filtered = []
-        for job in jobs:
-            if not any(term.lower() in job["title"].lower() for term in exclude_terms):
-                filtered.append(job)
+        exclude_terms_lower = [t.lower() for t in exclude_terms]
 
-        return filtered
+        return [
+            job for job in jobs 
+            if not any(t in job["title"].lower() for t in exclude_terms_lower)
+        ]
     
     def _get_companies(self, company_name: str = None):
         """Get active companies to fetch from."""
