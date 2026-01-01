@@ -58,6 +58,10 @@ class SearchConfigAdmin(admin.ModelAdmin):
         (None, {
             'fields': ('search_term', 'active')
         }),
+        ('Related Configuration', {
+            'fields': ('related_terms',),
+            'description': 'List of related search terms sharing the same exclusion rules (e.g., ["Software Developer", "Backend Engineer"])'
+        }),
         ('Exclusion Configuration', {
             'fields': ('exclude_terms',),
             'description': 'List of terms to exclude from job titles (e.g., ["Manager", "Principal", "Staff"])'
