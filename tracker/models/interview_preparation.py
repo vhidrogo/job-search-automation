@@ -30,3 +30,6 @@ class InterviewPreparation(models.Model):
     
     class Meta:
         unique_together = [["interview"]]
+
+    def __str__(self):
+        return str(self.interview)

@@ -40,3 +40,5 @@ class Interview(models.Model):
     scheduled_at = models.DateTimeField()
     notes = models.TextField(blank=True, help_text="Freeform interview notes")
     
+    def __str__(self):
+        return f"{self.application.job.company} - {self.stage}"
