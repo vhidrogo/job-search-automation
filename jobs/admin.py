@@ -30,7 +30,7 @@ class JobListingAdmin(admin.ModelAdmin):
         "last_fetched",
     ]
     list_filter = ["status", "search_term"]
-    search_fields = ["title", "location", "external_id"]
+    search_fields = ["company__name", "title", "location", "external_id"]
     readonly_fields = ["search_term", "last_fetched"]
 
     actions = ["mark_as_interested", "mark_as_dismissed", "mark_as_applied"]
