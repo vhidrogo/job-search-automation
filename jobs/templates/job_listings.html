@@ -125,11 +125,14 @@
     <div class="stats">
         <strong>{{ total_unseen }} new jobs available</strong>
         {% if filters.status == 'new' and total_unseen > 0 %}
-            <button class="btn btn-dismiss" onclick="bulkDismissNew()" style="margin-left: 15px;">
+            <button class="btn btn-dismiss" onclick="bulkDismiss('new')" style="margin-left: 15px;">
                 Mark All as Dismissed
             </button>
         {% endif %}
         {% if filters.status == 'interested' and jobs.count > 0 %}
+            <button class="btn btn-dismiss" onclick="bulkDismiss('interested')" style="margin-left: 15px;">
+                Mark All as Dismissed
+            </button>
             <button class="btn btn-seen" onclick="bulkMarkApplied()" style="margin-left: 15px;">
                 Mark All as Applied
             </button>
@@ -251,13 +254,14 @@
             });
         }
 
-        function bulkDismissNew() {
+        function bulkDismiss(status) {
             if (confirm("Mark all new jobs as dismissed?")) {
-                fetch('/jobs/bulk-dismiss-new/', {
+                fetch('/jobs/bulk-dismiss/', {
                     method: "POST",
                     headers: {
                         "X-CSRFToken": csrftoken
-                    }
+                    },
+                    body: JSON.stringify({status})
                 }).then(response => response.json()).then(data => {
                     if (data.status === "success") {
                         alert(`${data.count} jobs dismissed`);
