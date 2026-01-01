@@ -25,10 +25,11 @@ class JobListingAdmin(admin.ModelAdmin):
         "company",
         "location",
         "status",
+        "search_term",
         "is_stale",
         "last_fetched",
     ]
-    list_filter = ["status"]
+    list_filter = ["status", "search_term"]
     search_fields = ["title", "location", "external_id"]
     readonly_fields = ["search_term", "last_fetched"]
 
