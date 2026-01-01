@@ -1,3 +1,5 @@
+import json
+
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
@@ -68,12 +70,18 @@ def update_job_status(request, job_id):
 
 
 @require_POST
-def bulk_dismiss_new(request):
-    """AJAX endpoint to mark all NEW jobs as dismissed"""
+def bulk_dismiss(request):
+    """AJAX endpoint to mark all jobs with a given status as dismissed"""
+    data = json.loads(request.body)
+    status = data.get("status")
+    
+    if status not in [JobListing.Status.NEW, JobListing.Status.INTERESTED]:
+        return JsonResponse({"status": "error", "message": "Invalid status"}, status=400)
+    
     count = JobListing.objects.filter(
         company__active=True,
         is_stale=False,
-        status=JobListing.Status.NEW
+        status=status
     ).update(status=JobListing.Status.DISMISSED)
     
     return JsonResponse({"status": "success", "count": count})
