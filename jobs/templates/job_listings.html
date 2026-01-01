@@ -85,7 +85,7 @@
             cursor: pointer;
             font-size: 14px;
         }
-        .btn-seen {
+        .btn-applied {
             background: #4CAF50;
             color: white;
         }
@@ -133,7 +133,7 @@
             <button class="btn btn-dismiss" onclick="bulkDismiss('interested')" style="margin-left: 15px;">
                 Mark All as Dismissed
             </button>
-            <button class="btn btn-seen" onclick="bulkMarkApplied()" style="margin-left: 15px;">
+            <button class="btn btn-applied" onclick="bulkMarkApplied()" style="margin-left: 15px;">
                 Mark All as Applied
             </button>
         {% endif %}
@@ -187,10 +187,11 @@
             <div class="job-actions">
                 {% if job.status == 'new' %}
                     <button class="btn btn-interested" onclick="updateStatus({{ job.id }}, 'interested')">Mark Interesting</button>
+                    <button class="btn btn-applied" onclick="updateStatus({{ job.id }}, 'applied')">Mark Applied</button>
                     <button class="btn btn-dismiss" onclick="updateStatus({{ job.id }}, 'dismissed')">Dismiss</button>
                 {% elif job.status == 'interested' %}
                     <button class="btn btn-dismiss" onclick="updateStatus({{ job.id }}, 'dismissed')">Dismiss</button>
-                    <button class="btn btn-seen" onclick="updateStatus({{ job.id }}, 'applied')">Mark Applied</button>
+                    <button class="btn btn-applied" onclick="updateStatus({{ job.id }}, 'applied')">Mark Applied</button>
                 {% endif %}
             </div>
         </div>
