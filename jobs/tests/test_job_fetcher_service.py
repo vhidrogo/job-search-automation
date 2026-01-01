@@ -237,7 +237,7 @@ class TestJobFetcherService(TestCase):
         job = JobListing.objects.get(company=self.company, external_id=self.DEFAULT_JOB_ID)
         self.assertEqual(job.status, JobListing.Status.NEW)
 
-    def test_fetch_and_sync_jobs_filters_excluded_terms(self):
+    def test_fetch_and_sync_jobs_filters_config_excluded_terms(self):
         self.search_config.exclude_terms = ["Senior"]
         self.search_config.save(update_fields=["exclude_terms"])
         
@@ -252,6 +252,42 @@ class TestJobFetcherService(TestCase):
             {
                 "external_id": "JOB-2",
                 "title": "Senior Software Engineer",
+                "location": "Seattle, WA",
+                "url_path": "/job/2",
+                "posted_on": "2024-01-01",
+            },
+        ]
+        
+        stats = self.service.fetch_and_sync_jobs()
+        
+        self.assertEqual(
+            stats[self.expected_stats_key],
+            {
+                "new": 1,
+                "updated": 0,
+                "applied": 0,
+                "total": 1,
+            }
+        )
+        
+        self.assertTrue(JobListing.objects.filter(external_id="JOB-1").exists())
+        self.assertFalse(JobListing.objects.filter(external_id="JOB-2").exists())
+
+    def test_fetch_and_sync_jobs_filters_company_excluded_terms(self):
+        self.company.exclude_terms = ["Some Term"]
+        self.company.save(update_fields=["exclude_terms"])
+        
+        self.mock_client.fetch_jobs.return_value = [
+            {
+                "external_id": "JOB-1",
+                "title": "Software Engineer",
+                "location": "Seattle, WA",
+                "url_path": "/job/1",
+                "posted_on": "2024-01-01",
+            },
+            {
+                "external_id": "JOB-2",
+                "title": "Some Term Software Engineer",
                 "location": "Seattle, WA",
                 "url_path": "/job/2",
                 "posted_on": "2024-01-01",

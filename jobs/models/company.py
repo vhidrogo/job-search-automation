@@ -22,6 +22,11 @@ class Company(models.Model):
         blank=True,
         help_text="Base URL for public job listings (e.g., https://nordstrom.wd501.myworkdayjobs.com/en-US/nordstrom_careers/)"
     )
+    exclude_terms = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Terms to exclude from job titles"
+    )
     active = models.BooleanField(
         default=True,
         help_text="Whether to include this company in job syncing"

@@ -681,6 +681,7 @@ The interview preparation system generates structured preparation documents for 
 | name | CharField | Company name (unique) |
 | platform | CharField | ATS platform (workday, greenhouse, lever, ashby) |
 | public_site_url | URLField | Base URL for public job listings (e.g., https://nordstrom.wd501.myworkdayjobs.com/en-US/nordstrom_careers/) |
+| exclude_terms | JSONField | Company specific list of terms to exclude from job titles |
 | active | BooleanField | Whether to include in job syncing |
 
 #### WorkdayConfig

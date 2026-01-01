@@ -65,7 +65,8 @@ class JobFetcherService:
                         location,
                         max_results
                     )
-                    filtered_jobs = self._filter_excluded_jobs(jobs, config.exclude_terms)
+                    exclude_terms = company.exclude_terms + config.exclude_terms
+                    filtered_jobs = self._filter_excluded_jobs(jobs, exclude_terms)
                     all_stats[key] = self._sync_jobs_to_database(company, filtered_jobs, config.search_term)
                     
                 except JobFetcherClientError as e:
