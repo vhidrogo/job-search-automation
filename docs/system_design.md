@@ -138,7 +138,7 @@ job_search_automation/ (Django Project)
 |-------|----------------|
 | **ClaudeClient** | Wraps LLM API calls (`generate()`, `count_tokens()`), handles configuration and model defaults. |
 | **WorkdayClient** | Handles Workday API pagination, location filtering, and job fetching. Applies seniority filters and returns normalized job data. |
-| **JobFetcherService** | Coordinates job fetching across multiple companies/platforms and search configurations. Applies search-specific title exclusions (via SearchConfig), syncs results to database, marks stale jobs, and automatically sets status=APPLIED for jobs found in tracker.Job (scoped by company). |
+| **JobFetcherService** | Coordinates job fetching across multiple companies and search configurations. For each SearchConfig, makes a single API call for the primary search_term, enforces exact title matching on results for the search_term and any related_terms, applies search-specific and company-specific exclusion filtering, syncs to database, marks stale jobs (scoped by search term), and automatically sets status=APPLIED for jobs found in tracker.Job. |
 | **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skills()` to produce both experience and skill-section entries used by `Resume` rendering. |
 | **JDParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
 | **Orchestrator** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative flows. |
@@ -192,25 +192,37 @@ Status transitions are managed through:
 3. **Immutable applied status**: Once marked APPLIED (either via sync or user action), jobs maintain this status
 
 #### Search Configuration Management
-Job filtering is configured per search term via the SearchConfig model:
+Job filtering is configured via the SearchConfig model, which supports both explicit search terms and related term variations:
 
-- Each active SearchConfig defines a search term (e.g., "Software Engineer", "Data Analyst")
-- Each config can specify exclusion terms (e.g., ["Senior", "Staff", "Principal"])
-- Exclusion logic is handled in JobFetcherService after fetching, not in platform clients
-- Configuration is managed via Django admin without code changes
-- New search terms can be added dynamically without modifying code
+- Each active SearchConfig defines a primary `search_term` (e.g., "Software Engineer")
+- Each config can specify `related_terms` (e.g., ["Software Developer", "Backend Engineer"]) to capture valid title variations
+- Each config can specify `exclude_terms` (e.g., ["Senior", "Staff", "Principal"]) applied across all terms
+- Companies can define `exclude_terms` at the company level for company-specific filtering
+
+**Filtering approach:**
+- Service makes a single API call for the primary `search_term`
+- Post-processing enforces exact match: job title must contain the `search_term` or any `related_terms`
+- Then applies exclusion terms as secondary filter (both config-level and company-level)
+- This approach prioritizes specificity over broad fuzzy matching
+
+**Rationale:**
+Platform search APIs lack exact-match operators and return overly broad results (e.g., "Business Analyst" searches return "Senior Software Engineer"). Rather than maintaining complex exclusion rules to filter noise, the system fetches a single broad set for the main search term and filters for known valid variations, enforcing exact title matching. This shifts effort from excluding unwanted results to curating valid term lists—a more maintainable approach as variations are discovered organically.
+
+**Example configuration:**
+```python
+SearchConfig(
+    search_term="Software Engineer",
+    related_terms=["Software Developer", "Backend Engineer", "Python Engineer"],
+    exclude_terms=["Senior", "Staff", "Principal", "Frontend"]
+)
+```
+
+This searches for "Software Engineer", "Software Developer", "Backend Engineer", and "Python Engineer" separately, keeps only jobs containing those exact terms, then filters out senior-level and frontend roles.
 
 **Service behavior:**
 - When `keywords` parameter is provided, syncs only SearchConfigs where search_term contains the keyword
 - When `keywords` is omitted, syncs all active SearchConfigs
-- This enables both exploratory searches and standardized role-based syncing
-
-**Example configurations:**
-- SearchConfig(search_term="Software Engineer", exclude_terms=["Staff", "Principal", "Frontend"])
-- SearchConfig(search_term="Data Analyst", exclude_terms=[])
-- SearchConfig(search_term="Business Intelligence Engineer", exclude_terms=["Director", "Manager"])
-
-This design allows flexible search exploration while maintaining role-specific filtering rules.
+- Company-level exclude_terms are merged with config-level exclude_terms during filtering
 
 #### User Workflow
 1. Run sync command: `python manage.py sync_jobs --keywords engineer --location Seattle` (filters to search configs containing "engineer", or omit --keywords to sync all active configs)
@@ -698,8 +710,9 @@ The interview preparation system generates structured preparation documents for 
 | Field | Type | Description |
 |-------|------|-------------|
 | id | IntegerField | Primary key |
-| search_term | CharField | Primary search keyword (e.g., "Software Engineer", "Data Analyst") - unique |
-| exclude_terms | JSONField | List of terms to exclude from job titles |
+| search_term | CharField | Primary search keyword (e.g., "Software Engineer") - unique |
+| related_terms | JSONField | List of related search terms sharing the same exclusion rules (e.g., ["Software Developer", "Backend Engineer"]) |
+| exclude_terms | JSONField | List of terms to exclude from job titles (applied after exact matching) |
 | active | BooleanField | Include in automated syncs |
 
 #### JobListing

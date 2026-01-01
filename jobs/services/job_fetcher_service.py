@@ -21,43 +21,39 @@ class JobFetcherService:
         max_results: int = None,
     ):
         """
-        Fetch jobs from companies and sync with database.
-        
-        Loops through all active search configurations (or filters by keywords)
-        and all active companies (or filters by company_name). For each 
-        company-search combination, fetches jobs, applies exclusion filtering,
-        and syncs to database.
-        
+        Fetch jobs from companies and sync them with the database.
+
+        For each company and search configuration, makes a single API call using
+        the primary search_term. Post-processing then filters results to only
+        include jobs whose titles match the search_term or any related_terms
+        (case-insensitive substring match). Exclusion filtering is applied afterwards.
+
         Args:
             company_name: Specific company to fetch from (None = all active companies)
             keywords: Filter search configurations by search_term (None = all active configs)
             location: Location filter passed to platform client
-            max_results: Max results per company per search
-            
+            max_results: Max results per company per search term
+
         Returns:
             Dict with stats keyed by "{company_name} - {search_term}":
             {
                 "Company - Search Term": {
                     "new": X,
                     "updated": Y,
-                    "total": Z
+                    "applied": Z,
+                    "total": W
                 },
                 ...
             }
-            
-        Example:
-            service.fetch_and_sync_jobs(keywords="engineer", location="Seattle")
-            # Returns stats for all companies, all search configs containing "engineer"
         """
         companies = self._get_companies(company_name)
         search_configs = self._get_search_configs(keywords)
-        
         all_stats = {}
         
         for company in companies:
             for config in search_configs:
                 key = f"{company.name} - {config.search_term}"
-                
+
                 try:
                     jobs = self._fetch_jobs_for_company(
                         company,
@@ -65,19 +61,26 @@ class JobFetcherService:
                         location,
                         max_results
                     )
-                    exclude_terms = company.exclude_terms + config.exclude_terms
-                    filtered_jobs = self._filter_excluded_jobs(jobs, exclude_terms)
-                    all_stats[key] = self._sync_jobs_to_database(company, filtered_jobs, config.search_term)
-                    
+
                 except JobFetcherClientError as e:
-                    print(f"Error fetching jobs from {company.name}: {e}")
-                    all_stats[key] = {"error": str(e)}
+                        print(f"Error fetching jobs from {company.name}: {e}")
+                        all_stats[key] = {"error": str(e)}
+                        continue
 
                 except Exception as e:
                     raise JobFetcherServiceError(
                         f"Unexpected error while fetching jobs for {company.name}"
                     ) from e
-        
+                
+                all_stats[key] = self._sync_jobs_to_database(
+                    company,
+                    self._filter_excluded_jobs(
+                        self._filter_exact_match(jobs, config),
+                        (company.exclude_terms or []) + config.exclude_terms
+                    ),
+                    config.search_term
+                )
+
         self._cleanup_stale_jobs()
 
         return all_stats
@@ -88,17 +91,31 @@ class JobFetcherService:
             configs = configs.filter(search_term__icontains=keywords)
 
         return configs
+    
+    def _filter_exact_match(self, jobs, config):
+        """
+        Filter jobs to those whose title contains the search_term or any related_terms
+        from the given SearchConfig (case-insensitive, substring match).
+        """
+        all_terms = [config.search_term] + (config.related_terms or [])
+        terms_lower = [t.lower() for t in all_terms]
+
+        return [
+            job
+            for job in jobs
+            if any(t in job["title"].lower() for t in terms_lower)
+        ]
         
     def _filter_excluded_jobs(self, jobs, exclude_terms):
         if not exclude_terms:
             return jobs
         
-        filtered = []
-        for job in jobs:
-            if not any(term.lower() in job["title"].lower() for term in exclude_terms):
-                filtered.append(job)
+        exclude_terms_lower = [t.lower() for t in exclude_terms]
 
-        return filtered
+        return [
+            job for job in jobs 
+            if not any(t in job["title"].lower() for t in exclude_terms_lower)
+        ]
     
     def _get_companies(self, company_name: str = None):
         """Get active companies to fetch from."""

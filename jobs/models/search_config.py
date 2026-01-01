@@ -7,6 +7,11 @@ class SearchConfig(models.Model):
         unique=True,
         help_text="Primary search keyword (e.g., 'Software Engineer', 'Data Analyst')"
     )
+    related_terms = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of related search terms sharing the same exclusion rules (e.g., ['Software Developer'])"
+    )
     exclude_terms = models.JSONField(
         default=list,
         blank=True,
