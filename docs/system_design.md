@@ -138,7 +138,7 @@ job_search_automation/ (Django Project)
 |-------|----------------|
 | **ClaudeClient** | Wraps LLM API calls (`generate()`, `count_tokens()`), handles configuration and model defaults. |
 | **WorkdayClient** | Handles Workday API pagination, location filtering, and job fetching. Applies seniority filters and returns normalized job data. |
-| **JobFetcherService** | Coordinates job fetching across multiple companies and search configurations. For each SearchConfig, makes separate API calls for the primary search_term and each related_term, enforces exact title matching on fetched results, applies search-specific and company-specific exclusion filtering, syncs to database, marks stale jobs (scoped by search term), and automatically sets status=APPLIED for jobs found in tracker.Job. |
+| **JobFetcherService** | Coordinates job fetching across multiple companies and search configurations. For each SearchConfig, makes a single API call for the primary search_term, enforces exact title matching on results for the search_term and any related_terms, applies search-specific and company-specific exclusion filtering, syncs to database, marks stale jobs (scoped by search term), and automatically sets status=APPLIED for jobs found in tracker.Job. |
 | **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skills()` to produce both experience and skill-section entries used by `Resume` rendering. |
 | **JDParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
 | **Orchestrator** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative flows. |
@@ -200,13 +200,13 @@ Job filtering is configured via the SearchConfig model, which supports both expl
 - Companies can define `exclude_terms` at the company level for company-specific filtering
 
 **Filtering approach:**
-- Service makes separate API calls for `search_term` + each `related_term`
-- After fetching, enforces exact match: job title must contain the specific term used in that API call
+- Service makes a single API call for the primary `search_term`
+- Post-processing enforces exact match: job title must contain the `search_term` or any `related_terms`
 - Then applies exclusion terms as secondary filter (both config-level and company-level)
 - This approach prioritizes specificity over broad fuzzy matching
 
 **Rationale:**
-Platform search APIs lack exact-match operators and return overly broad results (e.g., "Business Analyst" searches return "Senior Software Engineer"). Rather than maintaining complex exclusion rules to filter noise, the system fetches specifically for known valid variations and enforces exact title matching. This shifts effort from excluding unwanted results to curating valid term lists—a more maintainable approach as variations are discovered organically.
+Platform search APIs lack exact-match operators and return overly broad results (e.g., "Business Analyst" searches return "Senior Software Engineer"). Rather than maintaining complex exclusion rules to filter noise, the system fetches a single broad set for the main search term and filters for known valid variations, enforcing exact title matching. This shifts effort from excluding unwanted results to curating valid term lists—a more maintainable approach as variations are discovered organically.
 
 **Example configuration:**
 ```python

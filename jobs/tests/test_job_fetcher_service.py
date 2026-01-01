@@ -285,18 +285,6 @@ class TestJobFetcherService(TestCase):
         self.assertTrue(JobListing.objects.filter(external_id="JOB-1").exists())
         self.assertTrue(JobListing.objects.filter(external_id="JOB-2").exists())
 
-    def test_fetch_and_sync_jobs_makes_separate_calls_for_related_terms(self):
-        self.search_config.related_terms = ["Software Developer", "Backend Engineer"]
-        self.search_config.save()
-        
-        self.service.fetch_and_sync_jobs()
-        
-        self.assertEqual(self.mock_client.fetch_jobs.call_count, 3)
-        call_args = [call[1]["keywords"] for call in self.mock_client.fetch_jobs.call_args_list]
-        self.assertIn("Software Engineer", call_args)
-        self.assertIn("Software Developer", call_args)
-        self.assertIn("Backend Engineer", call_args)
-
     def test_fetch_and_sync_jobs_filters_config_excluded_terms(self):
         self.search_config.exclude_terms = ["Senior"]
         self.search_config.save(update_fields=["exclude_terms"])

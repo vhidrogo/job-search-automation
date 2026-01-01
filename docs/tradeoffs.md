@@ -801,9 +801,8 @@ Platform search APIs (Workday, Greenhouse, etc.) do not support exact-match oper
    - Allow combined term exclusions to handle multi-word patterns.
    - Requires parsing exclusion strings and implementing AND/OR logic.
 3. **Exact term matching with curated related variants:**  
-   - Make separate API calls for primary term + each related term.
-   - Enforce exact match: title must contain the specific term used in that API call.
-   - Maintain explicit list of valid variations via `related_terms` field.
+   - Make a single API call for the primary term.
+   - Post-process results to keep only jobs whose title contains the `search_term` or any `related_terms`.
    - Apply exclusions as secondary filter after exact matching.
 
 **Tradeoffs:**  
@@ -811,7 +810,7 @@ Platform search APIs (Workday, Greenhouse, etc.) do not support exact-match oper
   - ✅ Fewest API calls.
   - ❌ Exclusion lists grow indefinitely as edge cases discovered.
   - ❌ Cannot reliably handle long multi-word variations.
-  - ❌ Reactive approach—continuously adding exclusions rather than being proactive about what to include.
+  - ❌ Reactive approach—continuously adding exclusions rather than proactively curating valid terms.
 - **Boolean exclusion operators:**  
   - ✅ Handles complex exclusion patterns.
   - ✅ More expressive than simple term lists.
@@ -822,13 +821,14 @@ Platform search APIs (Workday, Greenhouse, etc.) do not support exact-match oper
   - ✅ Proactive—explicitly specify what to include rather than what to exclude.
   - ✅ Exact matching eliminates "Propulsion Engineer" from "Software Engineer" searches.
   - ✅ More maintainable—add variations organically as discovered vs. endless exclusion rules.
-  - ✅ Clear intent—"I want Software Engineer and these 3 known variations".
+  - ✅ Clear intent—"I want Software Engineer and these known variations".
   - ✅ Shared exclusions across related terms (DRY).
-  - ❌ More API calls (one per related term).
+  - ❌ Slightly more API calls (one per config, but not per related term).
   - ❌ Requires discovering and adding valid variations manually.
 
 **Decision:**  
-Adopt **exact term matching with curated related variants**. Each SearchConfig specifies `search_term` + `related_terms` list. JobFetcherService makes separate API calls for each term, enforces exact title matching (job title must contain that specific term), then applies exclusion rules as secondary filter. This shifts focus from "exclude noise" to "include known valid variations".
+Adopt **exact term matching with curated related variants**. Each SearchConfig specifies `search_term` + `related_terms` list. JobFetcherService makes a single API call for the search_term, filters results for exact matches against the search_term and related_terms, then applies exclusion rules as secondary filter. This shifts focus from "exclude noise" to "include known valid variations".
 
 **Reflection:**  
-This decision reflects a fundamental shift from reactive filtering (exclude everything unwanted) to proactive curation (fetch only known valid terms). The key insight is that platform APIs return such broad results that exclusion-based approaches become unmaintainable—there are too many possible unwanted variations to anticipate. By enforcing exact matches, the system eliminates entire categories of noise (e.g., "Propulsion Engineer" never matches "Software Engineer" searches). The additional API calls are acceptable overhead given typical search counts (5-10 configs × 2-4 terms each = 20-40 calls total), and exact matching dramatically improves signal-to-noise ratio. Discovering related terms organically through actual searches is more sustainable than predicting all possible exclusion patterns upfront. The approach also maintains flexibility—exclusions still handle level-based filtering ("Senior", "Staff") and role-specific filtering ("Frontend") after exact matching has already eliminated most noise.
+This decision reflects a fundamental shift from reactive filtering (exclude everything unwanted) to proactive curation (fetch only known valid terms). Platform APIs return overly broad results, making exclusion-based approaches unmaintainable. Exact matching eliminates entire categories of noise (e.g., "Propulsion Engineer" never matches "Software Engineer" searches). The slightly higher API overhead is acceptable given typical search counts (5-10 configs × 1 primary term each = 5-10 calls), and exact matching dramatically improves signal-to-noise ratio. Related terms are discovered organically and curated over time, while exclusion rules continue to handle level-based ("Senior", "Staff") and role-specific ("Frontend") filtering.
+
