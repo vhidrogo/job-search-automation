@@ -49,7 +49,6 @@ class WorkdayClient:
     def fetch_jobs(
         self,
         keywords: Optional[str] = None,
-        location: Optional[str] = None,
         max_results: Optional[int] = None,
     ) -> List[Dict]:
         """
@@ -57,14 +56,13 @@ class WorkdayClient:
         
         Args:
             keywords: Search keywords (server-side filter)
-            location: Location name (uses location_id if configured)
             max_results: Maximum number of jobs to return
             verbose: Print progress messages
             
         Returns:
             List of job dicts: {company_name, title, location, url_path, posted_on, external_id}
         """
-        location_ids = self._get_location_ids(location)
+        location_ids = self._get_location_ids()
         
         offset = 0
         total_available = None
@@ -92,16 +90,12 @@ class WorkdayClient:
             
         return all_jobs
 
-    def _get_location_ids(self, location):
-        """Get Workday location IDs from location name."""
-        if not location or not self.config.location_filters:
+    def _get_location_ids(self):
+        """Get all Workday location IDs from config."""
+        if not self.config.location_filters:
             return []
         
-        location_id = self.config.location_filters.get(location)
-        if location_id:
-            return [location_id]
-        
-        return []
+        return list(self.config.location_filters.values())
 
     def _fetch_page(self, keywords, location_ids, offset):
         """Fetch a single page of jobs from Workday API."""

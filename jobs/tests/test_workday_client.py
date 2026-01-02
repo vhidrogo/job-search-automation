@@ -28,8 +28,17 @@ class TestWorkdayCompanyConfig(TestCase):
 
 
 class TestWorkdayClient(TestCase):
-    LOCATION_NAME = "Seattle"
-    LOCATION_ID = "c8fdb73683a50112d3023d34321b428c"
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.config = WorkdayCompanyConfig(
+            name="Nordstrom",
+            base_url="https://nordstrom.wd501.myworkdayjobs.com",
+            tenant="nordstrom",
+            site="nordstrom_careers",
+            location_filters={},
+        )
+        cls.workday_client = WorkdayClient(cls.config)
 
     def setUp(self):
         patcher = patch("jobs.clients.workday_client.requests.post")
@@ -45,15 +54,6 @@ class TestWorkdayClient(TestCase):
 
         self.mock_post.return_value = mock_response
 
-        self.config = WorkdayCompanyConfig(
-            name="Nordstrom",
-            base_url="https://nordstrom.wd501.myworkdayjobs.com",
-            tenant="nordstrom",
-            site="nordstrom_careers",
-            location_filters={self.LOCATION_NAME: self.LOCATION_ID},
-        )
-        self.client = WorkdayClient(self.config)
-
     def test_fetch_jobs_returns_normalized_jobs(self):
         self.mock_post.return_value.json.return_value = {
             "total": 1,
@@ -67,23 +67,34 @@ class TestWorkdayClient(TestCase):
             ]
         }
 
-        jobs = self.client.fetch_jobs()
+        jobs = self.workday_client.fetch_jobs()
 
         self.assertEqual(len(jobs), 1)
         self.assertEqual(jobs[0]["company_name"], self.config.name)
         self.assertEqual(jobs[0]["title"], "Software Engineer")
 
     def test_fetch_jobs_returns_empty_list_when_no_jobs(self):
-        jobs = self.client.fetch_jobs()
+        jobs = self.workday_client.fetch_jobs()
         self.assertEqual(jobs, [])
 
-    def test_fetch_jobs_applies_location_filter(self):
-        self.client.fetch_jobs(location=self.LOCATION_NAME)
+    def test_fetch_jobs_applies_location_filters(self):
+        config = WorkdayCompanyConfig(
+            name="Company",
+            base_url="url",
+            tenant="tenant",
+            site="site",
+            location_filters={
+                "Seattle, WA": "abc123",
+                "Chicago, IL": "xyz456",
+                },
+        )
+        client = WorkdayClient(config)
+        
+        client.fetch_jobs()
 
         _, kwargs = self.mock_post.call_args
         payload = kwargs["json"]
-
-        self.assertEqual(payload["appliedFacets"]["locations"], [self.LOCATION_ID])
+        self.assertEqual(payload["appliedFacets"]["locations"], ["abc123", "xyz456"])
 
     def test_fetch_jobs_respects_max_results(self):
         self.mock_post.return_value.json.return_value = {
@@ -94,7 +105,7 @@ class TestWorkdayClient(TestCase):
             ],
         }
 
-        jobs = self.client.fetch_jobs(max_results=1)
+        jobs = self.workday_client.fetch_jobs(max_results=1)
 
         self.assertEqual(len(jobs), 1)
 
@@ -102,7 +113,7 @@ class TestWorkdayClient(TestCase):
         self.mock_post.return_value.raise_for_status.side_effect = requests.HTTPError()
 
         with self.assertRaises(WorkdayClientError):
-            self.client.fetch_jobs()
+            self.workday_client.fetch_jobs()
 
     def test_fetch_jobs_stops_when_api_returns_no_more_jobs(self):
         self.mock_post.return_value.json.return_value = {
@@ -110,7 +121,7 @@ class TestWorkdayClient(TestCase):
             "total": 10,
         }
 
-        jobs = self.client.fetch_jobs()
+        jobs = self.workday_client.fetch_jobs()
 
         self.assertEqual(jobs, [])
         self.assertEqual(self.mock_post.call_count, 1)
