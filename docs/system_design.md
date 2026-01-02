@@ -14,7 +14,7 @@ Automates discovery of job postings from company career sites and job boards, ag
 - Automatic deduplication against applied jobs from tracker system
 - User status tracking (new, interested, dismissed, applied)
 - Search configuration management (search terms with role-specific exclusions via SearchConfig model)
-- Location-based filtering using platform-specific location IDs
+- Location-based filtering configured per company via platform-specific config models (e.g., WorkdayConfig.location_filters)
 - Stale job detection and cleanup (jobs no longer appearing in API results)
 - Batch syncing via management command with keyword/location filters
 
@@ -137,7 +137,7 @@ job_search_automation/ (Django Project)
 | Class | Responsibility |
 |-------|----------------|
 | **ClaudeClient** | Wraps LLM API calls (`generate()`, `count_tokens()`), handles configuration and model defaults. |
-| **WorkdayClient** | Handles Workday API pagination, location filtering, and job fetching. Applies seniority filters and returns normalized job data. |
+| **WorkdayClient** | Handles Workday API pagination and job fetching. Automatically applies all configured location filters from WorkdayConfig and returns normalized job data. |
 | **JobFetcherService** | Coordinates job fetching across multiple companies and search configurations. For each SearchConfig, makes a single API call for the primary search_term, enforces exact title matching on results for the search_term and any related_terms, applies search-specific and company-specific exclusion filtering, syncs to database, marks stale jobs (scoped by search term), and automatically sets status=APPLIED for jobs found in tracker.Job. |
 | **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skills()` to produce both experience and skill-section entries used by `Resume` rendering. |
 | **JDParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
@@ -165,7 +165,7 @@ The system fetches job postings from multiple platforms and aggregates them into
 
 #### Syncing Process
 1. **Client initialization**: Platform client created from company config
-3. **Search-based filtering**: Applies location filters and search-specific title exclusions (configured via SearchConfig model)
+3. **Location and search-based filtering**: Applies configured location filters (from platform config) and search-specific title exclusions (from SearchConfig model)
 4. **Normalization**: Returns standardized job dict format across platforms
 5. **Applied job detection**: Checks fetched jobs against tracker.Job records for the company and marks matching jobs as APPLIED
 6. **Syncing**: Updates database via `update_or_create`, tracking `last_fetched` timestamps
@@ -225,7 +225,7 @@ This searches for "Software Engineer", "Software Developer", "Backend Engineer",
 - Company-level exclude_terms are merged with config-level exclude_terms during filtering
 
 #### User Workflow
-1. Run sync command: `python manage.py sync_jobs --keywords engineer --location Seattle` (filters to search configs containing "engineer", or omit --keywords to sync all active configs)
+1. Run sync command: `python manage.py sync_jobs --keywords engineer` (filters to search configs containing "engineer", or omit --keywords to sync all active configs)
 2. Visit `/jobs/` to see new listings (default filter: `status=NEW`)
 3. Review each job and update status:
    - Mark as **INTERESTED** to flag for potential application
@@ -703,8 +703,8 @@ The interview preparation system generates structured preparation documents for 
 | company | OneToOne(Company) | Associated company (platform must be workday) |
 | base_url | URLField | Workday careers site base URL |
 | tenant | CharField | Workday tenant identifier |
-| site | CharField | Workday site identifier |
-| location_filters | JSONField | Map of location names to Workday location IDs |
+| location_filters | JSONField | Map of location names to Workday location IDs - all IDs used in API requests when populated |
+
 
 #### SearchConfig
 | Field | Type | Description |

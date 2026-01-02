@@ -9,7 +9,6 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--company", type=str, help="Specific company name")
         parser.add_argument("--keywords", type=str, help="Filter search terms (e.g., 'engineer')")
-        parser.add_argument("--location", type=str, help="Location filter (e.g., Seattle)")
         parser.add_argument("--max", type=int, help="Max results per company per search")
     
     def handle(self, *args, **options):
@@ -21,7 +20,6 @@ class Command(BaseCommand):
         stats = service.fetch_and_sync_jobs(
             company_name=options.get("company"),
             keywords=keywords,
-            location=options.get("location"),
             max_results=options.get("max"),
         )
         
@@ -33,6 +31,6 @@ class Command(BaseCommand):
                 applied_msg = f" ({result['applied']} already applied)" if result['applied'] > 0 else ""
                 self.stdout.write(
                     self.style.SUCCESS(
-                        f"{key}: {result['new']} new{applied_msg}, {result['updated']} updated, {result['total']} total"
+                        f"{key}\n\t{result['new']} new{applied_msg}\n\t{result['updated']} updated\n\t{result['total']} total"
                     )
                 )

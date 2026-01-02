@@ -17,7 +17,6 @@ class JobFetcherService:
         self,
         company_name: str = None,
         keywords: str = None,
-        location: str = None,
         max_results: int = None,
     ):
         """
@@ -31,7 +30,6 @@ class JobFetcherService:
         Args:
             company_name: Specific company to fetch from (None = all active companies)
             keywords: Filter search configurations by search_term (None = all active configs)
-            location: Location filter passed to platform client
             max_results: Max results per company per search term
 
         Returns:
@@ -58,7 +56,6 @@ class JobFetcherService:
                     jobs = self._fetch_jobs_for_company(
                         company,
                         config.search_term,
-                        location,
                         max_results
                     )
 
@@ -124,13 +121,12 @@ class JobFetcherService:
             companies = companies.filter(name=company_name)
         return companies
     
-    def _fetch_jobs_for_company(self, company, search_term, location, max_results):
+    def _fetch_jobs_for_company(self, company, search_term, max_results):
         """Fetch jobs from a single company using appropriate client."""
         client = company.get_job_fetcher()
 
         return client.fetch_jobs(
             keywords=search_term,
-            location=location,
             max_results=max_results,
         )
     
