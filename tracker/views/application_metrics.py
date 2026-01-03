@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import timedelta
 
 from django.db.models import Count
 from django.shortcuts import render
@@ -56,7 +57,7 @@ def application_metrics(request):
 
     callbacks = applications.filter(status__state="callback")
     callback_analysis = _analyze_dimension_breakdowns(callbacks)
-    callback_timeline = _build_callback_timeline(callbacks)
+    callback_timeline = _build_callback_timeline_with_metrics(callbacks, applications)
 
     rejections = applications.filter(status__state="rejected")
     rejection_summary = _build_rejection_summary(rejections)
@@ -363,32 +364,56 @@ def _build_volume_timeline(queryset):
     return result
 
 
-def _build_callback_timeline(queryset):
+def _build_callback_timeline_with_metrics(callbacks_queryset, all_applications_queryset):
     """
     Build callback timeline showing when callbacks occurred (by applied_date).
-    Includes all dates in range with zero counts for dates without callbacks.
-    Returns list of {date, count} dicts for charting.
+    Includes running application count and callback rate for each callback date.
+    Returns list of {date, count, running_total, callback_rate} dicts for charting.
     """
-    from datetime import timedelta
-    
     callback_dates = defaultdict(int)
     
-    for app in queryset:
+    for app in callbacks_queryset:
         local_date = timezone.localtime(app.applied_date).date()
         callback_dates[local_date] += 1
     
     if not callback_dates:
         return []
     
+    # Build running total of applications up to each date
+    all_apps_by_date = []
+    for app in all_applications_queryset:
+        local_date = timezone.localtime(app.applied_date).date()
+        all_apps_by_date.append(local_date)
+    
+    all_apps_by_date.sort()
+    
     min_date = min(callback_dates.keys())
     max_date = max(callback_dates.keys())
     
     result = []
+    running_total = 0
+    running_callbacks = 0
+    
     current_date = min_date
     while current_date <= max_date:
+        # Count applications up to and including current date
+        apps_up_to_date = sum(1 for d in all_apps_by_date if d <= current_date)
+        
+        # Count callbacks up to and including current date
+        callbacks_up_to_date = sum(
+            count for date, count in callback_dates.items() if date <= current_date
+        )
+        
+        callback_count = callback_dates.get(current_date, 0)
+        
+        # Calculate callback rate at this point in time
+        callback_rate = _safe_percentage(callbacks_up_to_date, apps_up_to_date)
+        
         result.append({
             "date": current_date.isoformat(),
-            "count": callback_dates.get(current_date, 0)
+            "count": callback_count,
+            "running_total": apps_up_to_date,
+            "callback_rate": callback_rate
         })
         current_date += timedelta(days=1)
     
@@ -459,7 +484,7 @@ def _build_dimension_deep_dive(queryset, dimension):
     """
     Build detailed breakdown for a single dimension showing:
     - Total applications
-    - Callbacks
+    - Callbacks (with callback rate %)
     - Rejected
     - Closed
     - No Response
@@ -506,6 +531,7 @@ def _build_dimension_deep_dive(queryset, dimension):
             "value": value,
             "total": stats["total"],
             "callbacks": stats["callbacks"],
+            "callback_rate": _safe_percentage(stats["callbacks"], stats["total"]),
             "rejected": stats["rejected"],
             "closed": stats["closed"],
             "no_response": stats["no_response"],
@@ -546,6 +572,7 @@ def _build_location_deep_dive(queryset):
             "value": location,
             "total": stats["total"],
             "callbacks": stats["callbacks"],
+            "callback_rate": _safe_percentage(stats["callbacks"], stats["total"]),
             "rejected": stats["rejected"],
             "closed": stats["closed"],
             "no_response": stats["no_response"],
