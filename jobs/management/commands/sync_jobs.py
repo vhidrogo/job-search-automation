@@ -1,3 +1,5 @@
+from textwrap import dedent
+
 from django.core.management.base import BaseCommand
 
 from jobs.services import JobFetcherService
@@ -23,14 +25,47 @@ class Command(BaseCommand):
             max_results=options.get("max"),
         )
         
-        self.stdout.write(self.style.SUCCESS("\n=== SYNC SUMMARY ==="))
+        # --------------------
+        # Sync Summary (DB-level, informational)
+        # --------------------
+        self.stdout.write(self.style.SUCCESS("=== SYNC SUMMARY ==="))
+
+        status_rows = []
+
         for key, result in stats.items():
             if "error" in result:
                 self.stdout.write(self.style.ERROR(f"{key}: {result['error']}"))
-            else:
-                applied_msg = f" ({result['applied']} already applied)" if result['applied'] > 0 else ""
+                continue
+
+            new = result["new"]
+            updated = result["updated"]
+            total = result["total"]
+            applied = result.get("applied", 0)
+            to_review = max(new - applied, 0)
+
+            message = dedent(f"""
+                {key}
+                    {new} new
+                    {updated} updated
+                    {total} total
+            """).strip()
+
+            self.stdout.write(self.style.SUCCESS(message))
+
+            if to_review > 0:
+                status_rows.append((key, to_review))
+
+        # --------------------
+        # Status Summary (signal)
+        # --------------------
+        if status_rows:
+            self.stdout.write(self.style.WARNING("\n=== STATUS SUMMARY ==="))
+            for company, to_review in status_rows:
                 self.stdout.write(
-                    self.style.SUCCESS(
-                        f"{key}\n\t{result['new']} new{applied_msg}\n\t{result['updated']} updated\n\t{result['total']} total"
-                    )
+                    self.style.WARNING(f"{company}: {to_review} to review")
                 )
+        else:
+            self.stdout.write(
+                self.style.SUCCESS("\n=== STATUS SUMMARY ===\nNo new jobs to review")
+            )
+
