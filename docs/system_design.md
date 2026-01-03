@@ -142,7 +142,6 @@ job_search_automation/ (Django Project)
 | **ResumeWriter** | Handles LLM-driven **bullet generation** for a given experience role and requirements; includes `generate_experience_bullets()` and `generate_skills()` to produce both experience and skill-section entries used by `Resume` rendering. |
 | **JDParser (JDParser)** | Parses JD text → extracts requirements and metadata (JSON). |
 | **Orchestrator** | Orchestrator CLI/entrypoint: invokes JDParser, calls ResumeWriter for bullets, persists Job/Requirement/Resume/ResumeBullet via tracker models, and manages iterative flows. |
-| **Job (model methods)** | `generate_resume_pdf()` — entry point for on-demand PDF generation via Django admin; delegates to `Resume.render_to_pdf()` for actual rendering. |
 | **Resume (model methods)** | `render_to_pdf()` — assembles template with bullets and skills, renders HTML via Jinja2, converts to PDF via WeasyPrint. |
 | **InterviewPrepGenerator** | Coordinates generation of interview preparation content via LLM; handles both base preparation (company context, drivers, narrative) and interview-specific preparation (predicted questions, interviewer questions). |
 
@@ -285,13 +284,12 @@ Resume templates use **HTML + CSS + Jinja2**, rendered to PDF via **WeasyPrint**
 - The orchestrator fetches the appropriate HTML template based on `Job.role` and `Job.level`, then renders it with Jinja2 using data from `Resume`, `ResumeSkillsCategory`, and `ResumeSkillsCategory` models.
 
 **Rendering Pipeline:**  
-1. User triggers PDF generation via Django admin action on a `Job` record.
-2. `Job.generate_resume_pdf()` fetches associated `Resume` and delegates to `Resume.render_to_pdf()`.
-3. `Resume.render_to_pdf()` fetches `ResumeTemplate` and associated `TemplateRoleConfig` entries.
-4. Query `ResumeSkillsCategory` and `ResumeSkillsCategory` objects (filtered by `exclude=False`), using `override_text` if present, otherwise `text`.
-5. Render HTML template with Jinja2, injecting roles (using `title_override` if present), bullets and skills.
-6. Pass rendered HTML + CSS to WeasyPrint for PDF generation.
-7. Save output file with naming convention based on job details (e.g., `{company}_{listing_job_title}_{level}.pdf`).
+1. User triggers PDF generation via Django admin action on a `Resume` record.
+2. `Resume.render_to_pdf()` fetches `ResumeTemplate` and associated `TemplateRoleConfig` entries.
+3. Query `ResumeSkillsCategory` and `ResumeSkillsCategory` objects (filtered by `exclude=False`), using `override_text` if present, otherwise `text`.
+4. Render HTML template with Jinja2, injecting roles (using `title_override` if present), bullets and skills.
+5. Pass rendered HTML + CSS to WeasyPrint for PDF generation.
+6. Save output file with naming convention based on job details (e.g., `{company}_{listing_job_title}_{level}.pdf`).
 
 **Template Directory Structure:**  
 ```
@@ -334,7 +332,7 @@ This approach:
 
 ### Output Generation
 - Generate PDF on-demand via Django admin action.
-- Trigger PDF generation through `Job.generate_resume_pdf()`.
+- Trigger PDF generation through `Resume.render_to_pdf()`.
 - Maintain versioning.
 
 ### Application Logging
@@ -732,7 +730,7 @@ The interview preparation system generates structured preparation documents for 
 
 ---
 
-### End-to-End Flow Diagram
+### End-to-End Flow Diagram: Resume Generation & Application Tracking
 
 ```mermaid
 flowchart TD
@@ -743,10 +741,10 @@ flowchart TD
     E --> F["Fetch TemplateRoleConfig → ExperienceRoles"]
     F --> G["For each ExperienceRole: ResumeWriter.generate_experience_bullets()"]
     G --> H["ResumeWriter.generate_skills()"]
-    H --> I["Persist Resume + ResumeSkillsCategory + ResumeSkillsCategory objects"]
-    I --> J["User reviews + edits bullets (override/exclude) via Django admin"]
-    J --> K["User triggers Job.generate_resume_pdf() via Django admin action"]
-    K --> L["Resume.render_to_pdf() → PDF saved to output directory"]
+    H --> I["Persist Resume + ResumeRoleBullet + ResumeSkillsCategory objects"]
+    I --> J["Resume.render_to_pdf() → PDF automatically generated and opened"]
+    J --> K["User reviews resume (optional: edit bullets via Django admin)"]
+    K --> L["If edited: Re-run Resume.render_to_pdf() for updated PDF"]
     L --> M["User saves Application record via Django admin"]
     M --> N["Admin updates ApplicationStatus for outcome tracking"]
     N --> O["Analytics layer: compute feedback loops & high-ROI insights"]
@@ -925,7 +923,7 @@ Incremental Build Plan
 | [x] Phase 3 | Bullet generation loop | JSON output |
 | [x] Phase 4 | Skill-section generation | JSON output |
 | [x] Phase 5 | Template selection | Correct HTML template (TemplateRoleConfig-based) |
-| [x] Phase 6 | Resume rendering | `Job.generate_resume_pdf()` + `Resume.render_to_pdf()` |
+| [x] Phase 6 | Resume rendering | `Resume.render_to_pdf()` |
 | [x] Phase 7 | orchestration app End-to-end automation | Persisted resume + tracker models |
 | [x] Phase 8 | Analytics | dashboards: compute feedback loops & high-ROI insights |
 | [x] Phase 9 | Interview Preparation System | `InterviewPrepGenerator`, models, view, command |
