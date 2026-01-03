@@ -664,19 +664,46 @@
         {% if callback_analysis.total > 0 %}
         const callbackCtx = document.getElementById('callbackChart').getContext('2d');
         const callbackData = {{ callback_timeline|safe }};
-        
-        new Chart(callbackCtx, {
+
+        // Track isolated state
+        let isolatedIndex = null;
+
+        const callbackChart = new Chart(callbackCtx, {
             type: 'bar',
             data: {
                 labels: callbackData.map(d => d.date),
                 datasets: [{
                     label: 'Callbacks',
                     data: callbackData.map(d => d.count),
-                    backgroundColor: '#4CAF50',
+                    backgroundColor: function(context) {
+                        const index = context.dataIndex;
+                        if (isolatedIndex === null || isolatedIndex === index) {
+                            return '#4CAF50';
+                        }
+                        return 'rgba(76, 175, 80, 0.2)';
+                    },
                 }]
             },
             options: {
                 responsive: true,
+                onClick: function(event, activeElements) {
+                    if (activeElements.length > 0) {
+                        const clickedIndex = activeElements[0].index;
+                        
+                        // Toggle isolation
+                        if (isolatedIndex === clickedIndex) {
+                            isolatedIndex = null; // Un-isolate
+                        } else {
+                            isolatedIndex = clickedIndex; // Isolate this bar
+                        }
+                        
+                        callbackChart.update();
+                    } else {
+                        // Clicked on empty space, clear isolation
+                        isolatedIndex = null;
+                        callbackChart.update();
+                    }
+                },
                 scales: {
                     y: { 
                         beginAtZero: true, 
@@ -703,7 +730,9 @@
                         formatter: function(value, context) {
                             const index = context.dataIndex;
                             const dataPoint = callbackData[index];
-                            if (dataPoint.count > 0) {
+                            
+                            // Only show label for isolated bar or all bars if none isolated
+                            if ((isolatedIndex === null || isolatedIndex === index) && dataPoint.count > 0) {
                                 return `Apps: ${dataPoint.running_total}\nRate: ${dataPoint.callback_rate}%`;
                             }
                             return '';
