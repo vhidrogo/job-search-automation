@@ -266,6 +266,7 @@ def _group_location(location):
         "oak brook",
         "oakbrook terrace",
         "schaumburg",
+        "skokie",
     }
 
     if city in chicago_area_cities:
@@ -274,6 +275,10 @@ def _group_location(location):
     milwaukee_area_cities = {
         "milwaukee",
         "racine",
+        "brookfield",
+        "menomonee falls",
+        "mequon",
+        "pewaukee",
     }
 
     if city in milwaukee_area_cities:
