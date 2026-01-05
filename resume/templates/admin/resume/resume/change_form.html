@@ -1,0 +1,15 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+
+{% block submit_buttons_bottom %}
+    {{ block.super }}
+    {% if original %}
+        <div class="submit-row">
+            <a href="{% url 'admin:resume_resume_render_pdf' original.pk %}" 
+               class="button" 
+               style="margin-left: 10px;">
+                Render to PDF
+            </a>
+        </div>
+    {% endif %}
+{% endblock %}

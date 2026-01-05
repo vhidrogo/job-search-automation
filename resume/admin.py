@@ -1,6 +1,8 @@
 from django import forms
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db import models
+from django.shortcuts import redirect
+from django.urls import path, reverse
 from django_json_widget.widgets import JSONEditorWidget
 
 from .models import (
@@ -90,10 +92,44 @@ class ExperienceRoleAdmin(admin.ModelAdmin):
 class ResumeAdmin(admin.ModelAdmin):
     search_fields = ["job__company"]
     actions = ["render_resume_to_pdf"]
+    change_form_template = "admin/resume/resume/change_form.html"
     inlines = [
         ResumeRoleInline,
         ResumeSkillsCategoryInline,
     ]
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                '<path:object_id>/render-pdf/',
+                self.admin_site.admin_view(self.render_pdf_view),
+                name='resume_resume_render_pdf',
+            ),
+        ]
+        return custom_urls + urls
+    
+    def render_pdf_view(self, request, object_id):
+        resume = self.get_object(request, object_id)
+        if resume is None:
+            self.message_user(request, "Resume not found.", level=messages.ERROR)
+            return redirect('admin:resume_resume_changelist')
+        
+        try:
+            pdf_path = resume.render_to_pdf()
+            self.message_user(
+                request,
+                f"Successfully rendered resume to PDF: {pdf_path}",
+                level=messages.SUCCESS
+            )
+        except Exception as e:
+            self.message_user(
+                request,
+                f"Error rendering PDF: {str(e)}",
+                level=messages.ERROR
+            )
+        
+        return redirect('admin:resume_resume_change', object_id=object_id)
     
     @admin.action(description="Render resume to PDF")
     def render_resume_to_pdf(self, request, queryset):
