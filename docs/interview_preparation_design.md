@@ -1,0 +1,219 @@
+# Interview Preparation - Subsystem Design
+
+*LLM-generated interview preparation materials tailored to stage and type*
+
+## Overview
+
+The Interview Preparation subsystem manages interview scheduling and generates structured preparation materials (company context, callback drivers, background narratives, predicted questions) tailored to each interview stage. Preparation documents are dynamically rendered based on interview type (recruiter/technical/hiring manager).
+
+---
+
+## Functional Requirements
+
+### Preparation Document Types
+
+**Base Preparation (once per application):**
+Generated when application has scheduled interviews, includes:
+- Formatted job description with bolded callback drivers
+- Company and product context
+- Primary callback drivers (1-3 key screening signals)
+- Targeted background narrative (opening, core, forward hook)
+
+**Interview-Specific Preparation (per interview):**
+Generated for each scheduled interview, includes:
+- 3-5 predicted questions with structured STAR responses
+- 5 interviewer-aligned questions with strategic rationale
+- Calibrated to interview stage and focus area
+
+### Generation Approach
+
+**Base preparation generation:**
+- Single LLM call generates all base content
+- Input: Job.raw_jd_text + Application metadata
+- Output: Markdown-formatted sections
+- Validates JSON structure before persistence
+
+**Interview-specific generation:**
+- One LLM call per interview
+- Input: Base prep context + Interview metadata (stage, focus, interviewer)
+- Output: Markdown-formatted Q&A
+- Calibrates questions based on interview type
+
+**LLM prompt structure:**
+- System prompt defines role and output format
+- User prompt includes job context and interview details
+- Requests markdown formatting for direct persistence
+- JSON wrapper for validation via Pydantic
+
+### Manual Editability
+
+- All content stored as markdown TextField
+- Users can edit directly in Django admin
+- Re-rendering automatic when viewing prep page
+
+---
+
+## Data Models
+
+### InterviewPreparationBase
+| Field | Type | Description |
+|-------|------|-------------|
+| id | IntegerField | Primary key |
+| application | OneToOne(Application) | Associated application |
+| formatted_jd | TextField | Markdown-formatted JD with bolded drivers |
+| company_context | TextField | Company/product info (markdown) |
+| primary_drivers | TextField | 1-3 key screening signals (markdown) |
+| background_narrative | TextField | Opening, core, forward hook (markdown) |
+
+### InterviewPreparation
+| Field | Type | Description |
+|-------|------|-------------|
+| id | IntegerField | Primary key |
+| interview | OneToOne(Interview) | Associated interview |
+| predicted_questions | TextField | 3-5 questions with STAR responses (markdown) |
+| interviewer_questions | TextField | 5 strategic questions with rationale (markdown) |
+
+---
+
+## Services
+
+### InterviewPrepGenerator
+
+Service responsible for generating and persisting interview preparation content using LLMs.
+
+**Responsibilities:**
+- Generate baseline preparation content for an application
+- Generate interview-specific preparation content
+- Construct prompts using application, job, and interview context
+- Validate generated output against structured schemas
+- Persist preparation content in markdown form
+
+**Core workflow:**
+- Assemble application and job context
+- Generate base preparation content
+- Generate interview-specific preparation content
+- Validate structured output
+- Persist finalized markdown content
+
+---
+
+## Views
+
+### Interview Preparation View (`/applications/<id>/interview-prep/`)
+
+**Purpose:** Single-page interview prep reference with dynamic interview filtering
+
+**Content sections:**
+
+**Always visible (base prep):**
+- Formatted job description
+- Company context
+- Primary callback drivers
+- Background narrative
+
+**Interview-specific (dynamic):**
+- Predicted questions (changes per interview)
+- Interviewer questions (changes per interview)
+
+**Features:**
+- Dropdown selector to switch between interviews
+- Markdown rendering with proper formatting
+- Print-friendly styling
+- Warning if prep not generated yet
+
+**Implementation:**
+- URL parameter `?interview_id=X` for direct linking
+- `marked.js` for client-side markdown rendering
+- OneToOne relationships for data fetching
+- Base prep fetched once, interview prep fetched per dropdown change
+
+---
+
+## Django Admin Actions
+
+### Generate Base Preparation (Application Admin)
+
+**Trigger:** Admin action on Application changelist
+
+**Behavior:**
+- Available for applications with scheduled interviews
+- Generates InterviewPreparationBase if not exists
+- Shows success/error message
+- Can be run on multiple applications at once
+
+### Generate Interview Preparation (Interview Admin)
+
+**Trigger:** Admin action on Interview changelist
+
+**Behavior:**
+- Available for scheduled interviews
+- Generates InterviewPreparation for selected interview(s)
+- Requires InterviewPreparationBase to exist (generates if missing)
+- Shows success/error message
+- Can be run on multiple interviews at once
+
+---
+
+## User Workflow
+
+### Initial Setup
+
+1. User creates Interview records via Django admin after scheduling
+2. Records include: stage, format, focus, interviewer details, scheduled_at
+
+### Preparation Generation
+
+1. **Generate base preparation:**
+   - Navigate to Application admin changelist
+   - Select application(s) with scheduled interviews
+   - Choose "Generate base preparation" admin action
+   - System generates InterviewPreparationBase
+
+2. **Generate interview-specific preparation:**
+   - Navigate to Interview admin changelist
+   - Select scheduled interview(s)
+   - Choose "Generate interview preparation" admin action
+   - System generates InterviewPreparation for each selected interview
+
+3. **User reviews prep documents** via `/applications/<id>/interview-prep/`
+
+### Pre-Interview Review
+
+1. User visits prep view before interview
+2. Selects specific interview from dropdown
+3. Reviews predicted questions and STAR responses
+4. Reviews interviewer questions and rationale
+5. Optionally prints page for offline reference
+
+### Post-Interview Updates
+
+1. User edits Interview.notes field with actual questions asked
+2. User optionally edits preparation documents if they want to refine for future reference
+3. Notes available in application detail view for outcome analysis
+
+---
+
+## Integration with Other Subsystems
+
+### Application Tracking Integration
+
+- InterviewPreparationBase links to Application (OneToOne)
+- Interview records link to Application (FK)
+- Enables prep generation workflow after interview scheduling
+
+### Resume Generation Integration
+
+- Base prep uses Job.raw_jd_text (stored during resume generation)
+- Enables reformatting JD with callback drivers highlighted
+- Callback drivers derived from resume screening context
+
+---
+
+## Future Enhancements
+
+- Interview recording transcription and analysis
+- Post-interview reflection prompts
+- Question bank with tagging (behavioral, technical, system design)
+- Company-specific interview guides (known questions, processes)
+- Interview performance self-assessment
+- Automated follow-up email generation
