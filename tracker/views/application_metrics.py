@@ -254,6 +254,7 @@ def _group_location(location):
         "silverdale",
         "seatac",
         "joint base lewis-mcchord",
+        "bremerton",
     }
 
     if city in seattle_area_cities:
