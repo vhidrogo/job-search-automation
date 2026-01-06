@@ -47,6 +47,7 @@ class ApplicationAdmin(admin.ModelAdmin):
         "applied_date_no_time",
         "job__company",
         "job__listing_job_title",
+        "job__external_job_id",
         "job__specialization",
         "job__location",
         "status__state",
