@@ -1,3 +1,5 @@
+{% load humanize %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -238,6 +240,14 @@
                 <div class="info-item">
                     <span class="info-label">Salary Range</span>
                     <span class="info-value">{{ job.salary_range }}</span>
+                </div>
+                {% endif %}
+                {% if application.desired_salary_min %}
+                <div class="info-item">
+                    <span class="info-label">Desired Salary</span>
+                    <span class="info-value">
+                        ${{ application.desired_salary_min|intcomma }}
+                    </span>
                 </div>
                 {% endif %}
                 <div class="info-item">
