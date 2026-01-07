@@ -285,6 +285,24 @@ class TestJobFetcherService(TestCase):
         self.assertTrue(JobListing.objects.filter(external_id="JOB-1").exists())
         self.assertTrue(JobListing.objects.filter(external_id="JOB-2").exists())
 
+    def test_fetch_and_sync_jobs_filters_partial_word_matches(self):
+        self.search_config.related_terms.append("api")
+        self.search_config.save(update_fields=["related_terms"])
+
+        self.mock_client.fetch_jobs.return_value = [
+            {
+                "external_id": "JOB-2",
+                "title": "Capital",
+                "location": "Seattle, WA",
+                "url_path": "/job/2",
+                "posted_on": "2024-01-01",
+            },
+        ]
+        
+        stats = self.service.fetch_and_sync_jobs()
+        
+        self.assertEqual(stats[self.expected_stats_key]["total"], 0)
+
     def test_fetch_and_sync_jobs_filters_config_excluded_terms(self):
         self.search_config.exclude_terms = ["Senior"]
         self.search_config.save(update_fields=["exclude_terms"])
