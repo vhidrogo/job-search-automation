@@ -1,3 +1,4 @@
+import re
 from datetime import timedelta
 
 from django.utils import timezone
@@ -95,12 +96,13 @@ class JobFetcherService:
         from the given SearchConfig (case-insensitive, substring match).
         """
         all_terms = [config.search_term] + (config.related_terms or [])
-        terms_lower = [t.lower() for t in all_terms]
 
         return [
-            job
-            for job in jobs
-            if any(t in job["title"].lower() for t in terms_lower)
+            job for job in jobs
+            if any(
+                re.search(r'\b' + re.escape(term) + r'\b', job["title"], re.IGNORECASE)
+                for term in all_terms
+            )
         ]
         
     def _filter_excluded_jobs(self, jobs, exclude_terms):
