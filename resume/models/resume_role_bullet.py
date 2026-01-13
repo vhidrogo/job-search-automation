@@ -7,6 +7,7 @@ class ResumeRoleBullet(models.Model):
 
     Fields:
       - resume_role: The associated ResumeRole.
+      - experience_project: Optional link to the ExperienceProject this bullet is based on.
       - text: Original bullet content.
       - override_text: Optional edited version of the bullet that overrides `text`.
       - order: Display order within the role.
@@ -17,6 +18,14 @@ class ResumeRoleBullet(models.Model):
         "ResumeRole",
         on_delete=models.CASCADE,
         related_name="bullets",
+    )
+    experience_project = models.ForeignKey(
+        "ExperienceProject",
+        on_delete=models.SET_NULL,
+        related_name="resume_bullets",
+        null=True,
+        blank=True,
+        help_text="Optional link to the ExperienceProject this bullet is based on.",
     )
     text = models.TextField(
         help_text="Original bullet content.",
