@@ -74,6 +74,7 @@ class TemplateRoleConfigInline(admin.TabularInline):
 
 
 class ExperienceProjectAdmin(admin.ModelAdmin):
+    list_display = ["short_name", "experience_role"]
     list_filter = ["experience_role"]
     search_fields = ["short_name", "tools"]
     formfield_overrides = {
