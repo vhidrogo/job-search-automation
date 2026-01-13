@@ -59,6 +59,21 @@ The Resume Generation subsystem automates the creation of role-specific resumes 
 - Simplifies orchestration while maintaining quality control
 - Ensures validated, structured outputs for downstream persistence
 
+### Bullet Source Tracking
+
+**Purpose:** Maintain traceability from resume bullets back to detailed project context for interview preparation.
+
+**Implementation:**
+- Each `ResumeRoleBullet` optionally links to source `ExperienceProject` via foreign key
+- LLM prompt requires `project_id` in bullet generation responses
+- `project_id` validated in `ExperienceBullet` Pydantic schema
+- Project ID persisted during bullet creation in orchestrator
+
+**Benefits:**
+- Enables downstream interview prep system to fetch full project details (problem context, actions, tools, outcomes)
+- Supports preparation for detailed interviewer questions about specific resume bullets
+- Maintains audit trail from concise bullet points to comprehensive source data
+
 ### Skills Generation
 
 - Single LLM call generates skills organized by category
@@ -182,6 +197,7 @@ The Resume Generation subsystem automates the creation of role-specific resumes 
 |-------|------|-------------|
 | id | IntegerField | Primary key |
 | resume_role | FK(ResumeRole) | Parent role context |
+| experience_project | FK(ExperienceProject) | Source project for this bullet (nullable) |
 | order | IntegerField | Display order within role |
 | text | TextField | Generated bullet text |
 | override_text | TextField | Optional manual edit |
