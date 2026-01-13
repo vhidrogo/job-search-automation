@@ -163,6 +163,7 @@ class ResumeWriter:
         """
         data = [
             {
+                "id": p.id,
                 "problem_context": p.problem_context,
                 "actions": p.actions,
                 "tools": p.tools,

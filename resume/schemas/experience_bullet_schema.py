@@ -18,6 +18,7 @@ class ExperienceBullet(BaseModel):
             description="The bullet point text describing work accomplished"
         )
     ]
+    project_id: Annotated[int, Field(description="ID of the source ExperienceProject")]
     
     @field_validator("text")
     @classmethod

@@ -294,6 +294,7 @@ class Orchestrator:
                         resume_role=role,
                         order=bullet.order,
                         text=bullet.text,
+                        experience_project_id=bullet.project_id,
                     )
                 )
         

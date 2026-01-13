@@ -23,9 +23,7 @@ from resume.services import ResumeWriter
 
 
 class TestResumeWriter(TestCase):
-    TARGET_ROLE = JobRole.SOFTWARE_ENGINEER
-    MAX_BULLET_COUNT = 2
-
+    
     @classmethod
     def setUpTestData(cls):
         cls.experience_role = ExperienceRole.objects.create(
@@ -67,19 +65,6 @@ class TestResumeWriter(TestCase):
         cls.bullet_order1, cls.bullet_order2 = 1, 2
         cls.bullet_text1 = "Built real-time API using Django and Postgres that reduced query latency by 80%"
         cls.bullet_text2 = "Automated data pipeline with Python and Airflow, cutting processing time from 4 hours to 15 minutes"
-        
-        cls.bullet_response = json.dumps({
-            "bullets": [
-                {
-                    "order": cls.bullet_order1,
-                    "text": cls.bullet_text1,
-                },
-                {
-                    "order": cls.bullet_order2,
-                    "text": cls.bullet_text2
-                }
-            ]
-        })
 
         cls.skills_category1, cls.skills_category2 = "Programming Languages", "Databases"
         cls.skills_text1 = "Python, Java"
@@ -105,14 +90,27 @@ class TestResumeWriter(TestCase):
         self.resume_writer = ResumeWriter(client=self.mock_client)
     
     def test_generate_experience_bullets_returns_validated_bullets(self):
-        ExperienceProject.objects.create(experience_role=self.experience_role)
-        self.mock_client.generate.return_value = self.bullet_response
+        project = ExperienceProject.objects.create(experience_role=self.experience_role)
+        self.mock_client.generate.return_value = json.dumps({
+            "bullets": [
+                {
+                    "order": 1,
+                    "text": "Built real-time API using Django and Postgres",
+                    "project_id": project.id,
+                },
+                {
+                    "order": 2,
+                    "text": "Automated data pipeline with Python and SQL",
+                    "project_id": project.id,
+                }
+            ]
+        })
 
         result = self.resume_writer.generate_experience_bullets(
             experience_role=self.experience_role,
             requirements=self.requirements,
-            target_role=self.TARGET_ROLE,
-            max_bullet_count=self.MAX_BULLET_COUNT,
+            target_role=JobRole.SOFTWARE_ENGINEER,
+            max_bullet_count=2,
         )
         
         self.mock_client.generate.assert_called_once_with(
@@ -124,12 +122,14 @@ class TestResumeWriter(TestCase):
         expected = BulletListModel(
             bullets=[
                 ExperienceBullet(
-                    order=self.bullet_order1,
-                    text=self.bullet_text1,
+                    order=1,
+                    text="Built real-time API using Django and Postgres",
+                    project_id=project.id,
                 ),
                 ExperienceBullet(
-                    order=self.bullet_order2,
-                    text=self.bullet_text2,
+                    order=2,
+                    text="Automated data pipeline with Python and SQL",
+                    project_id=project.id,
                 ),
             ]
         )
@@ -140,8 +140,8 @@ class TestResumeWriter(TestCase):
             self.resume_writer.generate_experience_bullets(
                 experience_role=self.experience_role,
                 requirements=self.requirements,
-                target_role=self.TARGET_ROLE,
-                max_bullet_count=self.MAX_BULLET_COUNT,
+                target_role=JobRole.SOFTWARE_ENGINEER,
+                max_bullet_count=1,
             )
 
         error_msg = str(cm.exception)
@@ -156,48 +156,69 @@ class TestResumeWriter(TestCase):
             self.resume_writer.generate_experience_bullets(
                 experience_role=self.experience_role,
                 requirements=self.requirements,
-                target_role=self.TARGET_ROLE,
-                max_bullet_count=self.MAX_BULLET_COUNT,
+                target_role=JobRole.SOFTWARE_ENGINEER,
+                max_bullet_count=1,
             )
 
     def test_generate_experience_bullets_raises_on_excess_bullets(self):
         ExperienceProject.objects.create(experience_role=self.experience_role)
-        self.mock_client.generate.return_value = self.bullet_response
-        max_bullet_count = 1
+        self.mock_client.generate.return_value = json.dumps({
+            "bullets": [
+                {
+                    "order": 1,
+                    "text": "Built real-time API using Django and Postgres",
+                    "project_id": 1,
+                },
+                {
+                    "order": 2,
+                    "text": "Automated data pipeline with Python and SQL",
+                    "project_id": 1,
+                }
+            ]
+        })
 
         with self.assertRaises(ValueError) as cm:
             self.resume_writer.generate_experience_bullets(
                 experience_role=self.experience_role,
                 requirements=self.requirements,
-                target_role=self.TARGET_ROLE,
-                max_bullet_count=max_bullet_count,
+                target_role=JobRole.SOFTWARE_ENGINEER,
+                max_bullet_count=1,
             )
 
-        self.assertIn(f"maximum allowed is {max_bullet_count}", str(cm.exception))
+        self.assertIn(f"maximum allowed is 1", str(cm.exception))
 
     def test_generate_experience_bullets_builds_prompt_with_data(self):
         tools = "Python"
         actions = "Wrote API client"
-        ExperienceProject.objects.create(
+        project = ExperienceProject.objects.create(
             experience_role=self.experience_role,
             tools=tools,
             actions=actions,
         )
-        self.mock_client.generate.return_value = self.bullet_response
+        self.mock_client.generate.return_value = json.dumps({
+            "bullets": [
+                {
+                    "order": 1,
+                    "text": "Built real-time API using Django and Postgres",
+                    "project_id": project.id,
+                }
+            ]
+        })
 
         self.resume_writer.generate_experience_bullets(
             experience_role=self.experience_role,
             requirements=self.requirements,
-            target_role=self.TARGET_ROLE,
+            target_role=JobRole.SOFTWARE_ENGINEER,
             max_bullet_count=2,
         )
 
         prompt = self._get_prompt_arg()
-        self.assertIn(self.TARGET_ROLE, prompt)
+        self.assertIn(JobRole.SOFTWARE_ENGINEER, prompt)
         self.assertIn(self.requirement_text1, prompt)
         self.assertIn(self.requirement_text2, prompt)
         self.assertIn(tools, prompt)
         self.assertIn(actions, prompt)
+        self.assertIn(str(project.id), prompt)
 
     def _create_default_project_with_tools(self):
         ExperienceProject.objects.create(

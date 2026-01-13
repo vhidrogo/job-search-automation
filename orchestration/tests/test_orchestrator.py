@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from orchestration.orchestrator import Orchestrator
 from resume.models import (
+    ExperienceProject,
     ExperienceRole,
     Resume,
     ResumeRole,
@@ -279,18 +280,20 @@ class TestOrchestrator(TestCase):
                 max_bullet_count=max_bullet_count,
             )
 
+        project = ExperienceProject.objects.create(experience_role=role1)
+
         # Create test bullet responses for each role
         role1_bullet1 = "Implemented REST APIs to improve data exchange between services."
         role1_bullet2 = "Optimized SQL queries, reducing request latency by 30%."
         bullet_list1 = [
-            ExperienceBullet(order=1, text=role1_bullet1),
-            ExperienceBullet(order=2, text=role1_bullet2),
+            ExperienceBullet(order=1, text=role1_bullet1, project_id=project.id),
+            ExperienceBullet(order=2, text=role1_bullet2, project_id=project.id),
         ]
         role2_bullet1 = "Developed unit tests to ensure code reliability and maintainability."
         role2_bullet2 = "Integrated third-party APIs to extend application functionality."
         bullet_list2 = [
-            ExperienceBullet(order=1, text=role2_bullet1),
-            ExperienceBullet(order=2, text=role2_bullet2),
+            ExperienceBullet(order=1, text=role2_bullet1, project_id=project.id),
+            ExperienceBullet(order=2, text=role2_bullet2, project_id=project.id),
         ]
         self.mock_resume_writer.generate_experience_bullets.side_effect = [
             BulletListModel(bullets=bullet_list1),
@@ -320,6 +323,7 @@ class TestOrchestrator(TestCase):
         self.assertTrue(ResumeRoleBullet.objects.filter(resume_role=resume_role1, text=role1_bullet2).exists())
         self.assertTrue(ResumeRoleBullet.objects.filter(resume_role=resume_role2, text=role2_bullet1).exists())
         self.assertTrue(ResumeRoleBullet.objects.filter(resume_role=resume_role2, text=role2_bullet2).exists())
+        self.assertEqual(ResumeRoleBullet.objects.first().experience_project, project)
 
     def test_run_uses_config_title_override_when_present(self):
         self._create_default_template()

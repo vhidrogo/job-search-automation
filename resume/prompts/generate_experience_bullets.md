@@ -8,7 +8,8 @@ Return a JSON array matching exactly this structure:
   "bullets": [
     {
       "order": 1,
-      "text": "<bullet text>"
+      "text": "<bullet text>",
+      "project_id": <id from experience project>
     }
   ]
 }
@@ -38,6 +39,7 @@ Style & Tone:
 Output Requirements:
 - Order bullets by impact (1 = highest).
 - Max number of bullets should not exceed {{MAX_BULLET_COUNT}}.
+- Each bullet must include the `project_id` from the source experience project it is based on.
 - Use valid JSON with no extra text.
 
 **Target Role:**
