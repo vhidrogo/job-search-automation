@@ -35,4 +35,4 @@ class ExperienceProject(models.Model):
         app_label = "resume"
 
     def __str__(self) -> str:
-        return f"{self.short_name} ({self.experience_role})"
+        return f"{self.short_name}"
