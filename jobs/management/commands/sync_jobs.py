@@ -40,8 +40,7 @@ class Command(BaseCommand):
             new = result["new"]
             updated = result["updated"]
             total = result["total"]
-            applied = result.get("applied", 0)
-            to_review = max(new - applied, 0)
+            new_to_review = result.get("new_to_review", 0)
 
             message = dedent(f"""
                 {key}
@@ -52,8 +51,8 @@ class Command(BaseCommand):
 
             self.stdout.write(self.style.SUCCESS(message))
 
-            if to_review > 0:
-                status_rows.append((key, to_review))
+            if new_to_review > 0:
+                status_rows.append((key, new_to_review))
 
         # --------------------
         # Status Summary (signal)
@@ -62,7 +61,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("\n=== STATUS SUMMARY ==="))
             for company, to_review in status_rows:
                 self.stdout.write(
-                    self.style.WARNING(f"{company}: {to_review} to review")
+                    self.style.WARNING(f"{company}: new jobs to review = {new_to_review}")
                 )
         else:
             self.stdout.write(
