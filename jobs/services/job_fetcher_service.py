@@ -148,7 +148,7 @@ class JobFetcherService:
         fetched_ids = set()
         new_count = 0
         updated_count = 0
-        applied_count = 0
+        new_to_review = 0
         
         for job_data in jobs:
             fetched_ids.add(job_data["external_id"])
@@ -166,11 +166,13 @@ class JobFetcherService:
                     "is_stale": False,
                 }
             )
-
-            if job_data["external_id"] in applied_external_ids:
+            
+            if job_data["external_id"] in applied_external_ids and job_listing.status != JobListing.Status.APPLIED:
                 job_listing.status = JobListing.Status.APPLIED
                 job_listing.save(update_fields=["status"])
-                applied_count += 1
+
+            if job_listing.status == JobListing.Status.NEW:
+                new_to_review += 1
             
             if created:
                 new_count += 1
@@ -188,8 +190,8 @@ class JobFetcherService:
         return {
             "new": new_count,
             "updated": updated_count,
-            "applied": applied_count,
-            "total": len(jobs)
+            "total": len(jobs),
+            "new_to_review": new_to_review,
         }
     
     def _cleanup_stale_jobs(self):
