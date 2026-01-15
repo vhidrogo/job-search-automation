@@ -55,8 +55,9 @@ class ResumeRoleBulletInline(admin.TabularInline):
     form = ResumeRoleBulletInlineForm
     extra = 0
     ordering = ["order"]
-    readonly_fields = ["text", "experience_project"]
+    readonly_fields = ["text"]
     fields = ["text", "experience_project", "exclude", "override_text"]
+    autocomplete_fields = ["experience_project"]
 
 
 class ResumeSkillsCategoryInline(admin.TabularInline):
