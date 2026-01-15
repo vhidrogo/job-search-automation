@@ -147,6 +147,7 @@ class ResumeAdmin(admin.ModelAdmin):
 class ResumeRoleAdmin(admin.ModelAdmin):
     list_display = ["resume", "source_role"]
     ordering = ["-resume__modified_at", "order"]
+    search_fields = ["resume__job__company"]
     inlines = [
         ResumeRoleBulletInline,
     ]
