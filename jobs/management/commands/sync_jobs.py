@@ -59,7 +59,7 @@ class Command(BaseCommand):
         # --------------------
         if status_rows:
             self.stdout.write(self.style.WARNING("\n=== STATUS SUMMARY ==="))
-            for company, to_review in status_rows:
+            for company, new_to_review in status_rows:
                 self.stdout.write(
                     self.style.WARNING(f"{company}: new jobs to review = {new_to_review}")
                 )
