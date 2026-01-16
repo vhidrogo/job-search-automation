@@ -82,7 +82,7 @@ class InterviewPrepGenerator:
         self,
         interview: Interview,
         model: str = None,
-        max_tokens: int = 4000,
+        max_tokens: int = 64000,
     ) -> InterviewPrepSpecificSchema:
         """Generate interview-specific preparation for an interview.
         
