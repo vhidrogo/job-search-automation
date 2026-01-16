@@ -189,6 +189,14 @@ class InterviewPreparationAdmin(admin.ModelAdmin):
             "fields": ("interviewer_questions",),
             "classes": ("wide",)
         }),
+        ("Resume Defense Prep", {
+            "fields": ("resume_defense_prep",),
+            "classes": ("wide",)
+        }),
+        ("Technical Deep Dives", {
+            "fields": ("technical_deep_dives",),
+            "classes": ("wide",)
+        }),
         ("Metadata", {
             "fields": ("created_at", "updated_at"),
             "classes": ("collapse",)

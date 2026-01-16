@@ -49,6 +49,8 @@ class TestGeneratePrepForInterview(TestCase):
         mock_generator.return_value = InterviewPrepSpecificSchema(
             predicted_questions="predicted_questions",
             interviewer_questions="interviewer_questions",
+            resume_defense_prep="resume_defense_prep",
+            technical_deep_dives="technical_deep_dives",
         )
 
         created = generate_prep_for_interview(self.interview.id)
