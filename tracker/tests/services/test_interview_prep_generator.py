@@ -11,6 +11,7 @@ from resume.models import (
     ResumeRoleBullet,
     ResumeSkillsCategory,
     ResumeTemplate,
+    ExperienceProject,
     ExperienceRole,
 )
 from tracker.models import (
@@ -210,6 +211,61 @@ class TestInterviewPrepGenerator(TestCase):
         self.assertIn(self.interview_stage, prompt)
         self.assertIn(self.interview_focus, prompt)
         self.assertIn(self.interviewer_title, prompt)
+
+    def test_generate_interview_preparation_includes_resume_projects_json(self):
+        InterviewPreparationBase.objects.create(application=self.application)
+        role = ExperienceRole.objects.create(key="1", start_date=timezone.now(), end_date=timezone.now())
+        project = ExperienceProject.objects.create(
+            experience_role=role,
+            problem_context="Scaling API bottleneck",
+            actions="Refactored query layer",
+            tools="Django, Postgres",
+            outcomes="Reduced latency by 40%",
+        )
+        bullet = ResumeRoleBullet.objects.first()
+        bullet.experience_project = project
+        bullet.save()
+        self.mock_client.generate.return_value = self.specific_response
+
+        self.generator.generate_interview_preparation(self.interview)
+
+        prompt = self._get_prompt_arg()
+        self.assertIn("Scaling API bottleneck", prompt)
+        self.assertIn("Refactored query layer", prompt)
+        self.assertIn("Django, Postgres", prompt)
+        self.assertIn("Reduced latency by 40%", prompt)
+
+    def test_generate_interview_preparation_includes_prior_interview_notes(self):
+        InterviewPreparationBase.objects.create(application=self.application)
+        Interview.objects.create(
+            application=self.application,
+            stage=Interview.Stage.TECHNICAL_SCREEN,
+            focus=Interview.Focus.CODING,
+            scheduled_at=timezone.now() - timezone.timedelta(days=7),
+            notes="Struggled with graph traversal",
+        )
+        self.mock_client.generate.return_value = self.specific_response
+
+        self.generator.generate_interview_preparation(self.interview)
+
+        prompt = self._get_prompt_arg()
+        self.assertIn("Technical Screen", prompt)
+        self.assertIn("Coding", prompt)
+        self.assertIn("Struggled with graph traversal", prompt)
+
+    def test_generate_interview_preparation_excludes_empty_notes(self):
+        InterviewPreparationBase.objects.create(application=self.application)
+        Interview.objects.create(
+            application=self.application,
+            scheduled_at=timezone.now() - timezone.timedelta(days=7),
+            notes="",
+        )
+        self.mock_client.generate.return_value = self.specific_response
+
+        self.generator.generate_interview_preparation(self.interview)
+
+        prompt = self._get_prompt_arg()
+        self.assertNotIn('"notes": ""', prompt)
 
     def _get_prompt_arg(self):
         self.mock_client.generate.assert_called_once()

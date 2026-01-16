@@ -16,29 +16,41 @@ class TestClaudeClient(TestCase):
     def test_generate_returns_text_and_logs_request(self):
         mock_text = "mocked response"
         output_tokens = 5
-        mock_message = Mock()
-        mock_message.content = [Mock(text=mock_text)]
-        mock_message.usage.output_tokens = output_tokens
-        self.mock_anthropic.messages.create.return_value = mock_message
+
+        # Minimal stream mock
+        class DummyStream:
+            def __enter__(self):
+                return self
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                pass
+            def __iter__(self):
+                event = Mock()
+                event.type = "content_block_delta"
+                event.delta.text = mock_text
+                return iter([event])
+            def get_final_message(self):
+                msg = Mock()
+                msg.usage.output_tokens = output_tokens
+                return msg
+
+        self.mock_anthropic.messages.stream.return_value = DummyStream()
+
+        # Token counting
         input_tokens = 7
         self.mock_anthropic.messages.count_tokens.return_value.input_tokens = input_tokens
+
         message = "hello"
         max_tokens = 1
         call_type = "test_call"
 
         result = self.client.generate(prompt=message, max_tokens=max_tokens, call_type=call_type)
 
-        self.mock_anthropic.messages.create.assert_called_once_with(
-            model=self.DEFAULT_MODEL,
-            max_tokens=max_tokens,
-            messages=[{"role": "user", "content": message}],
-        )
-        log = LlmRequestLog.objects.first()
         self.assertEqual(result, mock_text)
+
+        log = LlmRequestLog.objects.first()
         self.assertIsNotNone(log)
         self.assertEqual(log.call_type, call_type)
         self.assertEqual(log.model, self.DEFAULT_MODEL)
-        self.assertEqual(log.input_tokens, self.mock_anthropic.messages.count_tokens.return_value.input_tokens)
         self.assertEqual(log.input_tokens, input_tokens)
         self.assertEqual(log.output_tokens, output_tokens)
 

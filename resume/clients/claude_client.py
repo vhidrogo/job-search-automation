@@ -12,9 +12,10 @@ class ClaudeClient:
         model = model or self.default_model
         input_tokens = self.count_tokens(prompt, model)
         output_tokens = 0
+        chunks = []
 
         try:
-            message = self.client.messages.create(
+            with self.client.messages.stream(
                 model=model,
                 max_tokens=max_tokens,
                 messages=[
@@ -23,11 +24,17 @@ class ClaudeClient:
                         "content": prompt,
                     }
                 ]
-            )
-            output_tokens = message.usage.output_tokens
-            
-            return message.content[0].text
-        
+            ) as stream:
+                for event in stream:
+                    if event.type == "content_block_delta":
+                        text = event.delta.text
+                        chunks.append(text)
+
+                final_message = stream.get_final_message()
+                output_tokens = final_message.usage.output_tokens
+
+            return "".join(chunks)
+
         finally:
             LlmRequestLog.objects.create(
                 call_type=call_type,
