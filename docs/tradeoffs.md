@@ -127,6 +127,57 @@ This design prioritizes maintainability and type safety over schema simplicity. 
 
 ---
 
+#### Interview Prep Output Token Management: Prompt Reduction vs Streaming vs Request Splitting
+
+**Context:**  
+Interview preparation generation produces comprehensive documents (predicted questions with STAR answers, resume defense strategies, technical deep dives) that can exceed 20K output tokens, especially with 9+ resume bullets and prior interview context. Initial implementation with 4K max_tokens caused truncation, while increasing to 20K+ triggered "streaming required for operations >10 minutes" errors.
+
+**Options Considered:**  
+1. **Reduce prompt output via instruction changes:**  
+   - Modify prompt to generate more concise content (shorter STAR answers, fewer deep dive topics).
+   - Potentially remove sections like `predicted_questions` if redundant with `resume_defense_prep`.
+2. **Implement streaming to support full 64K output:**  
+   - Enable `stream=True` in ClaudeClient for interview prep calls.
+   - Handle chunked responses and aggregate full text.
+3. **Split into multiple smaller requests:**  
+   - One call for `predicted_questions` + `interviewer_questions` (passing full resume bullets).
+   - Separate calls per resume role for `resume_defense_prep` + `technical_deep_dives` (passing only that role's projects).
+   - Aggregate responses on backend.
+4. **Hybrid: Streaming + selective prompt optimization:**  
+   - Implement streaming for reliability but constrain "Additional Topics" generation that occurs beyond structured output.
+
+**Tradeoffs:**  
+- **Reduce prompt output:**  
+  - ✅ Stays under 20K token limit with current setup.  
+  - ❌ Risks cutting valuable prep content needed for high-stakes interviews.  
+  - ❌ Unreliable—12-bullet resumes might still exceed limits.  
+  - ❌ Guessing at what to cut without usage data.  
+- **Implement streaming:**  
+  - ✅ Supports full 64K output—handles all edge cases.  
+  - ✅ Future-proof for larger prep documents.  
+  - ✅ Simple implementation (~10 lines of code change).  
+  - ✅ No content compromise.  
+  - ❌ Slightly more complex than simple `generate()` call.  
+- **Split into multiple requests:**  
+  - ✅ Each request stays well under limits.  
+  - ✅ Can parallelize for faster total response time.  
+  - ❌ 3x API cost (one general call + one per role vs single call).  
+  - ❌ Loses cross-section coherence (can't reference resume bullets in predicted questions).  
+  - ❌ More complex aggregation logic and error handling.  
+  - ❌ Repeated JD context in each call increases input tokens.  
+- **Hybrid approach:**  
+  - ✅ Streaming provides safety net.  
+  - ✅ Can still optimize prompts based on usage patterns.  
+  - ❌ Adds constraint complexity without clear benefit.  
+
+**Decision:**  
+Adopt **streaming implementation** (Option 2) to support full 64K output tokens. Update `ClaudeClient.generate()` to use `messages.stream()` by default, handling chunked responses and extracting final token counts. This enables comprehensive interview prep documents without content compromise, handles current 9-bullet case (~25K estimated tokens) and future 12-bullet edge cases (~35K estimated tokens), all while maintaining single cohesive output.
+
+**Reflection:**  
+This decision prioritizes interview success over marginal cost optimization. At ~$0.12 per interview and ~13 interviews/year ($1.61 annual), the cost of comprehensive preparation is negligible compared to potential job offer value (>$150K). Streaming adds minimal implementation complexity (already used in `ClaudeClient`) while completely eliminating output truncation risk. The "split requests" approach would save no money (input tokens repeated across calls) and sacrifice content coherence. Future optimizations can focus on caching reusable base content (company context across interviews) rather than constraining per-interview output quality. The decision demonstrates appropriate cost-benefit analysis: don't optimize pennies at the expense of career-defining interview performance.
+
+---
+
 ### Job Description Processing
 Decisions related to parsing and extracting requirements from job descriptions.
 
