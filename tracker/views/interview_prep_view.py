@@ -1,5 +1,7 @@
-from django.shortcuts import render, get_object_or_404
 from django.http import Http404
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+
 from tracker.models import Application, Interview
 
 
@@ -37,7 +39,11 @@ def interview_preparation_view(request, application_id):
                 application=application
             )
         else:
-            selected_interview = interviews[0]
+            now = timezone.now()
+            selected_interview = (
+                interviews.filter(scheduled_at__gte=now).order_by("scheduled_at").first()
+                or interviews.filter(scheduled_at__lt=now).order_by("-scheduled_at").first()
+            )
         
         if hasattr(selected_interview, "preparation"):
             interview_prep = selected_interview.preparation

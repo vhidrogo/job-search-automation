@@ -180,6 +180,16 @@
         <h2>Interviewer-Aligned Questions</h2>
         <div class="markdown-content" id="interviewer-questions"></div>
     </div>
+
+    <div class="section">
+        <h2>Resume Defense Preparation</h2>
+        <div class="markdown-content" id="resume-defense-prep"></div>
+    </div>
+
+    <div class="section">
+        <h2>Technical Deep Dives</h2>
+        <div class="markdown-content" id="technical-deep-dives"></div>
+    </div>
     {% else %}
     <div class="warning">
         <strong>Note:</strong> Interview-specific preparation has not been generated for this interview yet.
@@ -198,6 +208,9 @@
                 {% if interview_prep %}
                 { id: 'predicted-questions', content: "{{ interview_prep.predicted_questions|escapejs }}" },
                 { id: 'interviewer-questions', content: "{{ interview_prep.interviewer_questions|escapejs }}" },
+                { id: 'resume-defense-prep', content: "{{ interview_prep.resume_defense_prep|escapejs }}" },
+                { id: 'technical-deep-dives', content: "{{ interview_prep.technical_deep_dives|escapejs }}" },
+
                 {% endif %}
             ];
 

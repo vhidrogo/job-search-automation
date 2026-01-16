@@ -23,7 +23,9 @@ Generated when application has scheduled interviews, includes:
 Generated for each scheduled interview, includes:
 - 3-5 predicted questions with structured STAR responses
 - 5 interviewer-aligned questions with strategic rationale
-- Calibrated to interview stage and focus area
+- Resume defense preparation for high-risk or high-signal resume bullets
+- Targeted technical deep dives based on resume claims, job requirements, and prior interview feedback
+- Calibrated to interview stage, interviewer role, and focus area
 
 ### Generation Approach
 
@@ -35,15 +37,24 @@ Generated for each scheduled interview, includes:
 
 **Interview-specific generation:**
 - One LLM call per interview
-- Input: Base prep context + Interview metadata (stage, focus, interviewer)
-- Output: Markdown-formatted Q&A
-- Calibrates questions based on interview type
+- Input:
+  - Base preparation context
+  - Resume (rendered bullets)
+  - Resume Projects (structured source project data behind resume bullets)
+  - Prior Interview Notes (structured notes from earlier rounds)
+  - Interview metadata (stage, focus, interviewer)
+- Output: Markdown-formatted preparation sections
+- Explicitly reuses Resume Projects data to generate authentic STAR responses, resume defense prep, and technical deep dives
+- Calibrates depth and focus using interview stage and prior interview feedback
 
 **LLM prompt structure:**
 - System prompt defines role and output format
 - User prompt includes job context and interview details
 - Requests markdown formatting for direct persistence
 - JSON wrapper for validation via Pydantic
+- Resume Projects provided as structured JSON to preserve technical detail behind resume bullets
+- Prior Interview Notes provided as structured JSON to target known weak areas and avoid repetition
+- Supports large prompt and output sizes via streaming responses
 
 ### Manual Editability
 
@@ -72,6 +83,8 @@ Generated for each scheduled interview, includes:
 | interview | OneToOne(Interview) | Associated interview |
 | predicted_questions | TextField | 3-5 questions with STAR responses (markdown) |
 | interviewer_questions | TextField | 5 strategic questions with rationale (markdown) |
+| resume_defense_prep | TextField | Bullet-by-bullet defense strategies using resume project data (markdown) |
+| technical_deep_dives | TextField | Targeted technical topics with prepared explanations (markdown) |
 
 ---
 
@@ -84,7 +97,9 @@ Service responsible for generating and persisting interview preparation content 
 **Responsibilities:**
 - Generate baseline preparation content for an application
 - Generate interview-specific preparation content
-- Construct prompts using application, job, and interview context
+- Preserve and reuse resume project data behind resume bullets
+- Incorporate prior interview notes to target gaps and weaknesses
+- Construct prompts using application, job, resume, and interview context
 - Validate generated output against structured schemas
 - Persist preparation content in markdown form
 
@@ -112,8 +127,10 @@ Service responsible for generating and persisting interview preparation content 
 - Background narrative
 
 **Interview-specific (dynamic):**
-- Predicted questions (changes per interview)
-- Interviewer questions (changes per interview)
+- Predicted questions with STAR responses
+- Interviewer questions with rationale
+- Resume defense preparation
+- Technical deep dives
 
 **Features:**
 - Dropdown selector to switch between interviews
@@ -187,9 +204,10 @@ Service responsible for generating and persisting interview preparation content 
 
 ### Post-Interview Updates
 
-1. User edits Interview.notes field with actual questions asked
-2. User optionally edits preparation documents if they want to refine for future reference
-3. Notes available in application detail view for outcome analysis
+1. User edits Interview.notes field with actual questions asked and self-reflection
+2. Notes are used as input for future interview-specific preparation
+3. Follow-on interview prep emphasizes areas of uncertainty or poor performance
+4. Preparation documents can be regenerated to reflect updated feedback
 
 ---
 
@@ -207,6 +225,16 @@ Service responsible for generating and persisting interview preparation content 
 - Enables reformatting JD with callback drivers highlighted
 - Callback drivers derived from resume screening context
 
+### Resume Project Context Integration
+
+- Resume bullets are linked to their source ExperienceProject records
+- Interview preparation uses these projects as the authoritative source for:
+  - STAR Situation / Action / Result details
+  - Technical stack explanations
+  - Architectural decisions and tradeoffs
+  - Concrete metrics and outcomes
+- Ensures interview prep can defend every resume claim with authentic, consistent detail
+
 ---
 
 ## Future Enhancements
@@ -217,3 +245,6 @@ Service responsible for generating and persisting interview preparation content 
 - Company-specific interview guides (known questions, processes)
 - Interview performance self-assessment
 - Automated follow-up email generation
+- Automatic identification of resume bullets at risk of weak defense
+- Confidence scoring for technical topics based on prior interview notes
+- Longitudinal tracking of improvement across interview rounds

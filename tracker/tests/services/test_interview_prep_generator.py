@@ -35,6 +35,8 @@ class TestInterviewPrepGenerator(TestCase):
     BACKGROUND_NARRATIVE = "### Opening one-liner\nSoftware engineer with backend focus"
     PREDICTED_QUESTIONS = "### Question 1\nTell me about a time..."
     INTERVIEWER_QUESTIONS = "### Question 1\nWhat does success look like?"
+    RESUME_DEFENSE_PREP = "Resume defense prep"
+    TECHNICAL_DEEP_DIVES = "Technical deep dives"
     ROLE_TITLE = "Software Engineer"
     RESUME_BULLET = "Built API with Django"
 
@@ -94,6 +96,8 @@ class TestInterviewPrepGenerator(TestCase):
         cls.specific_response = json.dumps({
             "predicted_questions": cls.PREDICTED_QUESTIONS,
             "interviewer_questions": cls.INTERVIEWER_QUESTIONS,
+            "resume_defense_prep": cls.RESUME_DEFENSE_PREP,
+            "technical_deep_dives": cls.TECHNICAL_DEEP_DIVES,
         })
 
     def setUp(self):
@@ -162,6 +166,8 @@ class TestInterviewPrepGenerator(TestCase):
         expected = InterviewPrepSpecificSchema(
             predicted_questions=self.PREDICTED_QUESTIONS,
             interviewer_questions=self.INTERVIEWER_QUESTIONS,
+            resume_defense_prep=self.RESUME_DEFENSE_PREP,
+            technical_deep_dives=self.TECHNICAL_DEEP_DIVES,
         )
         self.assertEqual(result, expected)
 
