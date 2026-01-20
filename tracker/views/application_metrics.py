@@ -269,6 +269,9 @@ def _group_location(location):
         "oakbrook terrace",
         "schaumburg",
         "skokie",
+        "des plaines",
+        "northfield",
+        "rosemont",
     }
 
     if city in chicago_area_cities:
