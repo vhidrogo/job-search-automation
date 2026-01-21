@@ -53,7 +53,14 @@ class ApplicationAdmin(admin.ModelAdmin):
         "status__state",
         "view_detail_link",
     ]
-    list_filter = ["applied_date", "job__role", "job__specialization", "status__state"]
+    list_filter = [
+        "applied_date",
+        "status__state",
+        "job__role",
+        "job__source",
+        "job__work_setting",
+        "job__location",
+    ]
     search_fields = ["job__company", "job__listing_job_title", "job__external_job_id"]
     readonly_fields = ["job"]
     inlines = [
