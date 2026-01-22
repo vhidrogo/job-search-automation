@@ -110,9 +110,9 @@ class TestWorkdayClient(TestCase):
         self.assertEqual(len(jobs), 1)
 
     def test_fetch_jobs_raises_client_error_on_http_failure(self):
-        self.mock_post.return_value.raise_for_status.side_effect = requests.HTTPError()
+        self.mock_post.return_value.raise_for_status.side_effect = requests.HTTPError("404 Not Found")
 
-        with self.assertRaises(WorkdayClientError):
+        with self.assertRaisesRegex(WorkdayClientError, r"HTTPError"):
             self.workday_client.fetch_jobs()
 
     def test_fetch_jobs_stops_when_api_returns_no_more_jobs(self):
