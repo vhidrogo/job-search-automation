@@ -188,6 +188,10 @@ class InterviewPreparationAdmin(admin.ModelAdmin):
         ("Interview", {
             "fields": ("interview",)
         }),
+        ("Prep Plan", {
+            "fields": ("prep_plan",),
+            "classes": ("wide",)
+        }),
         ("Predicted Questions", {
             "fields": ("predicted_questions",),
             "classes": ("wide",)
