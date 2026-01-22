@@ -14,6 +14,7 @@ class Interview(models.Model):
         RECRUITER_SCREEN = "recruiter_screen", "Recruiter Screen"
         HIRING_MANAGER_SCREEN = "hiring_manager_screen", "Hiring Manager Screen"
         TECHNICAL_SCREEN = "technical_screen", "Technical Screen"
+        PREP_CALL = "prep_call", "Prep/Logistics Call"
         FINAL_LOOP = "final_loop", "Final Loop"
     
     class Format(models.TextChoices):
@@ -26,6 +27,9 @@ class Interview(models.Model):
         BEHAVIORAL = "behavioral", "Behavioral"
         HIRING_MANAGER = "hiring_manager", "Hiring Manager"
         REFACTORING = "refactoring", "Refactoring / Code Quality"
+        CASE = "case", "Business Case"
+        DATA_PIPELINE_BUILD = "data_pipeline_build", "Data Pipeline Build"
+        DATA_PIPELINE_DESIGN = "data_pipeline_design", "Data Pipeline Design"
     
     application = models.ForeignKey(
         "Application",
