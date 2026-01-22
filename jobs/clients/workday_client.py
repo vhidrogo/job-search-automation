@@ -1,3 +1,4 @@
+import logging
 import requests
 from typing import List, Dict, Optional
 from dataclasses import dataclass
@@ -41,6 +42,7 @@ class WorkdayClient:
     """
     
     PAGE_SIZE = 20
+    logger = logging.getLogger(__name__)
     
     def __init__(self, config: WorkdayCompanyConfig):
         self.config = config
@@ -122,8 +124,12 @@ class WorkdayClient:
             return data.get("jobPostings", []), data.get("total", 0)
         
         except requests.exceptions.RequestException as e:
+            self.logger.error(
+                f"Workday API request failed for {self.config.name}: {e}",
+                exc_info=True
+            )
             raise WorkdayClientError(
-                f"Failed to fetch jobs from Workday for {self.config.name}"
+                f"Failed to fetch jobs from Workday for {self.config.name}: {type(e).__name__}: {str(e)}"
             ) from e
 
     def _normalize_job(self, job):
