@@ -67,6 +67,7 @@ def generate_prep_for_interview(interview_id: int) -> dict:
     
     InterviewPreparation.objects.create(
         interview=interview,
+        prep_plan=interview_schema.prep_plan,
         predicted_questions=interview_schema.predicted_questions,
         interviewer_questions=interview_schema.interviewer_questions,
         resume_defense_prep=interview_schema.resume_defense_prep,

@@ -47,6 +47,7 @@ class TestGeneratePrepForInterview(TestCase):
     @patch("tracker.utils.interview_prep.InterviewPrepGenerator.generate_interview_preparation")
     def test_generate_prep_for_interview_creates_prep(self, mock_generator):
         mock_generator.return_value = InterviewPrepSpecificSchema(
+            prep_plan="prep_plan",
             predicted_questions="predicted_questions",
             interviewer_questions="interviewer_questions",
             resume_defense_prep="resume_defense_prep",
