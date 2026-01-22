@@ -8,6 +8,7 @@ class InterviewPreparation(models.Model):
 
     Fields:
         - interview: FK to the associated Interview.
+        - prep_plan: Sequential preparation roadmap (markdown formatted).
         - predicted_questions: Predicted questions with STAR responses (markdown formatted).
         - interviewer_questions: Interviewer-aligned questions to ask (markdown formatted)
         - resume_defense_prep: Resume bullet defense strategies (markdown).
@@ -17,6 +18,11 @@ class InterviewPreparation(models.Model):
         "Interview",
         on_delete=models.CASCADE,
         related_name="preparation"
+    )
+
+    prep_plan = models.TextField(
+        blank=True,
+        help_text="Sequential, prioritized preparation roadmap (markdown)"
     )
     
     predicted_questions = models.TextField(
