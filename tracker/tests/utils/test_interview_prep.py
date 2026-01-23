@@ -21,6 +21,7 @@ class TestGenerateBasePrepForApplication(TestCase):
             company_context="company",
             primary_drivers="drivers",
             background_narrative="background",
+            resume_defense_prep="resume_defense_prep",
         )
 
         created = generate_base_prep_for_application(self.application.id)

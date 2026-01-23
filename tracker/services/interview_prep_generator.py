@@ -4,7 +4,7 @@ from resume.clients import ClaudeClient
 from resume.models import ExperienceProject
 from resume.utils.prompt import fill_placeholders, load_prompt
 from resume.utils.validation import parse_llm_json, validate_with_schema
-from tracker.models import Application, Interview, LlmRequestLog
+from tracker.models import Application, Interview, Job, LlmRequestLog
 from tracker.schemas import InterviewPrepBaseSchema, InterviewPrepSpecificSchema
 
 
@@ -40,7 +40,7 @@ class InterviewPrepGenerator:
         self,
         application: Application,
         model: str = None,
-        max_tokens: int = 4000,
+        max_tokens: int = 64000,
     ) -> InterviewPrepBaseSchema:
         """Generate base interview preparation for an application.
         
@@ -64,6 +64,7 @@ class InterviewPrepGenerator:
             {
                 "JOB_DESCRIPTION": application.job.raw_jd_text,
                 "RESUME": resume_text,
+                "RESUME_PROJECTS": self._format_projects_for_prompt(application.job),
             }
         )
         
@@ -112,7 +113,7 @@ class InterviewPrepGenerator:
         prompt = fill_placeholders(prompt_template, {
             "JOB_DESCRIPTION": interview.application.job.raw_jd_text,
             "RESUME": resume_text,
-            "RESUME_PROJECTS": self._format_projects_for_prompt(interview),
+            "RESUME_PROJECTS": self._format_projects_for_prompt(interview.application.job),
             "PRIMARY_DRIVERS": prep_base.primary_drivers,
             "INTERVIEW_STAGE": interview.get_stage_display(),
             "INTERVIEW_FOCUS": interview.get_focus_display() if interview.focus else "Not specified",
@@ -132,7 +133,7 @@ class InterviewPrepGenerator:
         
         return validated_data
     
-    def _build_resume_text(self, job) -> str:
+    def _build_resume_text(self, job: Job) -> str:
         """
         Build structured resume text from Job's associated Resume model.
         
@@ -172,19 +173,20 @@ class InterviewPrepGenerator:
         
         return "\n".join(sections)
 
-    def _format_projects_for_prompt(self, interview) -> str:
+    def _format_projects_for_prompt(self, job: Job) -> str:
         """
         Extract ExperienceProjects used by resume bullets for the given interview's application,
         and format them as JSON for LLM prompt context.
 
         Traversal:
-        Interview -> Application -> Job -> Resume -> Roles -> Bullets -> ExperienceProject
+        Job -> Resume -> Roles -> Bullets -> ExperienceProject
+
+        Args:
+            job: Job instance with associated Resume.
 
         Returns:
             JSON string for RESUME_PROJECTS placeholder.
         """
-
-        job = interview.application.job
 
         if not hasattr(job, "resume"):
             return "[]"

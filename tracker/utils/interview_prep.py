@@ -35,6 +35,7 @@ def generate_base_prep_for_application(application_id: int) -> dict:
         company_context=base_schema.company_context,
         primary_drivers=base_schema.primary_drivers,
         background_narrative=base_schema.background_narrative,
+        resume_defense_prep=base_schema.resume_defense_prep,
     )
     
     return True
