@@ -132,6 +132,7 @@ class InterviewAdmin(admin.ModelAdmin):
         "scheduled_at"
     ]
     list_filter = ["stage"]
+    search_fields = ["application__job__company"]
     formfield_overrides = {
         models.TextField: {"widget": forms.Textarea(attrs={"rows": 20, "cols": 60})},
     }
