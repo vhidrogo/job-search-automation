@@ -33,10 +33,10 @@ class TestInterviewPrepGenerator(TestCase):
     COMPANY_CONTEXT = "## What the company does\nPet care marketplace"
     PRIMARY_DRIVERS = "**Python Experience**: 2+ years with Django"
     BACKGROUND_NARRATIVE = "### Opening one-liner\nSoftware engineer with backend focus"
+    RESUME_DEFENSE_PREP = "Resume defense prep"
     PREP_PLAN = "### Study Materials"
     PREDICTED_QUESTIONS = "### Question 1\nTell me about a time..."
     INTERVIEWER_QUESTIONS = "### Question 1\nWhat does success look like?"
-    RESUME_DEFENSE_PREP = "Resume defense prep"
     TECHNICAL_DEEP_DIVES = "Technical deep dives"
     ROLE_TITLE = "Software Engineer"
     RESUME_BULLET = "Built API with Django"
@@ -64,14 +64,14 @@ class TestInterviewPrepGenerator(TestCase):
             template=template,
             job=cls.job,
         )
-        experience_role = ExperienceRole.objects.create(
+        cls.experience_role = ExperienceRole.objects.create(
             title=cls.ROLE_TITLE,
             start_date=timezone.now(),
             end_date=timezone.now(),
         )
         resume_role = ResumeRole.objects.create(
             resume=cls.resume,
-            source_role=experience_role,
+            source_role=cls.experience_role,
             title=cls.ROLE_TITLE,
             order=1,
         )
@@ -92,13 +92,13 @@ class TestInterviewPrepGenerator(TestCase):
             "company_context": cls.COMPANY_CONTEXT,
             "primary_drivers": cls.PRIMARY_DRIVERS,
             "background_narrative": cls.BACKGROUND_NARRATIVE,
+            "resume_defense_prep": cls.RESUME_DEFENSE_PREP,
         })
 
         cls.specific_response = json.dumps({
             "prep_plan": cls.PREP_PLAN,
             "predicted_questions": cls.PREDICTED_QUESTIONS,
             "interviewer_questions": cls.INTERVIEWER_QUESTIONS,
-            "resume_defense_prep": cls.RESUME_DEFENSE_PREP,
             "technical_deep_dives": cls.TECHNICAL_DEEP_DIVES,
         })
 
@@ -122,6 +122,7 @@ class TestInterviewPrepGenerator(TestCase):
             company_context=self.COMPANY_CONTEXT,
             primary_drivers=self.PRIMARY_DRIVERS,
             background_narrative=self.BACKGROUND_NARRATIVE,
+            resume_defense_prep=self.RESUME_DEFENSE_PREP,
         )
         self.assertEqual(result, expected)
 
@@ -153,6 +154,27 @@ class TestInterviewPrepGenerator(TestCase):
         self.assertIn("SKILLS", prompt)
         self.assertIn("Programming Languages: Python, Java", prompt)
 
+    def test_generate_base_preparation_includes_resume_projects_json(self):
+        project = ExperienceProject.objects.create(
+            experience_role=self.experience_role,
+            problem_context="Scaling API bottleneck",
+            actions="Refactored query layer",
+            tools="Django, Postgres",
+            outcomes="Reduced latency by 40%",
+        )
+        bullet = ResumeRoleBullet.objects.first()
+        bullet.experience_project = project
+        bullet.save()
+        self.mock_client.generate.return_value = self.base_response
+
+        self.generator.generate_base_preparation(self.application)
+
+        prompt = self._get_prompt_arg()
+        self.assertIn("Scaling API bottleneck", prompt)
+        self.assertIn("Refactored query layer", prompt)
+        self.assertIn("Django, Postgres", prompt)
+        self.assertIn("Reduced latency by 40%", prompt)
+
     def test_generate_interview_preparation_returns_validated_schema(self):
         InterviewPreparationBase.objects.create(application=self.application)
         self.mock_client.generate.return_value = self.specific_response
@@ -169,7 +191,6 @@ class TestInterviewPrepGenerator(TestCase):
             prep_plan=self.PREP_PLAN,
             predicted_questions=self.PREDICTED_QUESTIONS,
             interviewer_questions=self.INTERVIEWER_QUESTIONS,
-            resume_defense_prep=self.RESUME_DEFENSE_PREP,
             technical_deep_dives=self.TECHNICAL_DEEP_DIVES,
         )
         self.assertEqual(result, expected)
@@ -223,9 +244,8 @@ class TestInterviewPrepGenerator(TestCase):
 
     def test_generate_interview_preparation_includes_resume_projects_json(self):
         InterviewPreparationBase.objects.create(application=self.application)
-        role = ExperienceRole.objects.create(key="1", start_date=timezone.now(), end_date=timezone.now())
         project = ExperienceProject.objects.create(
-            experience_role=role,
+            experience_role=self.experience_role,
             problem_context="Scaling API bottleneck",
             actions="Refactored query layer",
             tools="Django, Postgres",

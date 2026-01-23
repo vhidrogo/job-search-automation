@@ -7,6 +7,7 @@ class InterviewPrepBaseSchema(BaseModel):
     company_context: str
     primary_drivers: str
     background_narrative: str
+    resume_defense_prep: str
 
 
 class InterviewPrepSpecificSchema(BaseModel):
@@ -14,5 +15,4 @@ class InterviewPrepSpecificSchema(BaseModel):
     prep_plan: str
     predicted_questions: str
     interviewer_questions: str
-    resume_defense_prep: str
     technical_deep_dives: str

@@ -124,6 +124,9 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <div class="header">
@@ -169,6 +172,11 @@
         <div class="markdown-content" id="background-narrative"></div>
     </div>
 
+    <div class="section">
+        <h2>Resume Defense Preparation</h2>
+        <div class="markdown-content" id="resume-defense-prep"></div>
+    </div>
+
     <!-- Interview-Specific Sections -->
     {% if interview_prep %}
     <div class="section">
@@ -184,11 +192,6 @@
     <div class="section">
         <h2>Interviewer-Aligned Questions</h2>
         <div class="markdown-content" id="interviewer-questions"></div>
-    </div>
-
-    <div class="section">
-        <h2>Resume Defense Preparation</h2>
-        <div class="markdown-content" id="resume-defense-prep"></div>
     </div>
 
     <div class="section">
@@ -210,13 +213,12 @@
                 { id: 'company-context', content: "{{ prep_base.company_context|escapejs }}" },
                 { id: 'primary-drivers', content: "{{ prep_base.primary_drivers|escapejs }}" },
                 { id: 'background-narrative', content: "{{ prep_base.background_narrative|escapejs }}" },
+                { id: 'resume-defense-prep', content: "{{ prep_base.resume_defense_prep|escapejs }}" },
                 {% if interview_prep %}
                 { id: 'prep-plan', content: "{{ interview_prep.prep_plan|escapejs }}" },
                 { id: 'predicted-questions', content: "{{ interview_prep.predicted_questions|escapejs }}" },
                 { id: 'interviewer-questions', content: "{{ interview_prep.interviewer_questions|escapejs }}" },
-                { id: 'resume-defense-prep', content: "{{ interview_prep.resume_defense_prep|escapejs }}" },
                 { id: 'technical-deep-dives', content: "{{ interview_prep.technical_deep_dives|escapejs }}" },
-
                 {% endif %}
             ];
 
@@ -225,6 +227,11 @@
                 if (element && section.content) {
                     element.innerHTML = marked.parse(section.content);
                 }
+            });
+
+            // Apply syntax highlighting to all code blocks
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
             });
         }
 

@@ -35,6 +35,7 @@ def generate_base_prep_for_application(application_id: int) -> dict:
         company_context=base_schema.company_context,
         primary_drivers=base_schema.primary_drivers,
         background_narrative=base_schema.background_narrative,
+        resume_defense_prep=base_schema.resume_defense_prep,
     )
     
     return True
@@ -70,7 +71,6 @@ def generate_prep_for_interview(interview_id: int) -> dict:
         prep_plan=interview_schema.prep_plan,
         predicted_questions=interview_schema.predicted_questions,
         interviewer_questions=interview_schema.interviewer_questions,
-        resume_defense_prep=interview_schema.resume_defense_prep,
         technical_deep_dives=interview_schema.technical_deep_dives,
     )
     

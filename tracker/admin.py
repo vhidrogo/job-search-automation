@@ -201,10 +201,6 @@ class InterviewPreparationAdmin(admin.ModelAdmin):
             "fields": ("interviewer_questions",),
             "classes": ("wide",)
         }),
-        ("Resume Defense Prep", {
-            "fields": ("resume_defense_prep",),
-            "classes": ("wide",)
-        }),
         ("Technical Deep Dives", {
             "fields": ("technical_deep_dives",),
             "classes": ("wide",)
@@ -252,6 +248,10 @@ class InterviewPreparationBaseAdmin(admin.ModelAdmin):
             "fields": ("background_narrative",),
             "classes": ("wide",)
         }),
+        ("Resume Defense Prep", {
+            "fields": ("resume_defense_prep",),
+            "classes": ("wide",)
+        }),
         ("Metadata", {
             "fields": ("created_at", "updated_at"),
             "classes": ("collapse",)
@@ -293,6 +293,7 @@ class JobAdmin(admin.ModelAdmin):
 
 class LlmRequestLogAdmin(admin.ModelAdmin):
     list_display = ["timestamp", "call_type", "input_tokens", "output_tokens"]
+    list_filter = ["call_type"]
     ordering = ["-timestamp"]
 
 

@@ -11,7 +11,6 @@ class InterviewPreparation(models.Model):
         - prep_plan: Sequential preparation roadmap (markdown formatted).
         - predicted_questions: Predicted questions with STAR responses (markdown formatted).
         - interviewer_questions: Interviewer-aligned questions to ask (markdown formatted)
-        - resume_defense_prep: Resume bullet defense strategies (markdown).
         - technical_deep_dives: Targeted technical deep dives with prepared explanations (markdown)
     """
     interview = models.OneToOneField(
@@ -31,10 +30,6 @@ class InterviewPreparation(models.Model):
     
     interviewer_questions = models.TextField(
         help_text="5 strategic questions with 'why this works' explanations (markdown)"
-    )
-
-    resume_defense_prep = models.TextField(
-        help_text="Resume bullet defense strategies (markdown)"
     )
     
     technical_deep_dives = models.TextField(

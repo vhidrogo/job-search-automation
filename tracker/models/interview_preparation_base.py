@@ -12,6 +12,7 @@ class InterviewPreparationBase(models.Model):
         - company_context: Company & product context (markdown with headers).
         - primary_drivers: Primary callback drivers (markdown list with bold titles).
         - background_narrative: Targeted background narrative (markdown with 3 subsections)
+        - resume_defense_prep: Resume bullet defense strategies (markdown).
     """
     application = models.OneToOneField(
         "Application",
@@ -33,6 +34,10 @@ class InterviewPreparationBase(models.Model):
     
     background_narrative = models.TextField(
         help_text="Opening line, core narrative, forward hook (markdown formatted)"
+    )
+
+    resume_defense_prep = models.TextField(
+        help_text="Resume bullet defense strategies (markdown)"
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
