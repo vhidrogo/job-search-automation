@@ -21,6 +21,7 @@ Generated when application has scheduled interviews, includes:
 
 **Interview-Specific Preparation (per interview):**
 Generated for each scheduled interview, includes:
+- Sequential preparation roadmap (4 phases: Foundation Review, Active Practice, Polish & Integration, Final Confidence Check)
 - 3-5 predicted questions with structured STAR responses
 - 5 interviewer-aligned questions with strategic rationale
 - Resume defense preparation for high-risk or high-signal resume bullets
@@ -81,6 +82,7 @@ Generated for each scheduled interview, includes:
 |-------|------|-------------|
 | id | IntegerField | Primary key |
 | interview | OneToOne(Interview) | Associated interview |
+| prep_plan | TextField | Sequential preparation roadmap with prioritized tasks (markdown) |
 | predicted_questions | TextField | 3-5 questions with STAR responses (markdown) |
 | interviewer_questions | TextField | 5 strategic questions with rationale (markdown) |
 | resume_defense_prep | TextField | Bullet-by-bullet defense strategies using resume project data (markdown) |
@@ -127,6 +129,7 @@ Service responsible for generating and persisting interview preparation content 
 - Background narrative
 
 **Interview-specific (dynamic):**
+- Preparation roadmap (sequential tasks at candidate's pace)
 - Predicted questions with STAR responses
 - Interviewer questions with rationale
 - Resume defense preparation
@@ -198,9 +201,10 @@ Service responsible for generating and persisting interview preparation content 
 
 1. User visits prep view before interview
 2. Selects specific interview from dropdown
-3. Reviews predicted questions and STAR responses
-4. Reviews interviewer questions and rationale
-5. Optionally prints page for offline reference
+3. Follows preparation roadmap to structure study and practice
+4. Reviews predicted questions and STAR responses
+5. Reviews interviewer questions and rationale
+6. Optionally prints page for offline reference
 
 ### Post-Interview Updates
 
