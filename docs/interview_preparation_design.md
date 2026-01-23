@@ -18,15 +18,16 @@ Generated when application has scheduled interviews, includes:
 - Company and product context
 - Primary callback drivers (1-3 key screening signals)
 - Targeted background narrative (opening, core, forward hook)
+- Resume defense preparation for all resume bullets
 
 **Interview-Specific Preparation (per interview):**
 Generated for each scheduled interview, includes:
 - Sequential preparation roadmap (4 phases: Foundation Review, Active Practice, Polish & Integration, Final Confidence Check)
 - 3-5 predicted questions with structured STAR responses
 - 5 interviewer-aligned questions with strategic rationale
-- Resume defense preparation for high-risk or high-signal resume bullets
 - Targeted technical deep dives based on resume claims, job requirements, and prior interview feedback
 - Calibrated to interview stage, interviewer role, and focus area
+- **Focus-specific:** All content tailored exclusively to the interview's focus area (e.g., "Data Pipeline Build" vs "Data Pipeline Design"), not the entire stage
 
 ### Generation Approach
 
@@ -45,7 +46,8 @@ Generated for each scheduled interview, includes:
   - Prior Interview Notes (structured notes from earlier rounds)
   - Interview metadata (stage, focus, interviewer)
 - Output: Markdown-formatted preparation sections
-- Explicitly reuses Resume Projects data to generate authentic STAR responses, resume defense prep, and technical deep dives
+- Explicitly reuses Resume Projects data to generate authentic STAR responses and technical deep dives
+- Focuses all generated content exclusively on the interview's focus area, not the entire stage
 - Calibrates depth and focus using interview stage and prior interview feedback
 
 **LLM prompt structure:**
@@ -76,6 +78,7 @@ Generated for each scheduled interview, includes:
 | company_context | TextField | Company/product info (markdown) |
 | primary_drivers | TextField | 1-3 key screening signals (markdown) |
 | background_narrative | TextField | Opening, core, forward hook (markdown) |
+| resume_defense_prep | TextField | Bullet-by-bullet defense strategies (markdown) |
 
 ### InterviewPreparation
 | Field | Type | Description |
@@ -85,7 +88,6 @@ Generated for each scheduled interview, includes:
 | prep_plan | TextField | Sequential preparation roadmap with prioritized tasks (markdown) |
 | predicted_questions | TextField | 3-5 questions with STAR responses (markdown) |
 | interviewer_questions | TextField | 5 strategic questions with rationale (markdown) |
-| resume_defense_prep | TextField | Bullet-by-bullet defense strategies using resume project data (markdown) |
 | technical_deep_dives | TextField | Targeted technical topics with prepared explanations (markdown) |
 
 ---
@@ -127,12 +129,12 @@ Service responsible for generating and persisting interview preparation content 
 - Company context
 - Primary callback drivers
 - Background narrative
+- Resume defense preparation
 
 **Interview-specific (dynamic):**
 - Preparation roadmap (sequential tasks at candidate's pace)
 - Predicted questions with STAR responses
 - Interviewer questions with rationale
-- Resume defense preparation
 - Technical deep dives
 
 **Features:**
