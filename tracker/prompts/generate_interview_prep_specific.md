@@ -5,6 +5,7 @@ Given a job description, resume, primary callback drivers, and interview details
 Return a JSON object with this exact structure:
 ```json
 {
+  "prep_plan": "markdown string",
   "predicted_questions": "markdown string",
   "interviewer_questions": "markdown string",
   "resume_defense_prep": "markdown string",
@@ -13,6 +14,148 @@ Return a JSON object with this exact structure:
 ```
 
 # Field Specifications
+
+## prep_plan
+Generate a sequential, prioritized preparation roadmap that the candidate can work through at their own pace.
+
+**Selection Criteria:**
+- Order tasks by logical prerequisites (understand before practice, practice before polish)
+- Prioritize gaps identified in Prior Interview Notes
+- Calibrate depth and focus based on Interview Stage and Focus
+- Include both consumption (review/study) and production (practice/drill) activities
+- Balance time investment with impact on interview performance
+
+**Format (markdown):**
+```markdown
+## Preparation Roadmap
+
+### Phase 1: Foundation Review (Do First)
+**Goal:** Build confident baseline understanding before practicing
+
+1. **Review Generated Interview Prep Materials**
+   - Read through all predicted questions and STAR answers
+   - Study resume defense prep for all bullets
+   - [If Prior Interview Notes exist: Flag weak areas from prior round for extra attention]
+   - **Why this order:** Need to know what you're preparing for before drilling specifics
+
+2. **Study Technical Deep Dives**
+   - Focus order: [List topics in priority order based on callback drivers and Prior Interview Notes]
+   - [If Prior Interview Notes show gaps: "PRIORITY: Review [specific topic] - you struggled with this when asked about [specific question]"]
+   - **Why this order:** Conceptual understanding enables better code/design practice
+
+3. **[Interview Focus-Specific Study]**
+   - [For coding: "Review [specific algorithms/patterns] relevant to [job requirements]"]
+   - [For system design: "Study [specific architectural patterns] used in [domain]"]
+   - [For behavioral: "Re-read STAR method and your prepared stories"]
+   - [For case: "Review business case frameworks and practice reading/evaluating code"]
+   - **Why this order:** Interview-specific preparation should build on general foundation
+
+---
+
+### Phase 2: Active Practice (Do Second)
+**Goal:** Convert knowledge into confident execution under pressure
+
+4. **[Interview Focus Practice Activity 1]**
+   - [For coding: "Practice 2-3 problems on [specific platform from job/recruiter materials] to familiarize yourself with the environment"]
+   - [For system design: "Whiteboard 2-3 [system type relevant to role] architectures on paper, explaining trade-offs aloud"]
+   - [For behavioral: "Record yourself answering 3-5 predicted questions using STAR method"]
+   - [For case: "Practice reading code + making business recommendations on [topic]"]
+   - **Practice focus:** [Specific skill this develops]
+   - [If Prior Interview Notes: "Focus on [specific scenario] since you were uncertain about [concept] last time"]
+
+5. **[Interview Focus Practice Activity 2]**
+   - [For coding: "Build 2-3 end-to-end [type of system/project relevant to role] using [primary languages from job description]"]
+   - [For system design: "Practice explaining [key technical tradeoffs from job requirements] with concrete examples from your experience"]
+   - [For behavioral: "Practice your 30-second elevator pitches for each resume bullet"]
+   - [For case: "Work through sample case with code evaluation + business recommendation"]
+   - **Practice focus:** [Specific skill this develops]
+
+6. **Resume Defense Dry Run**
+   - Pick 3-5 most technical bullets
+   - Explain each one aloud as if interviewer asked "tell me about this"
+   - Practice the 30-second elevator pitch for each
+   - [If Prior Interview Notes: "Especially practice [specific bullet] - your explanation last time lacked [specific detail]"]
+   - **Why this order:** Confidence on resume is foundational to entire interview
+
+---
+
+### Phase 3: Polish & Integration (Do Third)
+**Goal:** Smooth rough edges and build interview-day confidence
+
+7. **Mock Interview Yourself**
+   - Answer all predicted questions aloud, timing yourself (60-90 seconds each)
+   - Identify where you trail off or sound uncertain
+   - Revise weak answers and re-record
+   - **Why this order:** Reveals gaps that reading alone doesn't expose
+
+8. **Prepare Your Questions for Interviewer**
+   - Select 2-3 questions from generated list appropriate for this interviewer
+   - [If Prior Interview Notes: "Avoid repeating [questions already asked], focus on [new angles]"]
+   - Practice asking them naturally, not reading from notes
+   - **Why this order:** Questions should feel organic after you've internalized the prep
+
+9. **Technical Environment Prep**
+   - [If using CodeSignal: "Log into CodeSignal, verify you can access it, test screen sharing"]
+   - [If virtual: "Test webcam, microphone, screen share, backup internet plan"]
+   - Have resume and notes open for quick reference
+   - **Why this order:** Technical issues on interview day kill confidence - eliminate risk now
+
+---
+
+### Phase 4: Final Confidence Check (Do Last, Ideally Day Before)
+**Goal:** Quick validation that you're ready, targeted fixes only
+
+10. **Speed Review**
+    - Skim all generated materials one more time
+    - [If Prior Interview Notes: "Double-check you can now confidently answer [specific question that caused difficulty]"]
+    - Practice the 3 most likely questions one final time
+    - **Why this order:** Light refresh to keep content top of mind without over-studying
+
+11. **Mental Prep**
+    - Review Primary Callback Drivers - remind yourself why they wanted you
+    - [If Prior Interview Notes: "Reflect on what went well last time: [specific strengths]"]
+    - Trust your preparation
+    - **Why this order:** Confidence is the final ingredient
+
+---
+
+## Minimum Viable Prep (If Time-Constrained)
+If you can't complete all phases, prioritize in this order:
+1. **Must do:** Steps 1, 2, 6 (understand materials, know your resume)
+2. **Should do:** Steps 4, 7 (practice the interview focus area, mock yourself)
+3. **Nice to have:** Steps 3, 5, 8-11 (polish and environment prep)
+
+[If Prior Interview Notes exist with identified gaps:]
+**CRITICAL for this round:** Steps 2 and 4 - you must address [specific technical gap] or it will be exposed again
+```
+
+**Calibration by Interview Focus:**
+
+**Coding Focus:**
+- Phase 2 emphasizes live coding practice in actual environment (CodeSignal)
+- Include specific algorithm/data structure review based on job requirements
+- Practice talking through code while writing it
+
+**System Design Focus:**
+- Phase 2 emphasizes whiteboarding and explaining trade-offs aloud
+- Include architecture pattern review for relevant domain
+- Practice drawing schemas and data flow diagrams
+
+**Behavioral Focus:**
+- Phase 2 emphasizes STAR method practice and storytelling
+- Include recording yourself to catch filler words and trailing off
+- Practice smooth transitions between situation/action/result
+
+**Case Focus:**
+- Phase 2 emphasizes code reading + business analysis integration
+- Include business framework review (profitability, market sizing, etc.)
+- Practice making recommendations that balance technical and business factors
+
+**Prior Interview Notes Integration:**
+- Flag specific steps with "PRIORITY" when they address known gaps
+- Reference specific questions/topics that caused difficulty
+- Provide corrected explanations in context of practice activities
+- Adjust minimum viable prep to always include gap remediation
 
 ## predicted_questions
 Generate 3-5 predicted interview questions with structured STAR responses.

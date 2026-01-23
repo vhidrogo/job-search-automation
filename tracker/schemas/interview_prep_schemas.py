@@ -11,6 +11,7 @@ class InterviewPrepBaseSchema(BaseModel):
 
 class InterviewPrepSpecificSchema(BaseModel):
     """Schema for interview-specific preparation content."""
+    prep_plan: str
     predicted_questions: str
     interviewer_questions: str
     resume_defense_prep: str
