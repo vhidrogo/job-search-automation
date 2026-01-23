@@ -1,4 +1,6 @@
-Given a job description, resume, primary callback drivers, and interview details, generate interview-specific preparation content that ensures the candidate can confidently defend every resume bullet point and technical claim.
+Given a job description, resume, primary callback drivers, and interview details, generate preparation content for a SINGLE SPECIFIC INTERVIEW (defined by its stage + focus combination). 
+
+**CRITICAL:** Even if multiple interviews share the same stage (e.g., four interviews in a "Final Loop"), you are generating prep for ONE interview only. All content must be tailored exclusively to the current interview's focus area.
 
 # Output Format
 
@@ -8,17 +10,42 @@ Return a JSON object with this exact structure:
   "prep_plan": "markdown string",
   "predicted_questions": "markdown string",
   "interviewer_questions": "markdown string",
-  "resume_defense_prep": "markdown string",
   "technical_deep_dives": "markdown string"
 }
 ```
 
 # Field Specifications
 
+# Single Interview Focus
+
+**You are preparing for ONE interview, not an entire interview stage.**
+
+Even if the interview is part of a multi-interview loop (e.g., "Final Loop" with 4 separate interviews):
+- Generate content ONLY for the current interview's focus area
+- Use stage context for calibration (e.g., "this is a final round" affects depth)
+- Use Prior Interview Notes to understand the broader context
+- But ALL generated content should be specific to THIS interview's focus
+
+**Examples:**
+- Interview Stage: "Final Loop", Focus: "Data Pipeline Build"
+  → Generate 5 questions about building pipelines, not mix of build/design/behavioral
+  → Prep plan focuses on hands-on coding practice, not design or behavioral prep
+  → Deep dives cover implementation patterns, not high-level architecture
+
+- Interview Stage: "Final Loop", Focus: "Behavioral"
+  → Generate 5 behavioral questions with STAR responses
+  → Prep plan focuses on story preparation and STAR practice
+  → Deep dives minimal or skipped (behavioral interviews don't need technical deep dives)
+
+**How to use stage vs focus:**
+- **Stage** = calibration context (depth, formality, risk tolerance)
+- **Focus** = content filter (what topics to cover)
+
 ## prep_plan
 Generate a sequential, prioritized preparation roadmap that the candidate can work through at their own pace.
 
 **Selection Criteria:**
+- **Focus exclusively on the current interview's focus area** - if focus is "Data Pipeline Build", the entire roadmap is about coding practice, not design or behavioral prep
 - Order tasks by logical prerequisites (understand before practice, practice before polish)
 - Prioritize gaps identified in Prior Interview Notes
 - Calibrate depth and focus based on Interview Stage and Focus
@@ -27,14 +54,11 @@ Generate a sequential, prioritized preparation roadmap that the candidate can wo
 
 **Format (markdown):**
 ```markdown
-## Preparation Roadmap
-
 ### Phase 1: Foundation Review (Do First)
 **Goal:** Build confident baseline understanding before practicing
 
 1. **Review Generated Interview Prep Materials**
    - Read through all predicted questions and STAR answers
-   - Study resume defense prep for all bullets
    - [If Prior Interview Notes exist: Flag weak areas from prior round for extra attention]
    - **Why this order:** Need to know what you're preparing for before drilling specifics
 
@@ -69,13 +93,6 @@ Generate a sequential, prioritized preparation roadmap that the candidate can wo
    - [For behavioral: "Practice your 30-second elevator pitches for each resume bullet"]
    - [For case: "Work through sample case with code evaluation + business recommendation"]
    - **Practice focus:** [Specific skill this develops]
-
-6. **Resume Defense Dry Run**
-   - Pick 3-5 most technical bullets
-   - Explain each one aloud as if interviewer asked "tell me about this"
-   - Practice the 30-second elevator pitch for each
-   - [If Prior Interview Notes: "Especially practice [specific bullet] - your explanation last time lacked [specific detail]"]
-   - **Why this order:** Confidence on resume is foundational to entire interview
 
 ---
 
@@ -161,6 +178,7 @@ If you can't complete all phases, prioritize in this order:
 Generate 3-5 predicted interview questions with structured STAR responses.
 
 **Selection Criteria:**
+- **All 3-5 questions must relate to the current interview's focus area** - do not mix questions from different focus areas even if they're in the same stage
 - High likelihood given JD and resume
 - Directly evaluate Primary Callback Drivers or adjacent risk areas
 - Prefer questions that force evidence, tradeoffs, or decision-making
@@ -215,6 +233,7 @@ Generate 3-5 predicted interview questions with structured STAR responses.
 Generate 5 strategic questions to ask the interviewer.
 
 **Selection Criteria:**
+- **Calibrate questions to the interviewer's likely expertise based on the interview focus** - data pipeline build interviewer expects different questions than behavioral interviewer
 - Appropriate for interviewer's role and interview stage
 - Avoid technical depth with recruiters
 - Emphasize scope/expectations/decision-making with hiring managers
@@ -244,63 +263,12 @@ Generate 5 strategic questions to ask the interviewer.
 [Continue pattern...]
 ```
 
-## resume_defense_prep
-For each resume bullet point, generate a defense strategy that prepares the candidate to speak confidently on any detail.
-
-**Selection Criteria:**
-- Focus on bullets most likely to be questioned by technical interviewers
-- Prioritize projects with complex technical decisions or impressive scale
-- Prioritize bullets that align with Primary Callback Drivers
-- Reference Prior Interview Notes to identify which bullets were questioned or caused uncertainty
-- Use Resume Projects data as the authoritative source for technical details
-
-**Format (markdown):**
-```markdown
-### Resume Bullet: "[Exact text from resume]"
-
-**Likely Follow-up Questions:**
-1. [Specific technical question about this bullet]
-2. [Question about decision-making/tradeoffs]
-3. [Question about impact/outcomes]
-4. [If Prior Interview Notes indicate this bullet was discussed, include: "They already asked about X - be ready for deeper follow-up on Y"]
-
-**How to Defend This Bullet:**
-
-**The Technical Stack:**
-- Technologies used: [List from tools in Resume Projects with brief "why chosen" from problem_context]
-- Alternatives considered: [Infer from problem_context what wasn't used and why]
-
-**Key Decision Points:**
-- Decision 1: [Extract from actions in Resume Projects with rationale]
-- Decision 2: [Extract from actions in Resume Projects with rationale]
-
-**If They Drill Deeper, Be Ready to Explain:**
-- Architecture: [High-level system design from problem_context and tools]
-- Scale: [Specific numbers from outcomes in Resume Projects]
-- Challenges: [Extract 1-2 challenges from problem_context and solutions from actions]
-- Outcomes: [Use metrics from outcomes in Resume Projects]
-
-**Red Flags to Avoid:**
-- [Based on Prior Interview Notes, identify mistakes made when explaining similar topics]
-- [Common terminology mistakes - e.g., if Prior Interview Notes show "mentioned atomicity uncertainly", flag this]
-
-**30-Second Elevator Pitch:**
-"[Synthesize problem_context, actions, tools, and outcomes into complete, confident explanation]"
-
-**Prior Interview Performance:**
-[If this bullet was discussed in Prior Interview Notes, summarize how it went and what to improve]
-
----
-
-### Resume Bullet: "[Next bullet]"
-[Continue pattern...]
-```
-
 ## technical_deep_dives
 Based on the resume and job requirements, identify technical concepts the candidate mentioned but should be prepared to explain in depth.
 
 **Selection Criteria:**
-- Technologies/patterns mentioned in resume or Resume Projects
+- **Technologies/patterns directly relevant to the current interview's focus area** - if focus is "Data Pipeline Build", dive deep on implementation; if "Data Pipeline Design", dive deep on architecture
+- For non-technical focus areas (Behavioral, Case), this section may be minimal or focus on domain knowledge rather than technical implementation
 - Core technologies in job description
 - Concepts relevant to interviewer's domain expertise
 - Areas where shallow knowledge would be exposed in technical screens
@@ -357,32 +325,29 @@ Based on the resume and job requirements, identify technical concepts the candid
 **Recruiter Screen:**
 - Predicted questions: High-level behavioral, motivation, logistics
 - Interviewer questions: Role expectations, team structure, process timeline
-- Resume defense: Focus on impact stories and career progression
 - Technical deep dives: Skip or very high-level only
 
 **Hiring Manager Screen:**
 - Predicted questions: Experience depth, decision-making, leadership/ownership
 - Interviewer questions: Team challenges, success metrics, collaboration patterns, vision
-- Resume defense: Focus on decision-making rationale and business impact
 - Technical deep dives: Moderate depth on architectural decisions
 
 **Technical Screen:**
 - Predicted questions: Technical depth on callback drivers, problem-solving, system design
 - Interviewer questions: Architecture decisions, tech stack evolution, engineering practices, team dynamics
-- Resume defense: Be ready to defend every technical detail using Resume Projects data
 - Technical deep dives: Deep technical understanding required
 
 **Follow-On Technical Screen:**
 - Predicted questions: Drill deeper on areas where confidence was lacking in previous round - HEAVILY reference Prior Interview Notes
 - Interviewer questions: Clarifying questions on technical practices and decision-making
-- Resume defense: Expect challenges on every technical claim - use Prior Interview Notes to identify vulnerable areas
 - Technical deep dives: MANDATORY - they are specifically testing technical depth on topics from prior round
 
-**Final Loop:**
-- Predicted questions: Mix of technical depth, behavioral, culture fit, leadership
-- Interviewer questions: Long-term vision, growth opportunities, team dynamics
-- Resume defense: Be ready for any bullet point to be questioned
-- Technical deep dives: Comprehensive across all resume technologies
+**Final Loop (Single Interview within Loop):**
+- Predicted questions: Focused entirely on THIS interview's focus area with maximum depth
+- Interviewer questions: Tailored to the specific focus (coding interviewer vs design interviewer vs behavioral interviewer)
+- Prep plan: Specific to the focus area - coding practice for coding focus, design practice for design focus, story prep for behavioral focus
+- Technical deep dives: Deep dive only on technologies relevant to THIS focus area
+- **Remember:** If there are 4 interviews in the loop, you will generate 4 separate prep documents, each hyper-focused on one interview
 
 # Interviewer-Specific Calibration
 
@@ -438,7 +403,6 @@ Each project contains:
 1. **For STAR responses:** Map Resume Projects fields directly to STAR components
 2. **For technical details:** Reference specific tools and actions when explaining architecture
 3. **For authenticity:** Use exact metrics from outcomes, not approximations
-4. **For consistency:** Ensure resume defense matches Resume Projects data exactly
 5. **For depth:** When Resume Projects provide more detail than resume bullet, use it to prepare for follow-up questions
 
 # Using Prior Interview Notes
@@ -465,6 +429,32 @@ When Prior Interview Notes exist and Interview Stage is another "Technical Scree
 - Focus 70% of content on gaps identified in prior round
 - Provide explicit "what you said vs what you should have said" corrections
 - Generate practice answers for the exact questions that caused difficulty
+
+# Multi-Interview Loop Example
+
+**Scenario:** Capital One Power Day with 4 interviews, all stage="Final Loop"
+
+**Interview 1:** stage="Final Loop", focus="Data Pipeline Build"
+- Prep plan: CodeSignal practice, build 2-3 pipelines, Python/SQL coding drills
+- Predicted questions: 5 questions about implementing pipelines, handling data transformations, optimizing queries
+- Technical deep dives: Python libraries for data processing, SQL optimization techniques, data validation patterns, error handling strategies, and other implementation-focused topics
+
+**Interview 2:** stage="Final Loop", focus="Data Pipeline Design"  
+- Prep plan: Whiteboard practice, study architectural patterns, practice explaining trade-offs
+- Predicted questions: 5 questions about designing pipelines, choosing technologies, scaling strategies
+- Technical deep dives: Batch vs streaming processing, SQL vs NoSQL databases, data warehouse vs data lake architectures, schema-on-write vs schema-on-read, delivery semantics (exactly-once vs at-least-once), and other architecture/design trade-offs
+
+**Interview 3:** stage="Final Loop", focus="Behavioral"
+- Prep plan: STAR story preparation, record yourself, practice 30-second pitches
+- Predicted questions: 5 behavioral questions (collaboration, conflict, leadership, etc.)
+- Technical deep dives: Minimal or domain-specific context only - focus is on storytelling, not technical depth
+
+**Interview 4:** stage="Final Loop", focus="Case"
+- Prep plan: Business case frameworks, practice code reading + business recommendations
+- Predicted questions: 5 questions combining business analysis and code interpretation
+- Technical deep dives: Code reading and evaluation skills, understanding business metrics, profitability analysis frameworks, and other business-technical integration topics
+
+**Notice:** Each prep is completely different despite sharing the same stage. The focus area determines ALL content.
 
 # Inputs
 

@@ -15,5 +15,4 @@ class InterviewPrepSpecificSchema(BaseModel):
     prep_plan: str
     predicted_questions: str
     interviewer_questions: str
-    resume_defense_prep: str
     technical_deep_dives: str

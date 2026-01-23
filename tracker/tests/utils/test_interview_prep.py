@@ -51,7 +51,6 @@ class TestGeneratePrepForInterview(TestCase):
             prep_plan="prep_plan",
             predicted_questions="predicted_questions",
             interviewer_questions="interviewer_questions",
-            resume_defense_prep="resume_defense_prep",
             technical_deep_dives="technical_deep_dives",
         )
 

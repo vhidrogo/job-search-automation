@@ -99,7 +99,6 @@ class TestInterviewPrepGenerator(TestCase):
             "prep_plan": cls.PREP_PLAN,
             "predicted_questions": cls.PREDICTED_QUESTIONS,
             "interviewer_questions": cls.INTERVIEWER_QUESTIONS,
-            "resume_defense_prep": cls.RESUME_DEFENSE_PREP,
             "technical_deep_dives": cls.TECHNICAL_DEEP_DIVES,
         })
 
@@ -192,7 +191,6 @@ class TestInterviewPrepGenerator(TestCase):
             prep_plan=self.PREP_PLAN,
             predicted_questions=self.PREDICTED_QUESTIONS,
             interviewer_questions=self.INTERVIEWER_QUESTIONS,
-            resume_defense_prep=self.RESUME_DEFENSE_PREP,
             technical_deep_dives=self.TECHNICAL_DEEP_DIVES,
         )
         self.assertEqual(result, expected)
