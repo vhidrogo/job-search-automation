@@ -33,6 +33,7 @@ class TestInterviewPrepGenerator(TestCase):
     COMPANY_CONTEXT = "## What the company does\nPet care marketplace"
     PRIMARY_DRIVERS = "**Python Experience**: 2+ years with Django"
     BACKGROUND_NARRATIVE = "### Opening one-liner\nSoftware engineer with backend focus"
+    PREP_PLAN = "### Study Materials"
     PREDICTED_QUESTIONS = "### Question 1\nTell me about a time..."
     INTERVIEWER_QUESTIONS = "### Question 1\nWhat does success look like?"
     RESUME_DEFENSE_PREP = "Resume defense prep"
@@ -94,6 +95,7 @@ class TestInterviewPrepGenerator(TestCase):
         })
 
         cls.specific_response = json.dumps({
+            "prep_plan": cls.PREP_PLAN,
             "predicted_questions": cls.PREDICTED_QUESTIONS,
             "interviewer_questions": cls.INTERVIEWER_QUESTIONS,
             "resume_defense_prep": cls.RESUME_DEFENSE_PREP,
@@ -164,6 +166,7 @@ class TestInterviewPrepGenerator(TestCase):
             max_tokens=ANY,
         )
         expected = InterviewPrepSpecificSchema(
+            prep_plan=self.PREP_PLAN,
             predicted_questions=self.PREDICTED_QUESTIONS,
             interviewer_questions=self.INTERVIEWER_QUESTIONS,
             resume_defense_prep=self.RESUME_DEFENSE_PREP,
