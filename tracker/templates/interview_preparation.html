@@ -127,7 +127,68 @@
             border-radius: 4px;
             margin-bottom: 20px;
         }
+        .layout {
+            display: block;
+        }
+        .side-nav {
+            position: fixed;
+            top: 20px;
+            /* Put the nav in the left gutter next to the centered 1000px column */
+            left: max(20px, calc((100vw - 1000px) / 2 - 300px));
+            width: 240px;
+            align-self: start;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-height: calc(100vh - 40px);
+            overflow: auto;
+            z-index: 1000;
+        }
+        .side-nav__title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .side-nav__link {
+            display: block;
+            padding: 8px 10px;
+            margin: 2px 0;
+            border-radius: 6px;
+            color: #333;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .side-nav__link:hover {
+            background: #f4f4f4;
+        }
+        .side-nav__link.is-active {
+            background: #e9f2ff;
+            color: #0b57d0;
+            font-weight: 600;
+        }
+        .main-content {
+            min-width: 0;
+        }
+
+        /* On smaller screens, revert to top nav so it doesn't cover content */
+        @media (max-width: 1299px) {
+            .side-nav {
+                position: static;
+                width: auto;
+                max-height: none;
+                z-index: auto;
+                left: auto;
+            }
+        }
+
         @media print {
+            .side-nav {
+                display: none;
+            }
+            .layout {
+                display: block;
+            }
             body {
                 background: white;
             }
@@ -175,78 +236,96 @@
         </select>
     </div>
 
-    <!-- Base Preparation Sections -->
-    <details class="section" open>
-      <summary class="section-summary">
-        <h2>Job Description</h2>
-      </summary>
-      <div class="markdown-content" id="formatted-jd"></div>
-    </details>
+    <div class="layout">
+        <nav class="side-nav" aria-label="Section navigation">
+            <div class="side-nav__title">Sections</div>
+            <a class="side-nav__link" href="#job-description">Job Description</a>
+            <a class="side-nav__link" href="#company-context-section">Company &amp; Product Context</a>
+            <a class="side-nav__link" href="#primary-drivers-section">Primary Callback Drivers</a>
+            <a class="side-nav__link" href="#background-narrative-section">Targeted Background Narrative</a>
+            <a class="side-nav__link" href="#resume-defense-section">Resume Defense Preparation</a>
+            {% if interview_prep %}
+            <a class="side-nav__link" href="#prep-roadmap-section">Preparation Roadmap</a>
+            <a class="side-nav__link" href="#predicted-questions-section">Predicted Interview Questions &amp; Responses</a>
+            <a class="side-nav__link" href="#interviewer-questions-section">Interviewer-Aligned Questions</a>
+            <a class="side-nav__link" href="#technical-deep-dives-section">Technical Deep Dives</a>
+            {% endif %}
+        </nav>
 
-    <details class="section" open>
-      <summary class="section-summary">
-        <h2>Company &amp; Product Context</h2>
-      </summary>
-      <div class="markdown-content" id="company-context"></div>
-    </details>
+        <main class="main-content">
+            <!-- Base Preparation Sections -->
+            <details class="section" id="job-description" open>
+              <summary class="section-summary">
+                <h2>Job Description</h2>
+              </summary>
+              <div class="markdown-content" id="formatted-jd"></div>
+            </details>
 
-    <details class="section" open>
-      <summary class="section-summary">
-        <h2>Primary Callback Drivers</h2>
-      </summary>
-      <div class="markdown-content" id="primary-drivers"></div>
-    </details>
+            <details class="section" id="company-context-section" open>
+              <summary class="section-summary">
+                <h2>Company &amp; Product Context</h2>
+              </summary>
+              <div class="markdown-content" id="company-context"></div>
+            </details>
 
-    <details class="section" open>
-      <summary class="section-summary">
-        <h2>Targeted Background Narrative</h2>
-      </summary>
-      <div class="markdown-content" id="background-narrative"></div>
-    </details>
+            <details class="section" id="primary-drivers-section" open>
+              <summary class="section-summary">
+                <h2>Primary Callback Drivers</h2>
+              </summary>
+              <div class="markdown-content" id="primary-drivers"></div>
+            </details>
 
-    <details class="section" open>
-      <summary class="section-summary">
-        <h2>Resume Defense Preparation</h2>
-      </summary>
-      <div class="markdown-content" id="resume-defense-prep"></div>
-    </details>
+            <details class="section" id="background-narrative-section" open>
+              <summary class="section-summary">
+                <h2>Targeted Background Narrative</h2>
+              </summary>
+              <div class="markdown-content" id="background-narrative"></div>
+            </details>
 
-    <!-- Interview-Specific Sections -->
-    {% if interview_prep %}
-    <details class="section" open>
-      <summary class="section-summary">
-        <h2>Preparation Roadmap</h2>
-      </summary>
-      <div class="markdown-content" id="prep-plan"></div>
-    </details>
+            <details class="section" id="resume-defense-section" open>
+              <summary class="section-summary">
+                <h2>Resume Defense Preparation</h2>
+              </summary>
+              <div class="markdown-content" id="resume-defense-prep"></div>
+            </details>
 
-    <details class="section" open>
-      <summary class="section-summary">
-        <h2>Predicted Interview Questions &amp; Responses</h2>
-      </summary>
-      <div class="markdown-content" id="predicted-questions"></div>
-    </details>
+            <!-- Interview-Specific Sections -->
+            {% if interview_prep %}
+            <details class="section" id="prep-roadmap-section" open>
+              <summary class="section-summary">
+                <h2>Preparation Roadmap</h2>
+              </summary>
+              <div class="markdown-content" id="prep-plan"></div>
+            </details>
 
-    <details class="section" open>
-      <summary class="section-summary">
-        <h2>Interviewer-Aligned Questions</h2>
-      </summary>
-      <div class="markdown-content" id="interviewer-questions"></div>
-    </details>
+            <details class="section" id="predicted-questions-section" open>
+              <summary class="section-summary">
+                <h2>Predicted Interview Questions &amp; Responses</h2>
+              </summary>
+              <div class="markdown-content" id="predicted-questions"></div>
+            </details>
 
-    <details class="section" open>
-      <summary class="section-summary">
-        <h2>Technical Deep Dives</h2>
-      </summary>
-      <div class="markdown-content" id="technical-deep-dives"></div>
-    </details>
-    {% else %}
-    <div class="warning">
-      <strong>Note:</strong> Interview-specific preparation has not been generated for this interview yet.
-      Run the generation command to create it.
+            <details class="section" id="interviewer-questions-section" open>
+              <summary class="section-summary">
+                <h2>Interviewer-Aligned Questions</h2>
+              </summary>
+              <div class="markdown-content" id="interviewer-questions"></div>
+            </details>
+
+            <details class="section" id="technical-deep-dives-section" open>
+              <summary class="section-summary">
+                <h2>Technical Deep Dives</h2>
+              </summary>
+              <div class="markdown-content" id="technical-deep-dives"></div>
+            </details>
+            {% else %}
+            <div class="warning">
+              <strong>Note:</strong> Interview-specific preparation has not been generated for this interview yet.
+              Run the generation command to create it.
+            </div>
+            {% endif %}
+        </main>
     </div>
-    {% endif %}
-
 
     <script>
         // Render markdown content
@@ -286,8 +365,105 @@
             window.location = url;
         }
 
+        function openSectionFromHash() {
+            if (!window.location.hash) return;
+            const id = window.location.hash.slice(1);
+
+            setActiveNavById(id);
+
+            const target = document.getElementById(id);
+            if (target && target.tagName.toLowerCase() === 'details') {
+                target.open = true;
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function setActiveNavById(id) {
+            document.querySelectorAll('.side-nav__link').forEach(a => a.classList.remove('is-active'));
+            const link = document.querySelector(`.side-nav__link[href="#${CSS.escape(id)}"]`);
+            if (link) link.classList.add('is-active');
+        }
+
+        function wireNavClicks() {
+            document.querySelectorAll('.side-nav__link').forEach(link => {
+                link.addEventListener('click', () => {
+                    const href = link.getAttribute('href');
+                    if (!href || !href.startsWith('#')) return;
+
+                    const id = href.slice(1);
+                    const target = document.getElementById(id);
+
+                    if (target && target.tagName.toLowerCase() === 'details') {
+                        target.open = true;
+                    }
+
+                    // Immediately update highlight (don’t rely on IntersectionObserver)
+                    setActiveNavById(id);
+                });
+            });
+        }
+
+        function setupActiveSectionHighlight() {
+            const links = Array.from(document.querySelectorAll('.side-nav__link'));
+            const ids = links
+                .map(a => a.getAttribute('href'))
+                .filter(h => h && h.startsWith('#'))
+                .map(h => h.slice(1));
+
+            const sections = ids
+                .map(id => document.getElementById(id))
+                .filter(el => el && el.tagName.toLowerCase() === 'details');
+
+            if (!sections.length) return;
+
+            // Pick a point slightly below the top so headers aren’t too “twitchy”
+            const ACTIVE_Y = 120;
+
+            let ticking = false;
+
+            function updateActive() {
+                ticking = false;
+
+                let best = null;
+
+                for (const s of sections) {
+                    const r = s.getBoundingClientRect();
+
+                    // Active if the ACTIVE_Y line is inside the section bounds
+                    if (r.top <= ACTIVE_Y && r.bottom > ACTIVE_Y) {
+                        best = s;
+                        break; // sections are in DOM order, first match is correct
+                    }
+                }
+
+                // Fallback: if nothing contains ACTIVE_Y (e.g., very top), pick first visible
+                if (!best) {
+                    best = sections.find(s => s.getBoundingClientRect().bottom > 0) || sections[0];
+                }
+
+                if (best) setActiveNavById(best.id);
+            }
+
+            function onScrollOrResize() {
+                if (ticking) return;
+                ticking = true;
+                requestAnimationFrame(updateActive);
+            }
+
+            window.addEventListener('scroll', onScrollOrResize, { passive: true });
+            window.addEventListener('resize', onScrollOrResize);
+
+            // Initial state
+            updateActive();
+        }
+        // After markdown render (sections exist), wire everything up
+        window.addEventListener('hashchange', openSectionFromHash);
+
         // Render on page load
         renderMarkdown();
+        wireNavClicks();
+        setupActiveSectionHighlight();
+        openSectionFromHash();
     </script>
 </body>
 </html>
