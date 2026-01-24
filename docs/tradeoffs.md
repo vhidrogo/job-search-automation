@@ -688,6 +688,43 @@ This decision demonstrates user-centered design that adapts to workflow context 
 
 ---
 
+#### Interview Prep Page Information Architecture: Single View (Collapsible + Sidebar Nav) vs Separate Views
+
+**Context:**  
+The interview prep page grew to 9+ content-heavy sections, making it tedious to reach specific sections via scrolling while still keeping all prep material logically consolidated.
+
+**Options Considered:**  
+1. **Single view with collapsible sections only:**  
+   - Keep everything on one page and reduce scrolling by collapsing completed sections.  
+2. **Separate views per section (or per major section group):**  
+   - Split sections into dedicated pages/routes for direct access and shorter pages.  
+3. **Single view with collapsible sections + persistent navigation:**  
+   - Keep one page but add a sidebar/table-of-contents to jump directly to any section.
+
+**Tradeoffs:**  
+- **Single view (collapsible only):**  
+  - ✅ Keeps all content in one place and supports step-by-step review.  
+  - ✅ Minimal routing/template complexity.  
+  - ❌ Still slow to jump to a specific section later (collapse reduces length, but navigation is still scroll-based).  
+- **Separate views per section:**  
+  - ✅ Fast direct access to each section with clean, focused pages.  
+  - ✅ Enables distinct workflows/views (e.g., “daily practice” view) more naturally.  
+  - ❌ Increases routing and template maintenance overhead.  
+  - ❌ Fragments content that is often consumed holistically in a single session.  
+- **Single view (collapsible + sidebar nav):**  
+  - ✅ One place for all prep content while enabling 1-click jumps to any section.  
+  - ✅ Scales as more sections are added without adding routes/templates.  
+  - ✅ Supports both “first pass” (expand/collapse) and “return later” (nav) workflows.  
+  - ❌ Adds UI/state complexity (active section highlighting, anchor behavior with collapsed sections, responsive layout).
+
+**Decision:**  
+Adopt a **single view with collapsible sections plus a persistent sidebar navigation**, opening sections on navigation and highlighting the active section during scroll. This preserves a consolidated workflow while eliminating repeated long-scroll navigation.
+
+**Reflection:**  
+This decision prioritizes maintainability and workflow continuity over route proliferation. If future usage shows a distinct “repeat-only-last-section” workflow, a separate lightweight view (mode-based) can be added later without undoing the consolidated baseline.
+
+---
+
 #### Interview Outcome Tracking: Single ApplicationStatus vs Separate InterviewProcessStatus
 
 **Context:**  
