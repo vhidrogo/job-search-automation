@@ -116,6 +116,16 @@
         .admin-link:hover {
             background-color: #2c5266;
         }
+
+        .card-link {
+          color: #417690;
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 500;
+        }
+        .card-link:hover {
+          text-decoration: underline; /* optional */
+        }
     </style>
 </head>
 <body>
@@ -187,17 +197,17 @@
             {% endwith %}
 
             <div style="margin-top: 15px; text-align: right;">
-                <a href="{% url 'tracker:application_detail' interview.application.id %}" 
-                   style="color: #417690; text-decoration: none; font-size: 14px; font-weight: 500;">
-                    View Full Application Details →
-                </a>
+              <a class="card-link"
+                 href="{% url 'tracker:application_detail' interview.application.id %}">
+                View Full Application Details →
+              </a>
             </div>
 
             <div style="margin-top: 15px; text-align: right;">
-                <a href="{% url 'tracker:interview_preparation' interview.application.id %}" 
-                   style="color: #417690; text-decoration: none; font-size: 14px; font-weight: 500;">
-                    View Prep →
-                </a>
+              <a class="card-link"
+                 href="{% url 'tracker:interview_preparation' interview.application.id %}?interview_id={{ interview.id }}">
+                View Prep →
+              </a>
             </div>
         </div>
         {% endfor %}
