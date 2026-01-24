@@ -48,16 +48,34 @@
         }
         .section {
             background: white;
-            padding: 25px;
             border-radius: 8px;
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
         }
-        .section h2 {
-            margin: 0 0 20px 0;
+        .section-summary {
+            cursor: pointer;
+            user-select: none;
+            list-style: none;
+        }
+        .section-summary::-webkit-details-marker {
+            display: none;
+        }
+        .section-summary h2 {
+            margin: 0;
             color: #333;
             border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
+            padding: 20px 25px 10px 25px;
+        }
+        .section-summary h2::after {
+            content: "▾";
+            float: right;
+        }
+        .section[open] .section-summary h2::after {
+            content: "▴";
+        }
+        .section > .markdown-content {
+            padding: 15px 25px 25px 25px;
         }
         .section h3 {
             color: #555;
@@ -118,6 +136,12 @@
                 border: 1px solid #ddd;
                 page-break-inside: avoid;
             }
+            .section-summary h2::after {
+                content: "";
+            }
+            .section:not([open]) > .markdown-content {
+                display: block;
+            }
             .interview-selector {
                 display: none;
             }
@@ -152,58 +176,77 @@
     </div>
 
     <!-- Base Preparation Sections -->
-    <div class="section">
+    <details class="section" open>
+      <summary class="section-summary">
         <h2>Job Description</h2>
-        <div class="markdown-content" id="formatted-jd"></div>
-    </div>
+      </summary>
+      <div class="markdown-content" id="formatted-jd"></div>
+    </details>
 
-    <div class="section">
-        <h2>Company & Product Context</h2>
-        <div class="markdown-content" id="company-context"></div>
-    </div>
+    <details class="section" open>
+      <summary class="section-summary">
+        <h2>Company &amp; Product Context</h2>
+      </summary>
+      <div class="markdown-content" id="company-context"></div>
+    </details>
 
-    <div class="section">
+    <details class="section" open>
+      <summary class="section-summary">
         <h2>Primary Callback Drivers</h2>
-        <div class="markdown-content" id="primary-drivers"></div>
-    </div>
+      </summary>
+      <div class="markdown-content" id="primary-drivers"></div>
+    </details>
 
-    <div class="section">
+    <details class="section" open>
+      <summary class="section-summary">
         <h2>Targeted Background Narrative</h2>
-        <div class="markdown-content" id="background-narrative"></div>
-    </div>
+      </summary>
+      <div class="markdown-content" id="background-narrative"></div>
+    </details>
 
-    <div class="section">
+    <details class="section" open>
+      <summary class="section-summary">
         <h2>Resume Defense Preparation</h2>
-        <div class="markdown-content" id="resume-defense-prep"></div>
-    </div>
+      </summary>
+      <div class="markdown-content" id="resume-defense-prep"></div>
+    </details>
 
     <!-- Interview-Specific Sections -->
     {% if interview_prep %}
-    <div class="section">
+    <details class="section" open>
+      <summary class="section-summary">
         <h2>Preparation Roadmap</h2>
-        <div class="markdown-content" id="prep-plan"></div>
-    </div>
+      </summary>
+      <div class="markdown-content" id="prep-plan"></div>
+    </details>
 
-    <div class="section">
-        <h2>Predicted Interview Questions & Responses</h2>
-        <div class="markdown-content" id="predicted-questions"></div>
-    </div>
+    <details class="section" open>
+      <summary class="section-summary">
+        <h2>Predicted Interview Questions &amp; Responses</h2>
+      </summary>
+      <div class="markdown-content" id="predicted-questions"></div>
+    </details>
 
-    <div class="section">
+    <details class="section" open>
+      <summary class="section-summary">
         <h2>Interviewer-Aligned Questions</h2>
-        <div class="markdown-content" id="interviewer-questions"></div>
-    </div>
+      </summary>
+      <div class="markdown-content" id="interviewer-questions"></div>
+    </details>
 
-    <div class="section">
+    <details class="section" open>
+      <summary class="section-summary">
         <h2>Technical Deep Dives</h2>
-        <div class="markdown-content" id="technical-deep-dives"></div>
-    </div>
+      </summary>
+      <div class="markdown-content" id="technical-deep-dives"></div>
+    </details>
     {% else %}
     <div class="warning">
-        <strong>Note:</strong> Interview-specific preparation has not been generated for this interview yet.
-        Run the generation command to create it.
+      <strong>Note:</strong> Interview-specific preparation has not been generated for this interview yet.
+      Run the generation command to create it.
     </div>
     {% endif %}
+
 
     <script>
         // Render markdown content
