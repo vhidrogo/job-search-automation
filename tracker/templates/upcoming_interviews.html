@@ -65,6 +65,11 @@
             font-size: 14px;
             white-space: nowrap;
         }
+
+        .scheduled-time-hour {
+            display: block;
+            text-align: right;
+        }
         
         .interview-details {
             display: grid;
@@ -153,7 +158,9 @@
                 </div>
                 <div class="scheduled-time">
                     {{ interview.scheduled_at|date:"D, M d, Y" }}<br>
-                    {{ interview.scheduled_at|date:"g:i A" }}
+                    <span class="scheduled-time-hour">
+                        {{ interview.scheduled_at|date:"g:i A" }}
+                    </span>
                 </div>
             </div>
             
