@@ -177,7 +177,7 @@ class InterviewAdmin(admin.ModelAdmin):
 
 
 class InterviewPreparationAdmin(admin.ModelAdmin):
-    list_display = ["interview", "stage", "created_at", "view_link"]
+    list_display = ["interview", "stage", "focus", "created_at", "view_link"]
     readonly_fields = ["created_at", "updated_at"]
     search_fields = [
         "interview__application__job__company",
@@ -215,6 +215,11 @@ class InterviewPreparationAdmin(admin.ModelAdmin):
         return obj.interview.get_stage_display()
     stage.short_description = "Stage"
     stage.admin_order_field = "interview__stage"
+
+    def focus(self, obj):
+        return obj.interview.get_focus_display()
+    focus.short_desctiption = "Focus"
+    focus.admin_order_field = "interview__focus"
     
     def view_link(self, obj):
         url = reverse("tracker:interview_preparation", args=[obj.interview.application.id])
