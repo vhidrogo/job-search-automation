@@ -43,6 +43,9 @@ class Interview(models.Model):
     interviewer_title = models.CharField(max_length=200, blank=True)
     scheduled_at = models.DateTimeField()
     notes = models.TextField(blank=True, help_text="Freeform interview notes")
+
+    class Meta:
+        ordering = ["-scheduled_at"]
     
     def __str__(self):
         return f"{self.application.job.company} - {self.stage}"
