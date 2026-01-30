@@ -246,6 +246,9 @@
             {% for interview in interviews %}
             <option value="{{ interview.id }}" {% if interview.id == selected_interview.id %}selected{% endif %}>
                 {{ interview.get_stage_display }}
+                {% if interview.focus %}
+                    - {{ interview.get_focus_display }}
+                {% endif %}
                 {% if interview.scheduled_at %}
                     - {{ interview.scheduled_at|date:"M d, Y" }}
                 {% endif %}
