@@ -21,6 +21,7 @@ class Interview(models.Model):
     class Format(models.TextChoices):
         PHONE_CALL = "phone_call", "Phone Call"
         VIRTUAL_MEETING = "virtual_meeting", "Virtual Meeting"
+        ONSITE = "onsite", "Onsite"
     
     class Focus(models.TextChoices):
         CODING = "coding", "Coding"
