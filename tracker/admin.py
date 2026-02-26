@@ -272,6 +272,7 @@ class InterviewPreparationBaseAdmin(admin.ModelAdmin):
 class InterviewProcessStatusAdmin(admin.ModelAdmin):
     autocomplete_fields = ["application"]
     list_display = ["application", "outcome", "notes"]
+    ordering = ["application"]
 
 
 class JobAdmin(admin.ModelAdmin):
