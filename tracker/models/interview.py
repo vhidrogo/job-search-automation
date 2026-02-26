@@ -16,6 +16,7 @@ class Interview(models.Model):
         TECHNICAL_SCREEN = "technical_screen", "Technical Screen"
         PREP_CALL = "prep_call", "Prep/Logistics Call"
         FINAL_LOOP = "final_loop", "Final Loop"
+        TEAM_MATCH = "team_match", "Team Match"
     
     class Format(models.TextChoices):
         PHONE_CALL = "phone_call", "Phone Call"
