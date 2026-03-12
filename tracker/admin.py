@@ -112,8 +112,9 @@ class ApplicationAdmin(admin.ModelAdmin):
 
 
 class ApplicationStatusAdmin(admin.ModelAdmin):
-    autocomplete_fields = ["application",]
+    autocomplete_fields = ["application"]
     list_display = ["application", "state", "status_date"]
+    search_fields = ["application__job__external_job_id"]
 
 
 class ContractJobAdmin(admin.ModelAdmin):
